@@ -1,0 +1,451 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==================== USER & STATS ====================
+
+model User {
+  id         Int      @id @default(autoincrement())
+  telegramId BigInt   @unique
+  username   String?
+  firstName  String
+  lastName   String?
+  language   String   @default("uz")
+  isBanned   Boolean  @default(false)
+  isMuted    Boolean  @default(false)
+  muteExpiresAt DateTime?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Valyuta
+  diamonds   Int @default(0)
+  money      Int @default(0)
+
+  // VIP
+  isVip        Boolean   @default(false)
+  vipExpiresAt DateTime?
+
+  // Geroy va Shield (1 martalik flagalar — eski)
+  hasHero          Boolean   @default(false)
+  heroUsedAt       DateTime?
+  hasShield        Boolean   @default(false)
+  lastChestOpenedAt DateTime?
+
+  // Inventar (miqdorli)
+  shieldCount     Int @default(0)
+  documentCount   Int @default(0)
+
+  // Aktiv rol (sotib olingan)
+  activeRole      Role?
+
+  // Keyingi o'yinga foydalanish flaglari
+  useShieldNextGame    Boolean @default(false)
+  useDocumentNextGame  Boolean @default(false)
+  useActiveRoleNextGame Boolean @default(false)
+  useHeroNextGame      Boolean @default(false)
+  usePremiumEmoji      Boolean @default(false)
+
+  players      Player[]
+  stats        UserStats?
+  transactions Transaction[]
+  purchases    Purchase[]
+  chests       Chest[]
+  hero         Hero?
+
+  @@index([telegramId])
+}
+
+model UserStats {
+  id     Int  @id @default(autoincrement())
+  userId Int  @unique
+  user   User @relation(fields: [userId], references: [id])
+
+  gamesPlayed Int @default(0)
+  gamesWon    Int @default(0)
+  gamesLost   Int @default(0)
+
+  // Tinch axoli
+  timesCivilian Int @default(0)
+  timesDoctor   Int @default(0)
+  timesTramp    Int @default(0)
+  timesSheriff  Int @default(0)
+  timesKamikaze Int @default(0)
+  timesHooker   Int @default(0)
+  timesSergeant Int @default(0)
+  timesWarlock  Int @default(0)
+  timesSanta    Int @default(0)
+  timesSnowboy  Int @default(0)
+  // Mafiya
+  timesDon    Int @default(0)
+  timesMafia  Int @default(0)
+  timesLawyer Int @default(0)
+  timesSpy    Int @default(0)
+  timesLab    Int @default(0)
+  // Yakka
+  timesKiller    Int @default(0)
+  timesMiner     Int @default(0)
+  timesSniper    Int @default(0)
+  timesArcher    Int @default(0)
+  timesTraitor   Int @default(0)
+  timesRobber    Int @default(0)
+  timesProfessor Int @default(0)
+
+  killCount     Int @default(0)
+  savedCount    Int @default(0)
+  correctChecks Int @default(0)
+
+  winStreak    Int @default(0)
+  maxWinStreak Int @default(0)
+  rating       Int @default(1000)
+
+  updatedAt DateTime @updatedAt
+}
+
+// ==================== ECONOMY ====================
+
+// ==================== CONFIG (admin narxlari) ====================
+
+model Config {
+  key       String   @id
+  value     String                  // JSON yoki oddiy string
+  updatedAt DateTime @updatedAt
+}
+
+// ==================== HERO (GEROY) ====================
+
+model Hero {
+  id         Int      @id @default(autoincrement())
+  userId     Int      @unique
+  user       User     @relation(fields: [userId], references: [id])
+  name       String   @default("Qahramon")
+  level      Int      @default(1)
+  points     Int      @default(0)
+  powerMin   Int      @default(40)
+  powerMax   Int      @default(46)
+  protection Int      @default(100)
+  charge     Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model Transaction {
+  id        Int             @id @default(autoincrement())
+  userId    Int
+  user      User            @relation(fields: [userId], references: [id])
+  type      TransactionType
+  currency  Currency
+  amount    Int
+  fee       Int             @default(0)
+  reason    String
+  relatedId Int?
+  createdAt DateTime        @default(now())
+
+  @@index([userId, createdAt])
+}
+
+enum TransactionType {
+  EARN
+  SPEND
+  TRANSFER_IN
+  TRANSFER_OUT
+}
+
+enum Currency {
+  DIAMOND
+  MONEY
+}
+
+// ==================== SHOP ====================
+
+model ShopItem {
+  id          Int          @id @default(autoincrement())
+  name        String
+  description String
+  emoji       String
+  category    ShopCategory
+  priceType   Currency
+  price       Int
+  isActive    Boolean      @default(true)
+  createdAt   DateTime     @default(now())
+
+  purchases Purchase[]
+}
+
+model Purchase {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  itemId    Int
+  item      ShopItem @relation(fields: [itemId], references: [id])
+  quantity  Int      @default(1)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+enum ShopCategory {
+  HERO
+  SHIELD
+  CHEST
+  VIP
+  COSMETIC
+}
+
+// ==================== CHEST ====================
+
+model Chest {
+  id        Int       @id @default(autoincrement())
+  userId    Int
+  user      User      @relation(fields: [userId], references: [id])
+  type      ChestType
+  reward    String?
+  openedAt  DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+}
+
+enum ChestType {
+  BASIC
+  SILVER
+  GOLD
+}
+
+// ==================== CHAT ====================
+
+model Chat {
+  id         Int      @id @default(autoincrement())
+  telegramId BigInt   @unique
+  title      String?
+  type       String
+  language   String   @default("uz")
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  games    Game[]
+  settings ChatSettings?
+
+  @@index([telegramId])
+}
+
+model ChatSettings {
+  id     Int  @id @default(autoincrement())
+  chatId Int  @unique
+  chat   Chat @relation(fields: [chatId], references: [id])
+
+  registrationTimeout  Int @default(90)
+  nightTimeout         Int @default(60)
+  dayDiscussionTimeout Int @default(90)
+  votingTimeout        Int @default(60)
+
+  minPlayers Int @default(4)
+  maxPlayers Int @default(30)
+
+  showRoleOnDeath Boolean @default(true)
+  allowSelfVote   Boolean @default(false)
+  muteOnNight     Boolean @default(false)
+
+  // Tinch axoli rollari
+  enableTramp    Boolean @default(true)
+  enableKamikaze Boolean @default(true)
+  enableHooker   Boolean @default(true)
+  enableSergeant Boolean @default(true)
+  enableWarlock  Boolean @default(true)
+  enableSanta    Boolean @default(false)
+  enableSnowboy  Boolean @default(false)
+  // Mafiya rollari
+  enableLawyer Boolean @default(true)
+  enableSpy    Boolean @default(true)
+  enableLab    Boolean @default(true)
+  // Yakka rollar
+  enableKiller    Boolean @default(true)
+  enableMiner     Boolean @default(true)
+  enableSniper    Boolean @default(true)
+  enableArcher    Boolean @default(true)
+  enableTraitor   Boolean @default(true)
+  enableRobber    Boolean @default(false)
+  enableProfessor Boolean @default(false)
+
+  updatedAt DateTime @updatedAt
+}
+
+// ==================== GAME ====================
+
+model Game {
+  id         Int        @id @default(autoincrement())
+  chatId     Int
+  chat       Chat       @relation(fields: [chatId], references: [id])
+  status     GameStatus @default(WAITING)
+  winner     Winner?
+  roundCount Int        @default(0)
+  startedAt  DateTime?
+  endedAt    DateTime?
+  createdAt  DateTime   @default(now())
+
+  players Player[]
+  rounds  GameRound[]
+
+  @@index([chatId, status])
+}
+
+enum GameStatus {
+  WAITING
+  STARTING
+  NIGHT
+  DAY
+  VOTING
+  CONFIRMING
+  FINISHED
+  CANCELLED
+}
+
+enum Winner {
+  TOWN
+  MAFIA
+  SOLO
+  DRAW
+}
+
+// ==================== PLAYER ====================
+
+model Player {
+  id             Int         @id @default(autoincrement())
+  gameId         Int
+  game           Game        @relation(fields: [gameId], references: [id])
+  userId         Int
+  user           User        @relation(fields: [userId], references: [id])
+  role           Role?
+  isAlive        Boolean     @default(true)
+  deathRound     Int?
+  deathCause     DeathCause?
+  hasHeroActive   Boolean     @default(false)
+  hasShieldActive Boolean     @default(false)
+  shieldCharges   Int         @default(0)
+  createdAt      DateTime    @default(now())
+
+  actions       Action[] @relation("actor")
+  targetActions Action[] @relation("target")
+
+  @@unique([gameId, userId])
+  @@index([gameId, isAlive])
+}
+
+enum Role {
+  // Tinch axoli
+  CIVILIAN
+  DOCTOR
+  TRAMP
+  SHERIFF
+  KAMIKAZE
+  HOOKER
+  SERGEANT
+  WARLOCK
+  SANTA
+  SNOWBOY
+  // Mafiya
+  DON
+  MAFIA
+  LAWYER
+  SPY
+  LAB
+  // Yakka
+  KILLER
+  MINER
+  SNIPER
+  ARCHER
+  TRAITOR
+  ROBBER
+  PROFESSOR
+}
+
+enum DeathCause {
+  MAFIA_KILL
+  SHERIFF_KILL
+  KILLER_KILL
+  SNIPER_KILL
+  ARCHER_KILL
+  MINER_KILL
+  SNOWBOY_KILL
+  LAB_KILL
+  WARLOCK_KILL
+  KAMIKAZE_KILL
+  ROBBER_KILL
+  PROFESSOR_KILL
+  VOTED_OUT
+  LEFT_GAME
+}
+
+// ==================== GAME ROUND ====================
+
+model GameRound {
+  id        Int      @id @default(autoincrement())
+  gameId    Int
+  game      Game     @relation(fields: [gameId], references: [id])
+  roundNum  Int
+  phase     Phase
+  createdAt DateTime @default(now())
+  endedAt   DateTime?
+
+  actions Action[]
+
+  @@unique([gameId, roundNum, phase])
+  @@index([gameId])
+}
+
+enum Phase {
+  NIGHT
+  DAY
+  VOTING
+}
+
+// ==================== ACTIONS ====================
+
+model Action {
+  id        Int        @id @default(autoincrement())
+  roundId   Int
+  round     GameRound  @relation(fields: [roundId], references: [id])
+  actorId   Int
+  actor     Player     @relation("actor", fields: [actorId], references: [id])
+  targetId  Int?
+  target    Player?    @relation("target", fields: [targetId], references: [id])
+  type      ActionType
+  result    String?
+  createdAt DateTime   @default(now())
+
+  @@index([roundId, type])
+}
+
+enum ActionType {
+  // Mafiya
+  MAFIA_KILL
+  LAWYER_PROTECT
+  SPY_CHECK
+  LAB_ACTION
+  // Tinch axoli
+  SHERIFF_CHECK
+  SERGEANT_INFO
+  DOCTOR_HEAL
+  TRAMP_VISIT
+  HOOKER_BLOCK
+  WARLOCK_ACTION
+  KAMIKAZE_TAKE
+  SANTA_GIFT
+  SNOWBOY_KILL
+  // Yakka
+  KILLER_KILL
+  SNIPER_KILL
+  ARCHER_KILL
+  MINER_PLANT
+  TRAITOR_CHOOSE
+  ROBBER_ROB
+  PROFESSOR_GIFT
+  // Umumiy
+  VOTE
+  SKIP
+}

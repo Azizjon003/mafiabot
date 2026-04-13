@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx tsc:*)",
+      "Bash(npx prisma:*)",
+      "Bash(npm install:*)",
+      "Bash(ls \"c:/Users/Zenbook-PC/Desktop/work/mafiabot\"/*.md)",
+      "Bash(npm test:*)",
+      "Bash(LOG_LEVEL=silent npm test)"
+    ]
+  }
+}
