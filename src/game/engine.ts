@@ -92,6 +92,88 @@ export class GameEngine {
     return this.getAlivePlayers().filter((p) => p.role === role);
   }
 
+  // Himoyalanish faollashtirish (1 o'yinda 1 marta) — hero.protection'ni Player.heroProtection'ga yuklaydi
+  async activateHeroDefense(playerId: number): Promise<{ success: boolean; reason?: string; protection?: number }> {
+    const player = this.getPlayer(playerId);
+    if (!player) return { success: false, reason: "O'yinchi topilmadi" };
+    if (!player.isAlive) return { success: false, reason: "Siz o'lgansiz" };
+    if (!player.hasHeroActive) return { success: false, reason: "Geroy yo'q" };
+    if (player.heroDefendUsed) return { success: false, reason: "Allaqachon ishlatilgan" };
+
+    const { heroRepo } = await import("../database/repositories/hero.repository");
+    const hero = await heroRepo.findByUser(player.userId);
+    if (!hero || hero.protection <= 0) {
+      return { success: false, reason: "Himoyangiz yo'q! Profilda 'Himoyani yangilash' ni bosing." };
+    }
+
+    player.heroProtectionAvailable = true;
+    player.heroDefendUsed = true;
+    player.heroProtection = hero.protection;
+    return { success: true, protection: hero.protection };
+  }
+
+  // Geroy kunduz hujumi — HP + Protection tizimi
+  // damage → avval Protection'dan ayriladi, qolgan qism HP'dan ayriladi
+  async performHeroDayAttack(attackerPlayerId: number, targetPlayerId: number): Promise<{
+    killed: boolean;
+    damage: number;
+    absorbedByProtection: number;
+    hpDamage: number;
+    remainingHP: number;
+    remainingProtection: number;
+    targetHasHero: boolean;
+  } | null> {
+    const attacker = this.getPlayer(attackerPlayerId);
+    const target = this.getPlayer(targetPlayerId);
+    if (!attacker || !target || !attacker.isAlive || !target.isAlive) return null;
+    if (attackerPlayerId === targetPlayerId) return null;
+
+    // Hujum kuchi — attacker.hero'dan random
+    const { heroRepo } = await import("../database/repositories/hero.repository");
+    const attackerHero = await heroRepo.findByUser(attacker.userId);
+    if (!attackerHero) return null;
+    const damage = Math.floor(Math.random() * (attackerHero.powerMax - attackerHero.powerMin + 1)) + attackerHero.powerMin;
+
+    // Nishon geroy emas — darhol o'ladi (HP tizimi yo'q)
+    if (!target.hasHeroActive) {
+      target.isAlive = false;
+      playerRepo.kill(targetPlayerId, this.currentRound, "MAFIA_KILL").catch((e) =>
+        logger.error(e, "Hero attack kill error")
+      );
+      return {
+        killed: true, damage, absorbedByProtection: 0, hpDamage: damage,
+        remainingHP: 0, remainingProtection: 0, targetHasHero: false,
+      };
+    }
+
+    // Nishon geroy — avval Protection, keyin HP
+    const absorbed = Math.min(damage, target.heroProtection);
+    target.heroProtection -= absorbed;
+    const hpDamage = damage - absorbed;
+    target.heroHP -= hpDamage;
+
+    if (target.heroProtection <= 0) {
+      target.heroProtectionAvailable = false;
+    }
+
+    if (target.heroHP <= 0) {
+      target.heroHP = 0;
+      target.isAlive = false;
+      playerRepo.kill(targetPlayerId, this.currentRound, "MAFIA_KILL").catch((e) =>
+        logger.error(e, "Hero attack kill error")
+      );
+      return {
+        killed: true, damage, absorbedByProtection: absorbed, hpDamage,
+        remainingHP: 0, remainingProtection: target.heroProtection, targetHasHero: true,
+      };
+    }
+
+    return {
+      killed: false, damage, absorbedByProtection: absorbed, hpDamage,
+      remainingHP: target.heroHP, remainingProtection: target.heroProtection, targetHasHero: true,
+    };
+  }
+
   getMafiaMembers(): PlayerState[] {
     return this.getAlivePlayers().filter((p) => MAFIA_ROLES.includes(p.role));
   }

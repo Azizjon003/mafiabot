@@ -60,22 +60,45 @@ export function activeRoleListKeyboard(prices: Record<string, number>): InlineKe
 }
 
 // 4-ekran: Geroy sahifasi
-export function heroKeyboard(hasHero: boolean): InlineKeyboard {
+export interface HeroDayActions {
+  canAttack?: boolean;       // Otish mumkinmi (zaryad bor + tirik + kunduz)
+  canDefend?: boolean;       // Himoyalanish mumkinmi (himoya hali ishlatilmagan + tirik + kunduz)
+  alreadyDefending?: boolean; // Allaqachon himoyalanyapti
+}
+
+export function heroKeyboard(hasHero: boolean, dayActions: HeroDayActions = {}): InlineKeyboard {
   if (!hasHero) {
     return new InlineKeyboard()
       .text("✨ Geroy yaratish", "hero:create")
       .row()
       .text("🔙 Profil", "prof:back");
   }
-  return new InlineKeyboard()
-    .text("💰 Ball sotib olish", "hero:buypoints")
-    .row()
+  const kb = new InlineKeyboard();
+
+  // Kunduzdagi tanlovlar
+  if (dayActions.canAttack || dayActions.canDefend) {
+    if (dayActions.canAttack) kb.text("🥷 Otish", "hero:attack");
+    if (dayActions.canDefend) kb.text("⚜️ Himoyalanish", "hero:defend");
+    else if (dayActions.alreadyDefending) kb.text("🛡 Himoyalanyapsiz ✅", "hero:noop");
+    kb.row();
+  }
+
+  kb.text("💰 Ball sotib olish", "hero:buypoints").row()
     .text("🛡 Himoyani yangilash", "hero:protection")
-    .text("⚡ Zaryadlash", "hero:charge")
-    .row()
-    .text("✏️ Nomini o'zgartirish", "hero:rename")
-    .row()
+    .text("⚡ Zaryadlash", "hero:charge").row()
+    .text("✏️ Nomini o'zgartirish", "hero:rename").row()
     .text("🔙 Profil", "prof:back");
+  return kb;
+}
+
+// Geroy hujumi — nishon tanlash
+export function heroAttackTargetsKeyboard(targets: { playerId: number; firstName: string }[]): InlineKeyboard {
+  const kb = new InlineKeyboard();
+  for (const t of targets) {
+    kb.text(`👤 ${t.firstName}`, `hero:atk:${t.playerId}`).row();
+  }
+  kb.text("🔙 Bekor qilish", "prof:hero");
+  return kb;
 }
 
 // 5-ekran: Foydalanish menyusi

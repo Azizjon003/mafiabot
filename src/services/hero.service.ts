@@ -2,9 +2,25 @@ import { heroRepo } from "../database/repositories/hero.repository";
 import { economyService } from "./economy.service";
 import { pricingService, PRICE_KEYS } from "./pricing.service";
 
+export const HERO_MAX_LEVEL = 10;
+
 // Keyingi darajaga kerakli ball
 function pointsForNextLevel(level: number): number {
   return level * 1000 + level * 100; // 1100, 2200, 3300...
+}
+
+// Daraja bo'yicha kuch oralig'i (lvl 1: 40-46, lvl 10: 94-100)
+export function powerForLevel(level: number): { min: number; max: number } {
+  const min = 40 + (level - 1) * 6;
+  const max = 46 + (level - 1) * 6;
+  return { min: Math.min(min, 94), max: Math.min(max, 100) };
+}
+
+// Daraja bo'yicha max himoya (lvl 1: 30, lvl 5: 50, lvl 10: 100)
+// Linear formula: 30 + (level-1) * 70/9
+export function maxProtectionForLevel(level: number): number {
+  const value = 30 + Math.round((level - 1) * 70 / 9);
+  return Math.min(100, value);
 }
 
 export const heroService = {
@@ -46,11 +62,15 @@ export const heroService = {
   },
 
   async refreshProtection(userId: number): Promise<{ success: boolean; error?: string }> {
+    const hero = await heroRepo.findByUser(userId);
+    if (!hero) return { success: false, error: "Sizda Geroy yo'q!" };
+
     const cost = await pricingService.get(PRICE_KEYS.HERO_PROTECTION_REFRESH);
     const spent = await economyService.spendDiamonds(userId, cost, "hero_protection");
     if (!spent) return { success: false, error: `Yetarli olmosingiz yo'q! (${cost}💎)` };
 
-    await heroRepo.refreshProtection(userId);
+    const max = maxProtectionForLevel(hero.level);
+    await heroRepo.refreshProtection(userId, max);
     return { success: true };
   },
 
@@ -63,15 +83,20 @@ export const heroService = {
     return { success: true };
   },
 
-  // Loop — agar hero bir nechta darajaga oshishi mumkin bo'lsa
+  // Loop — agar hero bir nechta darajaga oshishi mumkin bo'lsa (max 10)
   async maybeLevelUp(userId: number): Promise<number> {
     let levelsGained = 0;
     while (true) {
       const hero = await heroRepo.findByUser(userId);
       if (!hero) break;
+      if (hero.level >= HERO_MAX_LEVEL) break; // Cap
+
       const needed = pointsForNextLevel(hero.level);
       if (hero.points >= needed) {
-        await heroRepo.levelUp(userId, needed);
+        const newLevel = hero.level + 1;
+        const newPower = powerForLevel(newLevel);
+        const newMaxProt = maxProtectionForLevel(newLevel);
+        await heroRepo.applyLevelUp(userId, needed, newPower.min, newPower.max, newMaxProt);
         levelsGained++;
       } else {
         break;
@@ -96,4 +121,20 @@ export const heroService = {
   getNeededPoints(level: number): number {
     return pointsForNextLevel(level);
   },
+
+  // Hero hujum qilishi mumkin va shu hujum kuchi
+  async getAttackInfo(userId: number): Promise<{ canAttack: boolean; power: number; charges: number; error?: string }> {
+    const hero = await heroRepo.findByUser(userId);
+    if (!hero) return { canAttack: false, power: 0, charges: 0, error: "Sizda Geroy yo'q!" };
+    if (hero.charge < 1) return { canAttack: false, power: 0, charges: 0, error: "Zaryad yetmaydi!" };
+
+    const power = Math.floor(Math.random() * (hero.powerMax - hero.powerMin + 1)) + hero.powerMin;
+    return { canAttack: true, power, charges: hero.charge };
+  },
+
+  // Hujumdan keyin zaryadni kamaytirish
+  async consumeCharge(userId: number): Promise<void> {
+    await heroRepo.decrementCharge(userId, 1);
+  },
+
 };

@@ -99,6 +99,10 @@ class GameManager {
       isHealedByDoctor: false,
       doctorSelfHealUsed: false,
       hasHeroActive: used.heroUsed,
+      heroProtectionAvailable: false,
+      heroDefendUsed: false,
+      heroHP: used.heroUsed ? 100 : 0, // Geroy bo'lsa 100 jon
+      heroProtection: 0, // Himoyalanish bosganda User.hero.protection'dan yuklanadi
       hasShieldActive: used.shieldUsed,
       shieldCharges: used.shieldUsed ? 1 : 0,
       hasDocumentActive: used.documentUsed,

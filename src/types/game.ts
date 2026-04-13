@@ -16,6 +16,10 @@ export interface PlayerState {
   doctorSelfHealUsed: boolean; // Shifokor o'zini davolagan
   // Geroy va Shield
   hasHeroActive: boolean; // Geroy faolmi
+  heroProtectionAvailable: boolean; // Himoyalanish bosilganmi (faol)
+  heroDefendUsed: boolean; // Bu o'yinda Himoyalanish ishlatilganmi (1 marta)
+  heroHP: number; // Umumiy jon (100 max)
+  heroProtection: number; // Himoya qoldig'i (damage shield, depleted by attacks)
   hasShieldActive: boolean; // Shield faolmi
   shieldCharges: number; // Shield necha hujumdan saqlay oladi
   hasDocumentActive?: boolean; // Hujjat faolmi (komissar tekshiruvini aldash)

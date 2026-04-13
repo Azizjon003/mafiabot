@@ -115,3 +115,6 @@ export const MAFIA_ROLES: Role[] = ["DON", "MAFIA", "LAWYER", "SPY", "LAB"];
 
 // Mafiya ovoz beradigan rollar (o'ldirish uchun)
 export const MAFIA_KILL_VOTERS: Role[] = ["DON", "MAFIA"];
+
+// Geroy bilan kunduzi otish/himoyalanish faqat shu rollarga ruxsat
+export const HERO_ATTACK_ROLES: Role[] = ["SNIPER", "DON", "SHERIFF"];

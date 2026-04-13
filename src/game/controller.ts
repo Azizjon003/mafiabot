@@ -222,10 +222,38 @@ export class GameController {
 
     await startDayPhase(engine, this.notifier);
 
+    // Geroy egalariga (SNIPER/DON/SHERIFF) PM yuborish
+    await this.sendHeroDayPrompts(engine).catch((e) => logger.error(e, "Hero day PM error"));
+
     // Muhokama timer → ovoz berishga o'tish
     engine.setTimer(engine.settings.dayDiscussionTimeout * 1000, async () => {
       await this.startVotingPhase(chatTelegramId);
     });
+  }
+
+  // Tong otganda — geroyga ega ruxsatli rollarga PM
+  private async sendHeroDayPrompts(engine: GameEngine): Promise<void> {
+    const { HERO_ATTACK_ROLES } = await import("../utils/constants");
+    const { InlineKeyboard } = await import("grammy");
+
+    for (const player of engine.getAlivePlayers()) {
+      if (!player.hasHeroActive) continue;
+      if (!HERO_ATTACK_ROLES.includes(player.role)) continue;
+
+      const kb = new InlineKeyboard();
+      kb.text("🥷 Otish", "hero:attack");
+      // Himoyalanish faqat hali ishlatilmagan bo'lsa
+      if (!player.heroDefendUsed) {
+        kb.text("⚜️ Himoyalanish", "hero:defend");
+      }
+
+      const text =
+        `🌅 <b>Tong otdi!</b>\n\n` +
+        `🥷 Sizning Geroyingiz tayyor.\n` +
+        `Bugun nima qilasiz?`;
+
+      await this.notifier.sendToPlayer(player.telegramId, text, kb).catch(() => {});
+    }
   }
 
   // ==================== VOTING ====================
@@ -432,6 +460,12 @@ export class GameController {
       try {
         const won = isWinnerFn(player);
         const ratingChange = this.calculateRating(player, winner, won);
+
+        // Geroy himoya qoldig'ini User.hero.protection'ga saqlash
+        if (player.hasHeroActive && player.heroDefendUsed) {
+          const { heroRepo } = await import("../database/repositories/hero.repository");
+          await heroRepo.updateProtection(player.userId, Math.max(0, player.heroProtection)).catch(() => {});
+        }
 
         await statsRepo.recordGameAndRating(player.userId, player.role, won, ratingChange);
 
