@@ -14,7 +14,7 @@ import { mention } from "../utils/helpers";
 import { statsRepo } from "../database/repositories/stats.repository";
 import { economyService } from "../services/economy.service";
 import { heroService } from "../services/hero.service";
-import { pricingService, rolePriceKey } from "../services/pricing.service";
+import { pricingService, rolePriceKey, PRICE_KEYS } from "../services/pricing.service";
 import { prisma } from "../database/prisma";
 import { botUsername } from "../config";
 import { logger } from "../utils/logger";
@@ -472,16 +472,18 @@ export class GameController {
         let moneyEarned = 0;
         let diamondsEarned = 0;
         if (won) {
-          // Standart mukofot (rol bo'yicha) + 100 pul g'oliblik bonusi
+          // Standart mukofot + g'oliblik bonusi (dinamik)
           const reward = await economyService.giveGameReward(player.userId, winner, player.role);
-          await economyService.addMoney(player.userId, 100, "winner_bonus");
+          const bonus = await pricingService.get(PRICE_KEYS.REWARD_WINNER_BONUS);
+          if (bonus > 0) await economyService.addMoney(player.userId, bonus, "winner_bonus");
           await heroService.addPointsForWin(player.userId, winner);
-          moneyEarned = reward.money + 100;
+          moneyEarned = reward.money + bonus;
           diamondsEarned = reward.diamonds;
         } else {
-          // Yutqazganlarga 30 pul
-          await economyService.addMoney(player.userId, 30, "loser_consolation");
-          moneyEarned = 30;
+          // Yutqazganlarga konsolyatsiya (dinamik)
+          const consolation = await pricingService.get(PRICE_KEYS.REWARD_LOSER_CONSOLATION);
+          if (consolation > 0) await economyService.addMoney(player.userId, consolation, "loser_consolation");
+          moneyEarned = consolation;
         }
 
         // Shaxsiy natija xabari

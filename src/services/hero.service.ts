@@ -47,6 +47,11 @@ export const heroService = {
     if (!name || name.length < 2 || name.length > 20) {
       return { success: false, error: "Ism 2-20 belgi orasida bo'lishi kerak" };
     }
+    const cost = await pricingService.get(PRICE_KEYS.HERO_RENAME);
+    if (cost > 0) {
+      const spent = await economyService.spendMoney(userId, cost, "hero_rename");
+      if (!spent) return { success: false, error: `Yetarli pulingiz yo'q! (${cost}💰)` };
+    }
     await heroRepo.rename(userId, name);
     return { success: true };
   },
@@ -76,8 +81,8 @@ export const heroService = {
 
   async charge(userId: number): Promise<{ success: boolean; error?: string }> {
     const cost = await pricingService.get(PRICE_KEYS.HERO_CHARGE);
-    const spent = await economyService.spendDiamonds(userId, cost, "hero_charge");
-    if (!spent) return { success: false, error: `Yetarli olmosingiz yo'q! (${cost}💎)` };
+    const spent = await economyService.spendMoney(userId, cost, "hero_charge");
+    if (!spent) return { success: false, error: `Yetarli pulingiz yo'q! (${cost}💰)` };
 
     await heroRepo.addCharge(userId, 1);
     return { success: true };
@@ -105,17 +110,20 @@ export const heroService = {
     return levelsGained;
   },
 
-  // O'yinda yutganda ball berish
+  // O'yinda yutganda ball berish (dinamik)
   async addPointsForWin(userId: number, winner: string): Promise<void> {
     const hero = await heroRepo.findByUser(userId);
     if (!hero) return;
 
-    let points = 100; // Tinch axoli
-    if (winner === "MAFIA") points = 150;
-    if (winner === "SOLO") points = 200;
+    let key: string = PRICE_KEYS.REWARD_HERO_POINTS_TOWN;
+    if (winner === "MAFIA") key = PRICE_KEYS.REWARD_HERO_POINTS_MAFIA;
+    if (winner === "SOLO") key = PRICE_KEYS.REWARD_HERO_POINTS_SOLO;
 
-    await heroRepo.addPoints(userId, points);
-    await this.maybeLevelUp(userId);
+    const points = await pricingService.get(key);
+    if (points > 0) {
+      await heroRepo.addPoints(userId, points);
+      await this.maybeLevelUp(userId);
+    }
   },
 
   getNeededPoints(level: number): number {

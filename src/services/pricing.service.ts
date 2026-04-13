@@ -4,24 +4,36 @@ import { Role } from "@prisma/client";
 // Narx kalitlari — bosh admin buyruqlar orqali bularni o'zgartira oladi
 export const PRICE_KEYS = {
   // Dokon (💎 olmosda)
-  SHIELD: "price_shield",                   // Himoya (50💎)
-  DOCUMENT: "price_document",               // Hujjat (30💎)
-  HERO_CREATE: "price_hero_create",         // Geroy yaratish (100💎)
-  VIP_MONTH: "price_vip_month",             // VIP 1 oy (100💎)
+  SHIELD: "price_shield",                        // 50💎
+  DOCUMENT: "price_document",                    // 30💎
+  HERO_CREATE: "price_hero_create",              // 100💎
+  VIP_MONTH: "price_vip_month",                  // 100💎
+  HERO_POINTS_1000: "price_hero_points_1000",    // 100💎 → 1000 ball
+  HERO_PROTECTION_REFRESH: "price_hero_prot",    // 100💎
 
-  // Sandiq (💰 pulda)
-  CHEST_BASIC: "price_chest_basic",         // Oddiy sandiq (10000💰)
-  CHEST_SILVER: "price_chest_silver",
-  CHEST_GOLD: "price_chest_gold",
-
-  // Geroy ball (💎 olmosda)
-  HERO_POINTS_1000: "price_hero_points_1000",   // 1000 ball = 100💎
-  HERO_PROTECTION_REFRESH: "price_hero_prot",    // Himoyani yangilash
-  HERO_CHARGE: "price_hero_charge",              // Zaryadlash
+  // Pul bilan (💰)
+  HERO_CHARGE: "price_hero_charge",              // 400💰 (zaryadlash)
+  HERO_RENAME: "price_hero_rename",              // 2000💰 (nomini o'zgartirish)
+  CHEST_BASIC: "price_chest_basic",              // 10 000💰
+  CHEST_SILVER: "price_chest_silver",            // 25 000💰
+  CHEST_GOLD: "price_chest_gold",                // 50 000💰
 
   // Transfer komissiyalari
-  FEE_DIAMOND_TRANSFER: "fee_diamond",
-  FEE_MONEY_TRANSFER: "fee_money",
+  FEE_DIAMOND_TRANSFER: "fee_diamond",           // 1💎
+  FEE_MONEY_TRANSFER: "fee_money",               // 100💰
+
+  // O'yin mukofotlari
+  REWARD_TOWN_MONEY: "reward_town_money",        // Shahar yutganiga pul
+  REWARD_TOWN_DIAMOND: "reward_town_diamond",    // Shahar yutganiga olmos
+  REWARD_MAFIA_MONEY: "reward_mafia_money",
+  REWARD_MAFIA_DIAMOND: "reward_mafia_diamond",
+  REWARD_SOLO_MONEY: "reward_solo_money",
+  REWARD_SOLO_DIAMOND: "reward_solo_diamond",
+  REWARD_WINNER_BONUS: "reward_winner_bonus",    // +100💰 bonus
+  REWARD_LOSER_CONSOLATION: "reward_loser",      // 30💰 yutqazganga
+  REWARD_HERO_POINTS_TOWN: "reward_hero_town",   // Geroy ball (shahar)
+  REWARD_HERO_POINTS_MAFIA: "reward_hero_mafia",
+  REWARD_HERO_POINTS_SOLO: "reward_hero_solo",
 } as const;
 
 // Aktiv rol narxi har rol uchun alohida (💰 pulda)
@@ -31,41 +43,61 @@ export function rolePriceKey(role: Role): string {
 
 // Default narxlar
 const DEFAULTS: Record<string, number> = {
-  [PRICE_KEYS.SHIELD]: 50,
-  [PRICE_KEYS.DOCUMENT]: 30,
-  [PRICE_KEYS.HERO_CREATE]: 100,
-  [PRICE_KEYS.VIP_MONTH]: 100,
-  [PRICE_KEYS.CHEST_BASIC]: 10000,
-  [PRICE_KEYS.CHEST_SILVER]: 25000,
-  [PRICE_KEYS.CHEST_GOLD]: 50000,
-  [PRICE_KEYS.HERO_POINTS_1000]: 100,
-  [PRICE_KEYS.HERO_PROTECTION_REFRESH]: 50,
-  [PRICE_KEYS.HERO_CHARGE]: 20,
-  [PRICE_KEYS.FEE_DIAMOND_TRANSFER]: 1,
-  [PRICE_KEYS.FEE_MONEY_TRANSFER]: 100,
-  // Rollar
-  price_role_SNIPER: 400,
-  price_role_MINER: 300,
-  price_role_SHERIFF: 400,
-  price_role_DON: 400,
-  price_role_LAB: 400,
-  price_role_WARLOCK: 400,
-  price_role_ARCHER: 400,
-  price_role_KAMIKAZE: 400,
-  price_role_ROBBER: 400,
-  price_role_PROFESSOR: 400,
-  price_role_MAFIA: 400,
-  price_role_KILLER: 400,
-  price_role_SERGEANT: 300,
-  price_role_HOOKER: 400,
-  price_role_TRAMP: 350,
-  price_role_LAWYER: 350,
-  price_role_DOCTOR: 350,
+  // Do'kon (💎 olmosda)
+  [PRICE_KEYS.SHIELD]: 50,                    // 50💎
+  [PRICE_KEYS.DOCUMENT]: 30,                  // 30💎
+  [PRICE_KEYS.HERO_CREATE]: 100,              // 100💎
+  [PRICE_KEYS.VIP_MONTH]: 100,                // 100💎
+  [PRICE_KEYS.HERO_POINTS_1000]: 100,         // 100💎 → 1000 ball
+  [PRICE_KEYS.HERO_PROTECTION_REFRESH]: 100,  // 100💎
+
+  // Pul bilan (💰)
+  [PRICE_KEYS.HERO_CHARGE]: 400,              // 400💰 zaryadlash
+  [PRICE_KEYS.HERO_RENAME]: 2000,             // 2000💰 nom o'zgartirish
+  [PRICE_KEYS.CHEST_BASIC]: 10000,            // 10 000💰
+  [PRICE_KEYS.CHEST_SILVER]: 25000,           // 25 000💰
+  [PRICE_KEYS.CHEST_GOLD]: 50000,             // 50 000💰
+
+  // Transfer komissiyalari
+  [PRICE_KEYS.FEE_DIAMOND_TRANSFER]: 1,       // 1💎
+  [PRICE_KEYS.FEE_MONEY_TRANSFER]: 100,       // 100💰
+
+  // O'yin mukofotlari
+  [PRICE_KEYS.REWARD_TOWN_MONEY]: 500,        // Shahar: 500💰
+  [PRICE_KEYS.REWARD_TOWN_DIAMOND]: 2,        // + 2💎
+  [PRICE_KEYS.REWARD_MAFIA_MONEY]: 700,       // Mafiya: 700💰
+  [PRICE_KEYS.REWARD_MAFIA_DIAMOND]: 3,       // + 3💎
+  [PRICE_KEYS.REWARD_SOLO_MONEY]: 1000,       // Yakka rol: 1000💰
+  [PRICE_KEYS.REWARD_SOLO_DIAMOND]: 5,        // + 5💎
+  [PRICE_KEYS.REWARD_WINNER_BONUS]: 100,      // G'olib bonusi +100💰
+  [PRICE_KEYS.REWARD_LOSER_CONSOLATION]: 30,  // Yutqazganga 30💰
+  [PRICE_KEYS.REWARD_HERO_POINTS_TOWN]: 100,  // Geroy: shahar yutsa 100 ball
+  [PRICE_KEYS.REWARD_HERO_POINTS_MAFIA]: 150, // Mafiya yutsa 150 ball
+  [PRICE_KEYS.REWARD_HERO_POINTS_SOLO]: 200,  // Yakka yutsa 200 ball
+
+  // Aktiv rollar (💰 pulda)
   price_role_CIVILIAN: 300,
-  price_role_SPY: 400,
-  price_role_TRAITOR: 400,
+  price_role_DOCTOR: 350,
+  price_role_TRAMP: 350,
+  price_role_SHERIFF: 400,
+  price_role_KAMIKAZE: 400,
+  price_role_HOOKER: 400,
+  price_role_SERGEANT: 300,
+  price_role_WARLOCK: 400,
   price_role_SANTA: 300,
   price_role_SNOWBOY: 300,
+  price_role_DON: 400,
+  price_role_MAFIA: 400,
+  price_role_LAWYER: 350,
+  price_role_SPY: 400,
+  price_role_LAB: 400,
+  price_role_KILLER: 400,
+  price_role_MINER: 300,
+  price_role_SNIPER: 400,
+  price_role_ARCHER: 400,
+  price_role_TRAITOR: 400,
+  price_role_ROBBER: 400,
+  price_role_PROFESSOR: 400,
 };
 
 // Cache — DB'ga har safar borish emas

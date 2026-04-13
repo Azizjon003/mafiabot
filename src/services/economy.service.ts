@@ -1,9 +1,6 @@
 import { prisma } from "../database/prisma";
 import { transactionRepo } from "../database/repositories/transaction.repository";
 
-const DIAMOND_TRANSFER_FEE = 1;
-const MONEY_TRANSFER_FEE = 100;
-
 export const economyService = {
   // Balans olish
   async getBalance(userId: number) {
@@ -63,8 +60,10 @@ export const economyService = {
     senderId: number,
     recipientId: number,
     amount: number
-  ): Promise<{ success: boolean; error?: string }> {
-    const totalCost = amount + DIAMOND_TRANSFER_FEE;
+  ): Promise<{ success: boolean; error?: string; fee?: number }> {
+    const { pricingService, PRICE_KEYS } = await import("./pricing.service");
+    const fee = await pricingService.get(PRICE_KEYS.FEE_DIAMOND_TRANSFER);
+    const totalCost = amount + fee;
     const sender = await prisma.user.findUnique({ where: { id: senderId } });
 
     if (!sender || sender.diamonds < totalCost) {
@@ -82,19 +81,21 @@ export const economyService = {
       }),
     ]);
 
-    await transactionRepo.create(senderId, "TRANSFER_OUT", "DIAMOND", amount, "transfer", DIAMOND_TRANSFER_FEE, recipientId);
+    await transactionRepo.create(senderId, "TRANSFER_OUT", "DIAMOND", amount, "transfer", fee, recipientId);
     await transactionRepo.create(recipientId, "TRANSFER_IN", "DIAMOND", amount, "transfer", 0, senderId);
 
-    return { success: true };
+    return { success: true, fee };
   },
 
-  // Pul transfer (komissiya: 100 pul)
+  // Pul transfer (komissiya dinamik)
   async transferMoney(
     senderId: number,
     recipientId: number,
     amount: number
-  ): Promise<{ success: boolean; error?: string }> {
-    const totalCost = amount + MONEY_TRANSFER_FEE;
+  ): Promise<{ success: boolean; error?: string; fee?: number }> {
+    const { pricingService, PRICE_KEYS } = await import("./pricing.service");
+    const fee = await pricingService.get(PRICE_KEYS.FEE_MONEY_TRANSFER);
+    const totalCost = amount + fee;
     const sender = await prisma.user.findUnique({ where: { id: senderId } });
 
     if (!sender || sender.money < totalCost) {
@@ -112,27 +113,31 @@ export const economyService = {
       }),
     ]);
 
-    await transactionRepo.create(senderId, "TRANSFER_OUT", "MONEY", amount, "transfer", MONEY_TRANSFER_FEE, recipientId);
+    await transactionRepo.create(senderId, "TRANSFER_OUT", "MONEY", amount, "transfer", fee, recipientId);
     await transactionRepo.create(recipientId, "TRANSFER_IN", "MONEY", amount, "transfer", 0, senderId);
 
-    return { success: true };
+    return { success: true, fee };
   },
 
   // O'yin mukofoti
   async giveGameReward(userId: number, winner: string, role: string) {
-    let diamonds = 2;
-    let money = 500;
+    const { pricingService, PRICE_KEYS } = await import("./pricing.service");
 
+    let moneyKey: string = PRICE_KEYS.REWARD_TOWN_MONEY;
+    let diamondKey: string = PRICE_KEYS.REWARD_TOWN_DIAMOND;
     if (winner === "MAFIA") {
-      diamonds = 3;
-      money = 700;
+      moneyKey = PRICE_KEYS.REWARD_MAFIA_MONEY;
+      diamondKey = PRICE_KEYS.REWARD_MAFIA_DIAMOND;
     } else if (winner === "SOLO") {
-      diamonds = 5;
-      money = 1000;
+      moneyKey = PRICE_KEYS.REWARD_SOLO_MONEY;
+      diamondKey = PRICE_KEYS.REWARD_SOLO_DIAMOND;
     }
 
-    await this.addDiamonds(userId, diamonds, `game_win_${winner}`);
-    await this.addMoney(userId, money, `game_win_${winner}`);
+    const money = await pricingService.get(moneyKey);
+    const diamonds = await pricingService.get(diamondKey);
+
+    if (diamonds > 0) await this.addDiamonds(userId, diamonds, `game_win_${winner}`);
+    if (money > 0) await this.addMoney(userId, money, `game_win_${winner}`);
 
     return { diamonds, money };
   },

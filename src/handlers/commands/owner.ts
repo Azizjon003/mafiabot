@@ -262,7 +262,10 @@ ownerCommand.callbackQuery("ap:roleprices", ownerOnly, async (ctx) => {
 ownerCommand.callbackQuery(/^ap:price:(.+)$/, ownerOnly, async (ctx) => {
   const key = ctx.match[1];
   const value = await pricingService.get(key);
-  const isMoney = key.includes("money") || key.startsWith("price_role_") || key.startsWith("price_chest");
+  const isMoney = key.includes("money") || key.startsWith("price_role_") || key.startsWith("price_chest")
+    || key === "price_hero_charge" || key === "price_hero_rename"
+    || key === "reward_winner_bonus" || key === "reward_loser"
+    || key === "fee_money";
   const symbol = isMoney ? "💰" : "💎";
 
   await ctx.answerCallbackQuery().catch(() => {});
@@ -280,7 +283,10 @@ ownerCommand.callbackQuery(/^ap:padj:(.+):(-?\d+)$/, ownerOnly, async (ctx) => {
   const newValue = Math.max(0, current + delta);
   await pricingService.set(key, newValue);
 
-  const isMoney = key.includes("money") || key.startsWith("price_role_") || key.startsWith("price_chest");
+  const isMoney = key.includes("money") || key.startsWith("price_role_") || key.startsWith("price_chest")
+    || key === "price_hero_charge" || key === "price_hero_rename"
+    || key === "reward_winner_bonus" || key === "reward_loser"
+    || key === "fee_money";
   const symbol = isMoney ? "💰" : "💎";
 
   await ctx.answerCallbackQuery({ text: `✅ ${newValue.toLocaleString()}${symbol}` }).catch(() => {});
