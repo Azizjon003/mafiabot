@@ -19,6 +19,7 @@ import { createNightActionCallbacks } from "./handlers/callbacks/night-action";
 import { createVoteCallbacks } from "./handlers/callbacks/vote";
 import { createSettingsCallbacks } from "./handlers/callbacks/settings";
 import { inlineHandler } from "./handlers/inline";
+import { chatHandler } from "./handlers/chat";
 import { logger } from "./utils/logger";
 import { setBotUsername } from "./config";
 
@@ -71,6 +72,9 @@ async function main() {
   bot.use(createNightActionCallbacks(gameController));
   bot.use(createVoteCallbacks(gameController));
   bot.use(createSettingsCallbacks());
+
+  // Chat handler — eng oxirida (mafia chat, dead chat, whisper)
+  bot.use(chatHandler);
 
   // Bot ishga tushirish
   bot.start({
