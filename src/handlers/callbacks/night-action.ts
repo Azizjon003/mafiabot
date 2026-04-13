@@ -112,8 +112,12 @@ export function createNightActionCallbacks(controller: GameController): Composer
     // Darhol javob
     await ctx.answerCallbackQuery().catch(() => {});
 
-    // Guruhga hikoya
-    await sendStory(ctx, found.engine, "SHERIFF");
+    // Guruhga hikoya — tekshirish/otish har xil matn
+    if (action === "shoot") {
+      await sendStory(ctx, found.engine, "SHERIFF_SHOOT");
+    } else {
+      await sendStory(ctx, found.engine, "SHERIFF");
+    }
 
     if (action === "check") {
       found.engine.submitNightAction(found.player.playerId, targetPlayerId, "SHERIFF");
