@@ -40,6 +40,7 @@ export class GameController {
 
     if (msgId) {
       this.registrationMessageId.set(chatKey, msgId);
+      engine.registrationMessageId = msgId;
     }
 
     // Registration countdown timer
@@ -406,28 +407,78 @@ export class GameController {
       await this.notifier.unmuteGroup(chatTelegramId);
     }
 
-    await this.notifier.announceGameEnd(chatTelegramId, winner, players, soloWinnerRole);
+    // O'yin muddati (minutda)
+    let durationMinutes: number | undefined;
+    if (engine.gameStartedAt) {
+      const ms = Date.now() - engine.gameStartedAt.getTime();
+      durationMinutes = Math.max(1, Math.round(ms / 60000));
+    }
+
+    // G'olib aniqlash funksiyasi
+    const isWinnerFn = (p: PlayerState) => this.didPlayerWin(p, winner);
+
+    await this.notifier.announceGameEnd(
+      chatTelegramId,
+      winner,
+      players,
+      soloWinnerRole,
+      isWinnerFn,
+      durationMinutes
+    );
     await engine.finish(winner);
 
     // Statistika yangilash — ketma-ket (race condition oldini olish)
     for (const player of players) {
       try {
-        const won = this.didPlayerWin(player, winner);
+        const won = isWinnerFn(player);
         const ratingChange = this.calculateRating(player, winner, won);
 
         await statsRepo.recordGameAndRating(player.userId, player.role, won, ratingChange);
 
+        let moneyEarned = 0;
+        let diamondsEarned = 0;
         if (won) {
-          await economyService.giveGameReward(player.userId, winner, player.role);
-          // Geroyga ball
+          // Standart mukofot (rol bo'yicha) + 100 pul g'oliblik bonusi
+          const reward = await economyService.giveGameReward(player.userId, winner, player.role);
+          await economyService.addMoney(player.userId, 100, "winner_bonus");
           await heroService.addPointsForWin(player.userId, winner);
+          moneyEarned = reward.money + 100;
+          diamondsEarned = reward.diamonds;
+        } else {
+          // Yutqazganlarga 30 pul
+          await economyService.addMoney(player.userId, 30, "loser_consolation");
+          moneyEarned = 30;
         }
+
+        // Shaxsiy natija xabari
+        await this.sendPersonalGameResult(player, won, moneyEarned, diamondsEarned, ratingChange).catch(() => {});
       } catch (e) {
         logger.error(e, `Statistika yozishda xatolik (userId: ${player.userId})`);
       }
     }
 
     await gameManager.endGame(chatTelegramId);
+  }
+
+  // Har o'yinchiga PMda natija
+  private async sendPersonalGameResult(
+    player: PlayerState,
+    won: boolean,
+    money: number,
+    diamonds: number,
+    ratingChange: number,
+  ): Promise<void> {
+    let text = won
+      ? `🎉 <b>Siz YUTDINGIZ!</b>\n\n`
+      : `😢 <b>Siz yutqazdingiz</b>\n\n`;
+    text += `🎭 Sizning rolingiz: ${ROLE_EMOJI[player.role]} <b>${ROLE_NAME[player.role]}</b>\n\n`;
+    text += `💰 Pul: <b>+${money}</b>\n`;
+    if (diamonds > 0) text += `💎 Olmos: <b>+${diamonds}</b>\n`;
+    text += `⭐️ Reyting: <b>${ratingChange > 0 ? "+" : ""}${ratingChange}</b>\n`;
+    text += `\n📊 /profile — to'liq ma'lumot\n`;
+    text += `🎭 /startgame — yangi o'yin`;
+
+    await this.notifier.sendToPlayer(player.telegramId, text);
   }
 
   private didPlayerWin(player: PlayerState, winner: Winner): boolean {

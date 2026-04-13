@@ -62,17 +62,22 @@ startCommand.command("start", async (ctx) => {
       { parse_mode: "HTML" }
     );
 
-    // Guruhda registration xabarni yangilash
-    const text = getRegistrationText(engine, engine.settings.registrationTimeout);
-    try {
-      // Guruhga yangilangan ro'yxatni yuborish
-      await ctx.api.sendMessage(
-        chatTelegramId.toString(),
-        `✅ ${mention(ctx.from.first_name, BigInt(ctx.from.id))} qo'shildi! (${engine.getPlayerCount()}/${engine.settings.maxPlayers})`,
-        { parse_mode: "HTML" }
-      );
-    } catch {
-      // Guruhga yubora olmasa — ignore
+    // Guruhda asosiy registration xabarini yangilash (alohida xabar yo'q)
+    if (engine.registrationMessageId) {
+      try {
+        const text = getRegistrationText(engine, engine.settings.registrationTimeout);
+        await ctx.api.editMessageText(
+          chatTelegramId.toString(),
+          engine.registrationMessageId,
+          text,
+          {
+            parse_mode: "HTML",
+            reply_markup: joinGameKeyboard(engine.gameId, botUsername, chatTelegramId),
+          }
+        );
+      } catch {
+        // Xabar o'zgarmagan yoki yo'q — ignore
+      }
     }
 
     return;

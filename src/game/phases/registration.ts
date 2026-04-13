@@ -9,12 +9,10 @@ export async function startRegistration(
   engine: GameEngine,
   notifier: NotificationService
 ): Promise<number | undefined> {
-  const text = uz.game.started.replace("{time}", engine.settings.registrationTimeout.toString());
-  const playerList = getPlayerListText(engine);
-
+  const text = `📝 <b>Ro'yxatdan o'tish davom etmoqda</b>${getPlayerListText(engine)}`;
   const messageId = await notifier.sendToGroup(
     engine.chatTelegramId,
-    text + playerList,
+    text,
     joinGameKeyboard(engine.gameId, botUsername, engine.chatTelegramId)
   );
 
@@ -25,16 +23,13 @@ export function getPlayerListText(engine: GameEngine): string {
   const players = [...engine.players.values()];
   if (players.length === 0) return "";
 
-  const list = players
-    .map((p, i) => `${i + 1}. ${mention(p.firstName, p.telegramId)}`)
-    .join("\n");
+  const namesInline = players
+    .map((p) => mention(p.firstName, p.telegramId))
+    .join(", ");
 
-  return uz.game.playerList
-    .replace("{count}", players.length.toString())
-    .replace("{list}", list);
+  return `\n\n<i>Ro'yxatdan o'tganlar:</i>\n${namesInline}\n\nJami <b>${players.length}</b>ta odam.`;
 }
 
 export function getRegistrationText(engine: GameEngine, timeLeft: number): string {
-  const text = uz.game.started.replace("{time}", timeLeft.toString());
-  return text + getPlayerListText(engine);
+  return `📝 <b>Ro'yxatdan o'tish davom etmoqda</b>` + getPlayerListText(engine);
 }

@@ -36,6 +36,12 @@ export class GameEngine {
   // Qaroqchi 2-bosqich — nishon javobi
   robberTargetResponse: RobberResponse | null = null;
 
+  // O'yin boshlangan vaqt (statistika uchun)
+  gameStartedAt: Date | null = null;
+
+  // Registration xabar ID (yangilash uchun)
+  registrationMessageId: number | null = null;
+
   // Timerlar
   private phaseTimer: ReturnType<typeof setTimeout> | null = null;
   private timerStartedAt: number = 0;
@@ -136,6 +142,7 @@ export class GameEngine {
     }
 
     this.status = "STARTING";
+    this.gameStartedAt = new Date();
     await gameRepo.updateStatus(this.gameId, "STARTING");
 
     // refundUserIds endi har doim bo'sh — pul qaytarilmaydi
