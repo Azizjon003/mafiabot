@@ -33,11 +33,16 @@ export const heroService = {
     if (existing) return { success: false, error: "Sizda allaqachon Geroy bor!" };
 
     const cost = await pricingService.get(PRICE_KEYS.HERO_CREATE);
-    const spent = await economyService.spendDiamonds(userId, cost, "hero_create");
-    if (!spent) return { success: false, error: `Yetarli olmosingiz yo'q! (${cost}💎 kerak)` };
+    const currency = await pricingService.getCurrency(PRICE_KEYS.HERO_CREATE);
+    const spent = currency === "diamond"
+      ? await economyService.spendDiamonds(userId, cost, "hero_create")
+      : await economyService.spendMoney(userId, cost, "hero_create");
+    if (!spent) {
+      const sym = currency === "diamond" ? "💎" : "💰";
+      return { success: false, error: `Yetarli ${currency === "diamond" ? "olmosingiz" : "pulingiz"} yo'q! (${cost}${sym} kerak)` };
+    }
 
     await heroRepo.create(userId);
-    // Geroy doimiy — har o'yinda foydalanish flag'ini default yoqib qo'yamiz
     const { inventoryRepo } = await import("../database/repositories/inventory.repository");
     await inventoryRepo.setUseFlag(userId, "hero", true);
     return { success: true };
@@ -49,8 +54,14 @@ export const heroService = {
     }
     const cost = await pricingService.get(PRICE_KEYS.HERO_RENAME);
     if (cost > 0) {
-      const spent = await economyService.spendMoney(userId, cost, "hero_rename");
-      if (!spent) return { success: false, error: `Yetarli pulingiz yo'q! (${cost}💰)` };
+      const currency = await pricingService.getCurrency(PRICE_KEYS.HERO_RENAME);
+      const spent = currency === "diamond"
+        ? await economyService.spendDiamonds(userId, cost, "hero_rename")
+        : await economyService.spendMoney(userId, cost, "hero_rename");
+      if (!spent) {
+        const sym = currency === "diamond" ? "💎" : "💰";
+        return { success: false, error: `Yetarli ${currency === "diamond" ? "olmosingiz" : "pulingiz"} yo'q! (${cost}${sym})` };
+      }
     }
     await heroRepo.rename(userId, name);
     return { success: true };
@@ -58,8 +69,14 @@ export const heroService = {
 
   async buyPoints(userId: number): Promise<{ success: boolean; error?: string; gained?: number }> {
     const cost = await pricingService.get(PRICE_KEYS.HERO_POINTS_1000);
-    const spent = await economyService.spendDiamonds(userId, cost, "hero_points");
-    if (!spent) return { success: false, error: `Yetarli olmosingiz yo'q! (${cost}💎)` };
+    const currency = await pricingService.getCurrency(PRICE_KEYS.HERO_POINTS_1000);
+    const spent = currency === "diamond"
+      ? await economyService.spendDiamonds(userId, cost, "hero_points")
+      : await economyService.spendMoney(userId, cost, "hero_points");
+    if (!spent) {
+      const sym = currency === "diamond" ? "💎" : "💰";
+      return { success: false, error: `Yetarli ${currency === "diamond" ? "olmosingiz" : "pulingiz"} yo'q! (${cost}${sym})` };
+    }
 
     await heroRepo.addPoints(userId, 1000);
     await this.maybeLevelUp(userId);
@@ -71,8 +88,14 @@ export const heroService = {
     if (!hero) return { success: false, error: "Sizda Geroy yo'q!" };
 
     const cost = await pricingService.get(PRICE_KEYS.HERO_PROTECTION_REFRESH);
-    const spent = await economyService.spendDiamonds(userId, cost, "hero_protection");
-    if (!spent) return { success: false, error: `Yetarli olmosingiz yo'q! (${cost}💎)` };
+    const currency = await pricingService.getCurrency(PRICE_KEYS.HERO_PROTECTION_REFRESH);
+    const spent = currency === "diamond"
+      ? await economyService.spendDiamonds(userId, cost, "hero_protection")
+      : await economyService.spendMoney(userId, cost, "hero_protection");
+    if (!spent) {
+      const sym = currency === "diamond" ? "💎" : "💰";
+      return { success: false, error: `Yetarli ${currency === "diamond" ? "olmosingiz" : "pulingiz"} yo'q! (${cost}${sym})` };
+    }
 
     const max = maxProtectionForLevel(hero.level);
     await heroRepo.refreshProtection(userId, max);
@@ -81,8 +104,14 @@ export const heroService = {
 
   async charge(userId: number): Promise<{ success: boolean; error?: string }> {
     const cost = await pricingService.get(PRICE_KEYS.HERO_CHARGE);
-    const spent = await economyService.spendMoney(userId, cost, "hero_charge");
-    if (!spent) return { success: false, error: `Yetarli pulingiz yo'q! (${cost}💰)` };
+    const currency = await pricingService.getCurrency(PRICE_KEYS.HERO_CHARGE);
+    const spent = currency === "diamond"
+      ? await economyService.spendDiamonds(userId, cost, "hero_charge")
+      : await economyService.spendMoney(userId, cost, "hero_charge");
+    if (!spent) {
+      const sym = currency === "diamond" ? "💎" : "💰";
+      return { success: false, error: `Yetarli ${currency === "diamond" ? "olmosingiz" : "pulingiz"} yo'q! (${cost}${sym})` };
+    }
 
     await heroRepo.addCharge(userId, 1);
     return { success: true };

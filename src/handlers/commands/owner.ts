@@ -258,20 +258,57 @@ ownerCommand.callbackQuery("ap:roleprices", ownerOnly, async (ctx) => {
   ).catch(() => {});
 });
 
-// Bitta narx ekrani — +/- tugmalar
+// Bu kalit sotib olinadigan item (valyuta o'zgartirish mumkin)
+const CONFIGURABLE_CURRENCY_KEYS = new Set([
+  "price_shield", "price_document", "price_hero_create", "price_vip_month",
+  "price_hero_points_1000", "price_hero_prot", "price_hero_charge", "price_hero_rename",
+  "price_chest_basic", "price_chest_silver", "price_chest_gold",
+]);
+
+// Bitta narx ekrani — +/- tugmalar va valyuta toggle
 ownerCommand.callbackQuery(/^ap:price:(.+)$/, ownerOnly, async (ctx) => {
   const key = ctx.match[1];
   const value = await pricingService.get(key);
-  const isMoney = key.includes("money") || key.startsWith("price_role_") || key.startsWith("price_chest")
-    || key === "price_hero_charge" || key === "price_hero_rename"
-    || key === "reward_winner_bonus" || key === "reward_loser"
-    || key === "fee_money";
-  const symbol = isMoney ? "💰" : "💎";
+
+  let currency: "diamond" | "money" = "diamond";
+  let canToggle = false;
+  if (CONFIGURABLE_CURRENCY_KEYS.has(key)) {
+    currency = await pricingService.getCurrency(key);
+    canToggle = true;
+  } else {
+    // Qat'iy belgilangan (rewards, rolelar, komissiyalar)
+    const isMoney = key.includes("money") || key.startsWith("price_role_")
+      || key === "reward_winner_bonus" || key === "reward_loser" || key === "fee_money";
+    currency = isMoney ? "money" : "diamond";
+  }
+  const symbol = currency === "money" ? "💰" : "💎";
 
   await ctx.answerCallbackQuery().catch(() => {});
   await ctx.editMessageText(
-    `💰 <b>${key}</b>\n\nHozirgi qiymat: <b>${value.toLocaleString()}</b>${symbol}\n\nO'zgartiring:`,
-    { parse_mode: "HTML", reply_markup: priceEditKeyboard(key, value) }
+    `💰 <b>${key}</b>\n\nHozirgi qiymat: <b>${value.toLocaleString()}</b>${symbol}\nValyuta: ${currency === "money" ? "💰 Pul" : "💎 Olmos"}\n\nO'zgartiring:`,
+    { parse_mode: "HTML", reply_markup: priceEditKeyboard(key, value, currency, canToggle) }
+  ).catch(() => {});
+});
+
+// Valyuta almashtirish
+ownerCommand.callbackQuery(/^ap:toggleCurrency:(.+)$/, ownerOnly, async (ctx) => {
+  const key = ctx.match[1];
+  if (!CONFIGURABLE_CURRENCY_KEYS.has(key)) {
+    await ctx.answerCallbackQuery({ text: "Bu narxda valyuta o'zgartirib bo'lmaydi" }).catch(() => {});
+    return;
+  }
+  const newCurrency = await pricingService.toggleCurrency(key);
+  await ctx.answerCallbackQuery({
+    text: `✅ Valyuta: ${newCurrency === "money" ? "💰 Pul" : "💎 Olmos"}`,
+    show_alert: true,
+  }).catch(() => {});
+
+  // Ekranni yangilash
+  const value = await pricingService.get(key);
+  const symbol = newCurrency === "money" ? "💰" : "💎";
+  await ctx.editMessageText(
+    `💰 <b>${key}</b>\n\nHozirgi qiymat: <b>${value.toLocaleString()}</b>${symbol}\nValyuta: ${newCurrency === "money" ? "💰 Pul" : "💎 Olmos"}\n\nO'zgartiring:`,
+    { parse_mode: "HTML", reply_markup: priceEditKeyboard(key, value, newCurrency, true) }
   ).catch(() => {});
 });
 

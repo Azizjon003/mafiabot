@@ -69,18 +69,24 @@ export function rolePricesKeyboard(prices: Record<string, number>): InlineKeyboa
 }
 
 // Bitta narxni o'zgartirish — +/- tugmalar
-export function priceEditKeyboard(key: string, currentValue: number): InlineKeyboard {
-  return new InlineKeyboard()
+// canToggleCurrency — valyutani almashtirish mumkinmi (sotib olish itemlari uchun)
+export function priceEditKeyboard(key: string, currentValue: number, currency?: "diamond" | "money", canToggleCurrency: boolean = false): InlineKeyboard {
+  const kb = new InlineKeyboard()
     .text("➖100", `ap:padj:${key}:-100`)
     .text("➖10", `ap:padj:${key}:-10`)
     .text("➖1", `ap:padj:${key}:-1`)
     .text("➕1", `ap:padj:${key}:1`)
     .text("➕10", `ap:padj:${key}:10`)
-    .text("➕100", `ap:padj:${key}:100`)
-    .row()
-    .text("✏️ Aniq qiymat", `ap:psetexact:${key}`)
-    .row()
-    .text("🔙 Narxlar", "ap:prices");
+    .text("➕100", `ap:padj:${key}:100`).row()
+    .text("✏️ Aniq qiymat", `ap:psetexact:${key}`).row();
+
+  if (canToggleCurrency && currency) {
+    const label = currency === "diamond" ? "💎 → 💰 (pulga)" : "💰 → 💎 (olmosga)";
+    kb.text(label, `ap:toggleCurrency:${key}`).row();
+  }
+
+  kb.text("🔙 Narxlar", "ap:prices");
+  return kb;
 }
 
 // Sovg'a kategoriyalari

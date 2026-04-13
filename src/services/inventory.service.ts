@@ -5,22 +5,35 @@ import { economyService } from "./economy.service";
 import { pricingService, PRICE_KEYS, rolePriceKey } from "./pricing.service";
 
 export const inventoryService = {
-  // Shield sotib olish (💎) — avtomatik keyingi o'yinga yoqiladi
+  // Shield sotib olish — avtomatik keyingi o'yinga yoqiladi
   async buyShield(userId: number): Promise<{ success: boolean; error?: string; price?: number }> {
     const price = await pricingService.get(PRICE_KEYS.SHIELD);
-    const spent = await economyService.spendDiamonds(userId, price, "buy_shield");
-    if (!spent) return { success: false, error: `Yetarli olmosingiz yo'q! (${price}💎)` };
+    const currency = await pricingService.getCurrency(PRICE_KEYS.SHIELD);
+    const spent = currency === "diamond"
+      ? await economyService.spendDiamonds(userId, price, "buy_shield")
+      : await economyService.spendMoney(userId, price, "buy_shield");
+    if (!spent) {
+      const sym = currency === "diamond" ? "💎" : "💰";
+      const cur = currency === "diamond" ? "olmosingiz" : "pulingiz";
+      return { success: false, error: `Yetarli ${cur} yo'q! (${price}${sym})` };
+    }
     await inventoryRepo.addShield(userId, 1);
-    // Avtomatik yoqish — keyingi o'yinda foydalanadi
     await inventoryRepo.setUseFlag(userId, "shield", true);
     return { success: true, price };
   },
 
-  // Document sotib olish (💎) — avtomatik yoqiladi
+  // Document sotib olish — avtomatik yoqiladi
   async buyDocument(userId: number): Promise<{ success: boolean; error?: string; price?: number }> {
     const price = await pricingService.get(PRICE_KEYS.DOCUMENT);
-    const spent = await economyService.spendDiamonds(userId, price, "buy_document");
-    if (!spent) return { success: false, error: `Yetarli olmosingiz yo'q! (${price}💎)` };
+    const currency = await pricingService.getCurrency(PRICE_KEYS.DOCUMENT);
+    const spent = currency === "diamond"
+      ? await economyService.spendDiamonds(userId, price, "buy_document")
+      : await economyService.spendMoney(userId, price, "buy_document");
+    if (!spent) {
+      const sym = currency === "diamond" ? "💎" : "💰";
+      const cur = currency === "diamond" ? "olmosingiz" : "pulingiz";
+      return { success: false, error: `Yetarli ${cur} yo'q! (${price}${sym})` };
+    }
     await inventoryRepo.addDocument(userId, 1);
     await inventoryRepo.setUseFlag(userId, "document", true);
     return { success: true, price };

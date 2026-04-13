@@ -100,8 +100,31 @@ const DEFAULTS: Record<string, number> = {
   price_role_PROFESSOR: 400,
 };
 
+// Valyuta turi — diamond yoki money
+export type Currency = "diamond" | "money";
+
+// Default valyutalar
+const DEFAULT_CURRENCIES: Record<string, Currency> = {
+  [PRICE_KEYS.SHIELD]: "diamond",
+  [PRICE_KEYS.DOCUMENT]: "diamond",
+  [PRICE_KEYS.HERO_CREATE]: "diamond",
+  [PRICE_KEYS.VIP_MONTH]: "diamond",
+  [PRICE_KEYS.HERO_POINTS_1000]: "diamond",
+  [PRICE_KEYS.HERO_PROTECTION_REFRESH]: "diamond",
+  [PRICE_KEYS.HERO_CHARGE]: "money",
+  [PRICE_KEYS.HERO_RENAME]: "money",
+  [PRICE_KEYS.CHEST_BASIC]: "money",
+  [PRICE_KEYS.CHEST_SILVER]: "money",
+  [PRICE_KEYS.CHEST_GOLD]: "money",
+};
+
+function currencyKey(priceKey: string): string {
+  return `currency_${priceKey}`;
+}
+
 // Cache — DB'ga har safar borish emas
 const cache = new Map<string, number>();
+const currencyCache = new Map<string, Currency>();
 
 async function loadFromDb(key: string): Promise<number> {
   const cfg = await prisma.config.findUnique({ where: { key } });
@@ -142,5 +165,33 @@ export const pricingService = {
   // Cache'ni tozalash (admin narx o'zgartirgandan keyin)
   clearCache(): void {
     cache.clear();
+    currencyCache.clear();
+  },
+
+  // Valyuta turini olish (diamond/money)
+  async getCurrency(priceKey: string): Promise<Currency> {
+    const key = currencyKey(priceKey);
+    if (currencyCache.has(key)) return currencyCache.get(key)!;
+    const cfg = await prisma.config.findUnique({ where: { key } });
+    const value = (cfg?.value as Currency) || DEFAULT_CURRENCIES[priceKey] || "diamond";
+    currencyCache.set(key, value);
+    return value;
+  },
+
+  async setCurrency(priceKey: string, currency: Currency): Promise<void> {
+    const key = currencyKey(priceKey);
+    await prisma.config.upsert({
+      where: { key },
+      update: { value: currency },
+      create: { key, value: currency },
+    });
+    currencyCache.set(key, currency);
+  },
+
+  async toggleCurrency(priceKey: string): Promise<Currency> {
+    const current = await this.getCurrency(priceKey);
+    const next: Currency = current === "diamond" ? "money" : "diamond";
+    await this.setCurrency(priceKey, next);
+    return next;
   },
 };

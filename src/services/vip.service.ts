@@ -1,7 +1,7 @@
 import { prisma } from "../database/prisma";
 import { economyService } from "./economy.service";
+import { pricingService, PRICE_KEYS } from "./pricing.service";
 
-const VIP_COST_DIAMONDS = 100;
 const VIP_DURATION_DAYS = 30;
 
 export const vipService = {
@@ -23,9 +23,14 @@ export const vipService = {
   },
 
   async buyVip(userId: number): Promise<{ success: boolean; error?: string; expiresAt?: Date }> {
-    const canSpend = await economyService.spendDiamonds(userId, VIP_COST_DIAMONDS, "vip_purchase");
+    const cost = await pricingService.get(PRICE_KEYS.VIP_MONTH);
+    const currency = await pricingService.getCurrency(PRICE_KEYS.VIP_MONTH);
+    const canSpend = currency === "diamond"
+      ? await economyService.spendDiamonds(userId, cost, "vip_purchase")
+      : await economyService.spendMoney(userId, cost, "vip_purchase");
     if (!canSpend) {
-      return { success: false, error: `Yetarli olmosigiz yo'q! (${VIP_COST_DIAMONDS}💎 kerak)` };
+      const sym = currency === "diamond" ? "💎" : "💰";
+      return { success: false, error: `Yetarli ${currency === "diamond" ? "olmosigiz" : "pulingiz"} yo'q! (${cost}${sym} kerak)` };
     }
 
     const expiresAt = new Date();
