@@ -23,6 +23,7 @@ import { chatHandler } from "./handlers/chat";
 import { nightSilenceHandler } from "./handlers/night-silence";
 import { logger } from "./utils/logger";
 import { setBotUsername } from "./config";
+import { setupBotCommands } from "./setup-commands";
 
 async function main() {
   // Database ulanish
@@ -45,6 +46,9 @@ async function main() {
   const botInfo = await bot.api.getMe();
   setBotUsername(botInfo.username);
   logger.info(`Bot username: @${botInfo.username}`);
+
+  // Bot buyruqlari menyusini sozlash (/start yozganda chiqadigan)
+  await setupBotCommands(bot);
 
   // Servislar
   const notifier = new NotificationService(bot);
