@@ -17,6 +17,7 @@ import {
   giftCategoriesKeyboard,
   configCategoriesKeyboard,
 } from "../../keyboards/admin-panel";
+import { privateOnly } from "../middleware/chat-type";
 
 // Pending state — admin "aniq qiymat" yoki "sovg'a miqdori" yozishini kutamiz
 // Map<ownerTelegramId, {type: "price"|"gift", key: string, targetUserId?: number}>
@@ -217,7 +218,7 @@ ownerCommand.command("myid", async (ctx) => {
 // ==================== ADMIN PANEL ====================
 
 // /admin — Inline tugmalar bilan panel
-ownerCommand.command("admin", ownerOnly, async (ctx) => {
+ownerCommand.command("admin", privateOnly, ownerOnly, async (ctx) => {
   await ctx.reply("🔧 <b>Bosh Admin Paneli</b>\n\nKategoriyani tanlang:", {
     parse_mode: "HTML",
     reply_markup: adminPanelKeyboard(),

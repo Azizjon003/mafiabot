@@ -4,6 +4,7 @@ import { statsRepo } from "../../database/repositories/stats.repository";
 import { userRepo } from "../../database/repositories/user.repository";
 import { uz } from "../../locales/uz";
 import { ROLE_EMOJI } from "../../utils/constants";
+import { groupOnly } from "../middleware/chat-type";
 
 export const statsCommand = new Composer<BotContext>();
 
@@ -39,17 +40,17 @@ statsCommand.command("stats", async (ctx) => {
 });
 
 // /top — Kunlik top
-statsCommand.command("top", async (ctx) => {
+statsCommand.command("top", groupOnly, async (ctx) => {
   await showTopByDays(ctx, 1, "Kunlik");
 });
 
 // /top7 — Haftalik top
-statsCommand.command("top7", async (ctx) => {
+statsCommand.command("top7", groupOnly, async (ctx) => {
   await showTopByDays(ctx, 7, "Haftalik");
 });
 
 // /top30 — Oylik top
-statsCommand.command("top30", async (ctx) => {
+statsCommand.command("top30", groupOnly, async (ctx) => {
   await showTopByDays(ctx, 30, "Oylik");
 });
 
@@ -75,7 +76,7 @@ async function showTopByDays(ctx: any, days: number, label: string) {
 }
 
 // /topall — Umumiy reyting (eski /top)
-statsCommand.command("topall", async (ctx) => {
+statsCommand.command("topall", groupOnly, async (ctx) => {
   const topPlayers = await statsRepo.getTopPlayers(10);
 
   if (topPlayers.length === 0) {

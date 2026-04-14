@@ -4,11 +4,12 @@ import { economyService } from "../../services/economy.service";
 import { userRepo } from "../../database/repositories/user.repository";
 import { gameManager } from "../../game/manager";
 import { mention } from "../../utils/helpers";
+import { groupOnly, privateOnly } from "../middleware/chat-type";
 
 export const economyCommand = new Composer<BotContext>();
 
-// /balance — Balans ko'rish
-economyCommand.command("balance", async (ctx) => {
+// /balance — Balans ko'rish (DM only)
+economyCommand.command("balance", privateOnly, async (ctx) => {
   if (!ctx.dbUser) return;
   const balance = await economyService.getBalance(ctx.dbUser.id);
 
@@ -20,8 +21,8 @@ economyCommand.command("balance", async (ctx) => {
   );
 });
 
-// /send N — Olmos yuborish (reply = birovga, guruhda = tarqatish)
-economyCommand.command("send", async (ctx) => {
+// /send N — Olmos yuborish (faqat guruhda, reply bilan)
+economyCommand.command("send", groupOnly, async (ctx) => {
   if (!ctx.dbUser || !ctx.message) return;
 
   const args = ctx.message.text?.split(" ") || [];
@@ -53,11 +54,16 @@ economyCommand.command("send", async (ctx) => {
       return;
     }
 
+    // Reply bo'lgan xabarga javob qaytaradi
     await ctx.reply(
-      `💎 ${mention(ctx.from!.first_name, BigInt(ctx.from!.id))} → ` +
-      `${mention(recipientTg.first_name, BigInt(recipientTg.id))}: ` +
-      `<b>${amount}</b> olmos (komissiya: 1💎)`,
-      { parse_mode: "HTML" }
+      `💎 <b>${amount}</b> olmos o'tkazildi!\n` +
+      `${mention(ctx.from!.first_name, BigInt(ctx.from!.id))} → ` +
+      `${mention(recipientTg.first_name, BigInt(recipientTg.id))}\n` +
+      `Komissiya: ${result.fee ?? 1}💎`,
+      {
+        parse_mode: "HTML",
+        reply_parameters: { message_id: ctx.message.reply_to_message.message_id },
+      }
     );
     return;
   }
@@ -71,8 +77,8 @@ economyCommand.command("send", async (ctx) => {
   }
 });
 
-// /money N — Pul yuborish (reply bilan)
-economyCommand.command("money", async (ctx) => {
+// /money N — Pul yuborish (faqat guruhda, reply bilan)
+economyCommand.command("money", groupOnly, async (ctx) => {
   if (!ctx.dbUser || !ctx.message) return;
 
   const args = ctx.message.text?.split(" ") || [];
@@ -106,17 +112,22 @@ economyCommand.command("money", async (ctx) => {
     return;
   }
 
+  // Reply bo'lgan xabarga javob qaytaradi
   await ctx.reply(
-    `💰 ${mention(ctx.from!.first_name, BigInt(ctx.from!.id))} → ` +
-    `${mention(recipientTg.first_name, BigInt(recipientTg.id))}: ` +
-    `<b>${amount.toLocaleString()}</b> pul (komissiya: 100💰)`,
-    { parse_mode: "HTML" }
+    `💰 <b>${amount.toLocaleString()}</b> pul o'tkazildi!\n` +
+    `${mention(ctx.from!.first_name, BigInt(ctx.from!.id))} → ` +
+    `${mention(recipientTg.first_name, BigInt(recipientTg.id))}\n` +
+    `Komissiya: ${result.fee ?? 100}💰`,
+    {
+      parse_mode: "HTML",
+      reply_parameters: { message_id: ctx.message.reply_to_message!.message_id },
+    }
   );
 });
 
-// /gsend N — Ro'yxatdagi o'yinchilarga olmos tarqatish
-economyCommand.command("gsend", async (ctx) => {
-  if (!ctx.dbUser || !ctx.message || ctx.chat.type === "private") return;
+// /gsend N — Ro'yxatdagi o'yinchilarga olmos tarqatish (faqat guruhda)
+economyCommand.command("gsend", groupOnly, async (ctx) => {
+  if (!ctx.dbUser || !ctx.message) return;
 
   const args = ctx.message.text?.split(" ") || [];
   const amount = parseInt(args[1] || "");
@@ -156,9 +167,9 @@ economyCommand.command("gsend", async (ctx) => {
   );
 });
 
-// /change N — Random g'olib olmos oladi
-economyCommand.command("change", async (ctx) => {
-  if (!ctx.dbUser || !ctx.message || ctx.chat.type === "private") return;
+// /change N — Random g'olib olmos oladi (faqat guruhda)
+economyCommand.command("change", groupOnly, async (ctx) => {
+  if (!ctx.dbUser || !ctx.message) return;
 
   const args = ctx.message.text?.split(" ") || [];
   const amount = parseInt(args[1] || "");

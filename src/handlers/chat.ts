@@ -3,11 +3,12 @@ import { BotContext } from "../types/context";
 import { gameManager } from "../game/manager";
 import { MAFIA_ROLES, ROLE_EMOJI } from "../utils/constants";
 import { logger } from "../utils/logger";
+import { privateOnly } from "./middleware/chat-type";
 
 export const chatHandler = new Composer<BotContext>();
 
-// /say <matn> — Anonim shivir (tirik o'yinchi guruhga anonim xabar yuboradi)
-chatHandler.command("say", async (ctx) => {
+// /say <matn> — Anonim shivir (DM only)
+chatHandler.command("say", privateOnly, async (ctx) => {
   if (!ctx.from || !ctx.message?.text) return;
 
   const text = ctx.message.text.split(" ").slice(1).join(" ").trim();

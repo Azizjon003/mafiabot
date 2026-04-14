@@ -8,6 +8,7 @@ import { prisma } from "../../database/prisma";
 import { mention } from "../../utils/helpers";
 import { settingsText, settingsMainKeyboard } from "../../keyboards/game";
 import { setPhasePhoto } from "../../config";
+import { groupOnly } from "../middleware/chat-type";
 
 export const adminCommand = new Composer<BotContext>();
 
@@ -35,7 +36,7 @@ async function getTargetUserId(ctx: BotContext): Promise<{ telegramId: bigint; f
 }
 
 // /mute — O'yinchini mute qilish
-adminCommand.command("mute", adminOnlyMiddleware, async (ctx) => {
+adminCommand.command("mute", groupOnly, adminOnlyMiddleware, async (ctx) => {
   if (ctx.chat.type === "private") return;
 
   const target = await getTargetUserId(ctx);
@@ -62,7 +63,7 @@ adminCommand.command("mute", adminOnlyMiddleware, async (ctx) => {
 });
 
 // /kick — O'yindan chiqarish
-adminCommand.command("kick", adminOnlyMiddleware, async (ctx) => {
+adminCommand.command("kick", groupOnly, adminOnlyMiddleware, async (ctx) => {
   if (ctx.chat.type === "private") return;
 
   const target = await getTargetUserId(ctx);
@@ -90,7 +91,7 @@ adminCommand.command("kick", adminOnlyMiddleware, async (ctx) => {
 });
 
 // /ban — Botdan ban
-adminCommand.command("ban", adminOnlyMiddleware, async (ctx) => {
+adminCommand.command("ban", groupOnly, adminOnlyMiddleware, async (ctx) => {
   if (ctx.chat.type === "private") return;
 
   const target = await getTargetUserId(ctx);
@@ -129,7 +130,7 @@ adminCommand.command("unban", adminOnlyMiddleware, async (ctx) => {
 });
 
 // /setphoto night|day — Rasmga reply qilib file_id saqlash
-adminCommand.command("setphoto", adminOnlyMiddleware, async (ctx) => {
+adminCommand.command("setphoto", groupOnly, adminOnlyMiddleware, async (ctx) => {
   const args = ctx.message?.text?.split(" ");
   const phase = args?.[1]?.toLowerCase();
 
@@ -151,13 +152,8 @@ adminCommand.command("setphoto", adminOnlyMiddleware, async (ctx) => {
   await ctx.reply(`✅ ${label} rasmi saqlandi!`);
 });
 
-// /settings — O'yin sozlamalari
-adminCommand.command("settings", adminOnlyMiddleware, async (ctx) => {
-  if (ctx.chat.type === "private") {
-    await ctx.reply("⚠️ Bu buyruq faqat guruhda ishlaydi!", { parse_mode: "HTML" });
-    return;
-  }
-
+// /settings — O'yin sozlamalari (guruh only)
+adminCommand.command("settings", groupOnly, adminOnlyMiddleware, async (ctx) => {
   const chat = await chatRepo.findOrCreate(BigInt(ctx.chat.id), ctx.chat.title);
   const settings = await chatRepo.getSettings(chat.id);
 

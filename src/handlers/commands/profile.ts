@@ -18,6 +18,7 @@ import {
   premiumGroupsKeyboard,
 } from "../../keyboards/profile";
 import { gameManager } from "../../game/manager";
+import { privateOnly } from "../middleware/chat-type";
 import { ROLE_EMOJI, ROLE_NAME } from "../../utils/constants";
 import { mention } from "../../utils/helpers";
 
@@ -55,7 +56,7 @@ async function buildProfileText(userId: number): Promise<string> {
   return t;
 }
 
-profileCommand.command("profile", async (ctx) => {
+profileCommand.command("profile", privateOnly, async (ctx) => {
   if (!ctx.dbUser) return;
   const text = await buildProfileText(ctx.dbUser.id);
   await ctx.reply(text, { parse_mode: "HTML", reply_markup: profileMainKeyboard() });
@@ -484,7 +485,7 @@ profileCommand.callbackQuery("hero:rename", async (ctx) => {
   }).catch(() => {});
 });
 
-profileCommand.command("heroname", async (ctx) => {
+profileCommand.command("heroname", privateOnly, async (ctx) => {
   if (!ctx.dbUser || !ctx.message?.text) return;
   const name = ctx.message.text.split(" ").slice(1).join(" ").trim();
   if (!name) {

@@ -1,6 +1,7 @@
 import { Composer } from "grammy";
 import { BotContext } from "../../types/context";
 import { vipService } from "../../services/vip.service";
+import { privateOnly } from "../middleware/chat-type";
 
 export const vipCommand = new Composer<BotContext>();
 
@@ -37,7 +38,7 @@ vipCommand.command("vip", async (ctx) => {
 });
 
 // /buyvip — VIP sotib olish
-vipCommand.command("buyvip", async (ctx) => {
+vipCommand.command("buyvip", privateOnly, async (ctx) => {
   if (!ctx.dbUser) return;
 
   const result = await vipService.buyVip(ctx.dbUser.id);

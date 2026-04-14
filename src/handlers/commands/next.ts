@@ -1,16 +1,12 @@
 import { Composer } from "grammy";
 import { BotContext } from "../../types/context";
 import { gameManager } from "../../game/manager";
+import { groupOnly } from "../middleware/chat-type";
 
 export const nextCommand = new Composer<BotContext>();
 
-// /next — Keyingi o'yinga qo'shilish xabari
-nextCommand.command("next", async (ctx) => {
-  if (ctx.chat.type === "private") {
-    await ctx.reply("⚠️ Bu buyruq faqat guruhda ishlaydi!");
-    return;
-  }
-
+// /next — Keyingi o'yinga qo'shilish xabari (guruh only)
+nextCommand.command("next", groupOnly, async (ctx) => {
   const chatId = BigInt(ctx.chat.id);
   const engine = gameManager.getGame(chatId);
 
