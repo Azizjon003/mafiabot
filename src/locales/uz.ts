@@ -335,7 +335,7 @@ export const uz = {
     votingTimeout: "🗳 Ovoz berish: <b>{value}s</b>",
     minPlayers: "👥 Min o'yinchilar: <b>{value}</b>",
     maxPlayers: "👥 Max o'yinchilar: <b>{value}</b>",
-    muteOnNight: "🔇 Tunda mute: <b>{value}</b>",
+    muteOnNight: "🗑 Tunda xabarlarni o'chirish: <b>{value}</b>",
     updated: "✅ Sozlama yangilandi!",
     back: "🔙 Orqaga",
     btn: {
@@ -345,7 +345,7 @@ export const uz = {
       votingTimeout: "🗳 Ovoz berish",
       minPlayers: "👥 Min o'yinchilar",
       maxPlayers: "👥 Max o'yinchilar",
-      muteOnNight: "🔇 Tunda mute",
+      muteOnNight: "🗑 Tunda o'chirish",
     },
   },
 

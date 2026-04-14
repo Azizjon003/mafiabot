@@ -43,6 +43,11 @@ export class GameController {
       engine.registrationMessageId = msgId;
     }
 
+    // /next obunachilariga xabar yuborish (parallel)
+    this.notifyNextSubscribers(chatTelegramId, chatTitle).catch((e) =>
+      logger.error(e, "Next subscriber notification error")
+    );
+
     // Registration countdown timer
     this.registrationTimeLeft.set(chatKey, engine.settings.registrationTimeout);
     const interval = setInterval(async () => {
@@ -570,6 +575,50 @@ export class GameController {
   }
 
   // ==================== STOP GAME ====================
+
+  // /next obunachilariga xabar yuborish va obunani tozalash
+  private async notifyNextSubscribers(chatTelegramId: bigint, chatTitle?: string): Promise<void> {
+    const { subscriptionRepo } = await import("../database/repositories/subscription.repository");
+    const { prisma } = await import("../database/prisma");
+    const { botUsername } = await import("../config");
+
+    const userIds = await subscriptionRepo.listForChat(chatTelegramId);
+    if (userIds.length === 0) return;
+
+    // User'larni olib TelegramId'larni topish
+    const users = await prisma.user.findMany({
+      where: { id: { in: userIds } },
+      select: { telegramId: true },
+    });
+
+    const groupName = chatTitle || "Guruh";
+    const text =
+      `🎭 <b>Yangi o'yin boshlanmoqda!</b>\n\n` +
+      `📍 Guruh: <b>${groupName}</b>\n\n` +
+      `Qo'shilish uchun tugmani bosing:`;
+
+    const { InlineKeyboard } = await import("grammy");
+    const kb = new InlineKeyboard().url("✅ Qo'shilish", `https://t.me/${botUsername}?start=join_${chatTelegramId}`);
+
+    let sent = 0;
+    let blocked = 0;
+    for (const u of users) {
+      try {
+        const result = await this.notifier.sendToPlayer(u.telegramId, text, kb);
+        if (result !== undefined) sent++;
+        else blocked++; // null qaytardi — xabar ketmadi
+      } catch {
+        blocked++;
+      }
+    }
+
+    // Obunalarni tozalash (bir martalik — bloklangan userlar ham tozalanadi)
+    await subscriptionRepo.clearForChat(chatTelegramId);
+    logger.info(
+      { chatId: chatTelegramId.toString(), sent, blocked, total: userIds.length },
+      "Next subscribers notified"
+    );
+  }
 
   async handleStopGame(chatTelegramId: bigint): Promise<void> {
     const engine = gameManager.getGame(chatTelegramId);

@@ -23,43 +23,10 @@ export class NotificationService {
     }
   }
 
-  async muteGroup(chatId: bigint): Promise<void> {
-    try {
-      await this.bot.api.setChatPermissions(chatId.toString(), {
-        can_send_messages: false,
-        can_send_audios: false,
-        can_send_documents: false,
-        can_send_photos: false,
-        can_send_videos: false,
-        can_send_video_notes: false,
-        can_send_voice_notes: false,
-        can_send_polls: false,
-        can_send_other_messages: false,
-        can_add_web_page_previews: false,
-      });
-    } catch (error) {
-      logger.error(error, `Guruhni mute qilishda xatolik: ${chatId}`);
-    }
-  }
-
-  async unmuteGroup(chatId: bigint): Promise<void> {
-    try {
-      await this.bot.api.setChatPermissions(chatId.toString(), {
-        can_send_messages: true,
-        can_send_audios: true,
-        can_send_documents: true,
-        can_send_photos: true,
-        can_send_videos: true,
-        can_send_video_notes: true,
-        can_send_voice_notes: true,
-        can_send_polls: true,
-        can_send_other_messages: true,
-        can_add_web_page_previews: true,
-      });
-    } catch (error) {
-      logger.error(error, `Guruhni unmute qilishda xatolik: ${chatId}`);
-    }
-  }
+  // Eski mute/unmute tizimi olib tashlandi — endi xabarlar avtomatik o'chiriladi
+  // src/handlers/night-silence.ts orqali
+  async muteGroup(_chatId: bigint): Promise<void> { /* no-op */ }
+  async unmuteGroup(_chatId: bigint): Promise<void> { /* no-op */ }
 
   async sendToGroup(chatId: bigint, text: string, keyboard?: InlineKeyboard): Promise<number | undefined> {
     try {

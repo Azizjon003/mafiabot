@@ -218,6 +218,18 @@ enum ChestType {
 
 // ==================== CHAT ====================
 
+// ==================== NEXT GAME SUBSCRIPTION ====================
+
+model NextGameSubscription {
+  id             Int      @id @default(autoincrement())
+  userId         Int
+  chatTelegramId BigInt   // Qaysi guruhga obuna
+  createdAt      DateTime @default(now())
+
+  @@unique([userId, chatTelegramId])
+  @@index([chatTelegramId])
+}
+
 model Chat {
   id         Int      @id @default(autoincrement())
   telegramId BigInt   @unique

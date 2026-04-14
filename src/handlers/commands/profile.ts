@@ -53,6 +53,15 @@ async function buildProfileText(userId: number): Promise<string> {
     t += `⭐️ VIP: <b>${user.vipExpiresAt.toLocaleDateString("uz-UZ")}</b> gacha\n`;
   }
   t += `\n🎮 O'yinlar: <b>${user.stats?.gamesPlayed || 0}</b> | 🏆 Yutgan: <b>${user.stats?.gamesWon || 0}</b>`;
+
+  // Obunalar
+  const { subscriptionRepo } = await import("../../database/repositories/subscription.repository");
+  const subs = await subscriptionRepo.listForUser(userId);
+  if (subs.length > 0) {
+    t += `\n\n🔔 <b>Obuna bo'lgan guruhlar:</b> ${subs.length} ta`;
+    t += `\n<i>Bekor qilish uchun shu guruhda /unsubscribe</i>`;
+  }
+
   return t;
 }
 

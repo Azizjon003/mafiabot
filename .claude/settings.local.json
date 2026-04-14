@@ -6,7 +6,9 @@
       "Bash(npm install:*)",
       "Bash(ls \"c:/Users/Zenbook-PC/Desktop/work/mafiabot\"/*.md)",
       "Bash(npm test:*)",
-      "Bash(LOG_LEVEL=silent npm test)"
+      "Bash(LOG_LEVEL=silent npm test)",
+      "Bash(grep -rn 'prisma\\\\.$queryRaw\\\\|prisma\\\\.raw' /c/Users/Zenbook-PC/Desktop/work/mafiabot/src '--include=*.ts')",
+      "Bash(find /c/Users/Zenbook-PC/Desktop/work/mafiabot/src -name \"*.ts\" -type f -exec grep -l \"unsubscribe\\\\|cancel.*sub\\\\|remove.*sub\" {} \\\\;)"
     ]
   }
 }

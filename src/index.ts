@@ -20,6 +20,7 @@ import { createVoteCallbacks } from "./handlers/callbacks/vote";
 import { createSettingsCallbacks } from "./handlers/callbacks/settings";
 import { inlineHandler } from "./handlers/inline";
 import { chatHandler } from "./handlers/chat";
+import { nightSilenceHandler } from "./handlers/night-silence";
 import { logger } from "./utils/logger";
 import { setBotUsername } from "./config";
 
@@ -51,6 +52,9 @@ async function main() {
 
   // Middleware
   bot.use(authMiddleware);
+
+  // Tunda xabarlarni avtomatik o'chirish (eng boshida)
+  bot.use(nightSilenceHandler);
 
   // Commands
   bot.use(startCommand);
