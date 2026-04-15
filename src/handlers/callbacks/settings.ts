@@ -9,7 +9,7 @@ import {
   SETTING_LIMITS,
   SettingKey,
 } from "../../keyboards/game";
-import { uz } from "../../locales/uz";
+import { t } from "../../services/text.service";
 
 export function createSettingsCallbacks(): Composer<BotContext> {
   const composer = new Composer<BotContext>();
@@ -22,11 +22,11 @@ export function createSettingsCallbacks(): Composer<BotContext> {
     try {
       const member = await ctx.getChatMember(ctx.from.id);
       if (member.status !== "creator" && member.status !== "administrator") {
-        await ctx.answerCallbackQuery({ text: uz.errors.notAdmin });
+        await ctx.answerCallbackQuery({ text: t("errors.notAdmin") });
         return;
       }
     } catch {
-      await ctx.answerCallbackQuery({ text: uz.errors.notAdmin });
+      await ctx.answerCallbackQuery({ text: t("errors.notAdmin") });
       return;
     }
 
@@ -57,7 +57,7 @@ export function createSettingsCallbacks(): Composer<BotContext> {
         parse_mode: "HTML",
         reply_markup: settingsMainKeyboard(),
       });
-      await ctx.answerCallbackQuery({ text: uz.settings.updated });
+      await ctx.answerCallbackQuery({ text: t("settings.updated") });
       return;
     }
 
@@ -84,11 +84,11 @@ export function createSettingsCallbacks(): Composer<BotContext> {
     try {
       const member = await ctx.getChatMember(ctx.from.id);
       if (member.status !== "creator" && member.status !== "administrator") {
-        await ctx.answerCallbackQuery({ text: uz.errors.notAdmin });
+        await ctx.answerCallbackQuery({ text: t("errors.notAdmin") });
         return;
       }
     } catch {
-      await ctx.answerCallbackQuery({ text: uz.errors.notAdmin });
+      await ctx.answerCallbackQuery({ text: t("errors.notAdmin") });
       return;
     }
 
@@ -114,7 +114,7 @@ export function createSettingsCallbacks(): Composer<BotContext> {
       parse_mode: "HTML",
       reply_markup: settingsEditKeyboard(key, newValue),
     });
-    await ctx.answerCallbackQuery({ text: uz.settings.updated });
+    await ctx.answerCallbackQuery({ text: t("settings.updated") });
   });
 
   return composer;

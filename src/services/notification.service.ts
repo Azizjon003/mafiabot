@@ -4,7 +4,7 @@ import { BotContext } from "../types/context";
 import { PlayerState, NightResult, VoteResult } from "../types";
 import { ROLE_EMOJI, ROLE_NAME, ROLE_TEAM, Team } from "../utils/constants";
 import { mention, sleep } from "../utils/helpers";
-import { uz } from "../locales/uz";
+import { t } from "./text.service";
 import { logger } from "../utils/logger";
 import { Winner } from "@prisma/client";
 import { getPhasePhotos } from "../config";
@@ -66,7 +66,7 @@ export class NotificationService {
   }
 
   async sendRoleToPlayer(player: PlayerState): Promise<void> {
-    let roleMessage = uz.roleAssigned[player.role];
+    let roleMessage = t(`roleAssigned.${player.role}`);
     if (!roleMessage) return;
 
     // Shield faol bo'lsa — qo'shimcha bildirish
@@ -115,17 +115,19 @@ export class NotificationService {
       if (healedSaves.length > 0) {
         await this.sendToGroup(chatId, "💊 Shifokor bir kishini saqlab qoldi!");
       } else {
-        await this.sendToGroup(chatId, uz.game.noOneDied);
+        await this.sendToGroup(chatId, t("game.noOneDied"));
       }
       return;
     }
 
     for (const { player: dead, cause } of result.killed) {
       // Atmosferali o'lim hikoyasi
-      const story = uz.deathStory[cause];
-      let text = story
-        ? story.replace("{name}", mention(dead.firstName, dead.telegramId))
-        : uz.game.playerDied.replace("{name}", mention(dead.firstName, dead.telegramId));
+      const nameMention = mention(dead.firstName, dead.telegramId);
+      const story = t(`deathStory.${cause}`, { name: nameMention });
+      // Agar kalit topilmasa (t key'ni qaytaradi) — playerDied ga tushamiz
+      let text = story && story !== `deathStory.${cause}`
+        ? story
+        : t("game.playerDied", { name: nameMention });
 
       if (showRole) {
         text += `\nRoli: ${ROLE_EMOJI[dead.role]} <b>${ROLE_NAME[dead.role]}</b>`;
@@ -153,9 +155,8 @@ export class NotificationService {
         `Axoli kelisha olmadi... Kelisha olmaslik oqibatida hech kim osilmadi...`;
     } else {
       // Hikoyali matn
-      const deathStory = uz.deathStory["VOTED_OUT"];
       text = `Ovoz berish yakunlandi:\n` +
-        deathStory.replace("{name}", mention(result.votedOut.firstName, result.votedOut.telegramId));
+        t("deathStory.VOTED_OUT", { name: mention(result.votedOut.firstName, result.votedOut.telegramId) });
 
       if (showRole) {
         text += `\nRoli: ${ROLE_EMOJI[result.votedOut.role]} <b>${ROLE_NAME[result.votedOut.role]}</b>`;
@@ -166,9 +167,10 @@ export class NotificationService {
     if (result.kamikazeTarget) {
       text +=
         "\n\n" +
-        uz.game.kamikazeActivated
-          .replace("{name}", mention(result.votedOut!.firstName, result.votedOut!.telegramId))
-          .replace("{target}", mention(result.kamikazeTarget.firstName, result.kamikazeTarget.telegramId));
+        t("game.kamikazeActivated", {
+          name: mention(result.votedOut!.firstName, result.votedOut!.telegramId),
+          target: mention(result.kamikazeTarget.firstName, result.kamikazeTarget.telegramId),
+        });
     }
 
     await this.sendToGroup(chatId, text);

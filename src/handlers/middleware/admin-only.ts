@@ -1,6 +1,6 @@
 import { NextFunction } from "grammy";
 import { BotContext } from "../../types/context";
-import { uz } from "../../locales/uz";
+import { t } from "../../services/text.service";
 
 export async function adminOnlyMiddleware(ctx: BotContext, next: NextFunction): Promise<void> {
   if (!ctx.chat || ctx.chat.type === "private") {
@@ -18,5 +18,5 @@ export async function adminOnlyMiddleware(ctx: BotContext, next: NextFunction): 
     // ignore
   }
 
-  await ctx.reply(uz.errors.notAdmin, { parse_mode: "HTML" });
+  await ctx.reply(t("errors.notAdmin"), { parse_mode: "HTML" });
 }

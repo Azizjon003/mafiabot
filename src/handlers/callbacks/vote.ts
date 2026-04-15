@@ -2,7 +2,7 @@ import { Composer, InlineKeyboard } from "grammy";
 import { BotContext } from "../../types/context";
 import { GameController } from "../../game/controller";
 import { gameManager } from "../../game/manager";
-import { uz } from "../../locales/uz";
+import { t } from "../../services/text.service";
 import { mention } from "../../utils/helpers";
 
 export function createVoteCallbacks(controller: GameController): Composer<BotContext> {
@@ -35,7 +35,7 @@ export function createVoteCallbacks(controller: GameController): Composer<BotCon
       return;
     }
     if (!voter.isAlive) {
-      await ctx.answerCallbackQuery({ text: uz.errors.playerDead });
+      await ctx.answerCallbackQuery({ text: t("errors.playerDead") });
       return;
     }
 
@@ -48,7 +48,7 @@ export function createVoteCallbacks(controller: GameController): Composer<BotCon
 
     const targetId = targetValue === "skip" ? -1 : parseInt(targetValue);
     if (isNaN(targetId) && targetValue !== "skip") {
-      await ctx.answerCallbackQuery({ text: uz.errors.invalidTarget }).catch(() => {});
+      await ctx.answerCallbackQuery({ text: t("errors.invalidTarget") }).catch(() => {});
       return;
     }
 

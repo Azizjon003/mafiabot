@@ -1,7 +1,7 @@
 import { InlineKeyboard } from "grammy";
 import { ChatSettings } from "@prisma/client";
 import { PlayerState } from "../types";
-import { uz } from "../locales/uz";
+import { t } from "../services/text.service";
 
 export function joinGameKeyboard(gameId: number, botUsername: string, chatId: bigint): InlineKeyboard {
   return new InlineKeyboard()
@@ -120,31 +120,31 @@ export const SETTING_LIMITS: Record<SettingKey, { min: number; max: number; step
 
 export function settingsText(settings: ChatSettings): string {
   const lines = [
-    uz.settings.title,
+    t("settings.title"),
     "",
-    uz.settings.registrationTimeout.replace("{value}", String(settings.registrationTimeout)),
-    uz.settings.nightTimeout.replace("{value}", String(settings.nightTimeout)),
-    uz.settings.dayDiscussionTimeout.replace("{value}", String(settings.dayDiscussionTimeout)),
-    uz.settings.votingTimeout.replace("{value}", String(settings.votingTimeout)),
-    uz.settings.minPlayers.replace("{value}", String(settings.minPlayers)),
-    uz.settings.maxPlayers.replace("{value}", String(settings.maxPlayers)),
-    uz.settings.muteOnNight.replace("{value}", settings.muteOnNight ? "Yoqiq ✅" : "O'chiq ❌"),
+    t("settings.registrationTimeout", { value: settings.registrationTimeout }),
+    t("settings.nightTimeout", { value: settings.nightTimeout }),
+    t("settings.dayDiscussionTimeout", { value: settings.dayDiscussionTimeout }),
+    t("settings.votingTimeout", { value: settings.votingTimeout }),
+    t("settings.minPlayers", { value: settings.minPlayers }),
+    t("settings.maxPlayers", { value: settings.maxPlayers }),
+    t("settings.muteOnNight", { value: settings.muteOnNight ? "Yoqiq ✅" : "O'chiq ❌" }),
   ];
   return lines.join("\n");
 }
 
 export function settingsMainKeyboard(): InlineKeyboard {
   return new InlineKeyboard()
-    .text(uz.settings.btn.registrationTimeout, "settings:registrationTimeout")
-    .text(uz.settings.btn.nightTimeout, "settings:nightTimeout")
+    .text(t("settings.btn.registrationTimeout"), "settings:registrationTimeout")
+    .text(t("settings.btn.nightTimeout"), "settings:nightTimeout")
     .row()
-    .text(uz.settings.btn.dayDiscussionTimeout, "settings:dayDiscussionTimeout")
-    .text(uz.settings.btn.votingTimeout, "settings:votingTimeout")
+    .text(t("settings.btn.dayDiscussionTimeout"), "settings:dayDiscussionTimeout")
+    .text(t("settings.btn.votingTimeout"), "settings:votingTimeout")
     .row()
-    .text(uz.settings.btn.minPlayers, "settings:minPlayers")
-    .text(uz.settings.btn.maxPlayers, "settings:maxPlayers")
+    .text(t("settings.btn.minPlayers"), "settings:minPlayers")
+    .text(t("settings.btn.maxPlayers"), "settings:maxPlayers")
     .row()
-    .text(uz.settings.btn.muteOnNight, "settings:muteOnNight");
+    .text(t("settings.btn.muteOnNight"), "settings:muteOnNight");
 }
 
 export function settingsEditKeyboard(key: SettingKey, currentValue: number): InlineKeyboard {
@@ -154,11 +154,10 @@ export function settingsEditKeyboard(key: SettingKey, currentValue: number): Inl
     const label = step > 0 ? `+${step}` : `${step}`;
     kb.text(label, `settings_adj:${key}:${step}`);
   }
-  kb.row().text(uz.settings.back, "settings:back");
+  kb.row().text(t("settings.back"), "settings:back");
   return kb;
 }
 
 export function settingsEditText(key: SettingKey, value: number): string {
-  const label = uz.settings[key as keyof typeof uz.settings] as string;
-  return label.replace("{value}", String(value));
+  return t(`settings.${key}`, { value });
 }

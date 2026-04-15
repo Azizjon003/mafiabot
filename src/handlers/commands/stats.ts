@@ -2,7 +2,7 @@ import { Composer } from "grammy";
 import { BotContext } from "../../types/context";
 import { statsRepo } from "../../database/repositories/stats.repository";
 import { userRepo } from "../../database/repositories/user.repository";
-import { uz } from "../../locales/uz";
+import { t } from "../../services/text.service";
 import { ROLE_EMOJI } from "../../utils/constants";
 import { groupOnly } from "../middleware/chat-type";
 
@@ -14,7 +14,7 @@ statsCommand.command("stats", async (ctx) => {
 
   const user = await userRepo.findByTelegramId(BigInt(ctx.from.id));
   if (!user?.stats) {
-    await ctx.reply(uz.stats.noStats, { parse_mode: "HTML" });
+    await ctx.reply(t("stats.noStats"), { parse_mode: "HTML" });
     return;
   }
 
@@ -22,19 +22,19 @@ statsCommand.command("stats", async (ctx) => {
   const rank = statsRepo.getRank(s.rating);
 
   const text =
-    uz.stats.header.replace("{name}", ctx.from.first_name) +
+    t("stats.header", { name: ctx.from.first_name }) +
     "\n" +
-    uz.stats.gamesPlayed.replace("{count}", s.gamesPlayed.toString()) +
+    t("stats.gamesPlayed", { count: s.gamesPlayed }) +
     "\n" +
-    uz.stats.wins.replace("{count}", s.gamesWon.toString()) +
+    t("stats.wins", { count: s.gamesWon }) +
     "\n" +
-    uz.stats.losses.replace("{count}", s.gamesLost.toString()) +
+    t("stats.losses", { count: s.gamesLost }) +
     "\n" +
-    uz.stats.rating.replace("{rating}", s.rating.toString()).replace("{rank}", rank) +
+    t("stats.rating", { rating: s.rating, rank }) +
     "\n" +
-    uz.stats.killCount.replace("{count}", s.killCount.toString()) +
+    t("stats.killCount", { count: s.killCount }) +
     "\n" +
-    uz.stats.savedCount.replace("{count}", s.savedCount.toString());
+    t("stats.savedCount", { count: s.savedCount });
 
   await ctx.reply(text, { parse_mode: "HTML" });
 });
@@ -80,24 +80,25 @@ statsCommand.command("topall", groupOnly, async (ctx) => {
   const topPlayers = await statsRepo.getTopPlayers(10);
 
   if (topPlayers.length === 0) {
-    await ctx.reply(uz.top.empty, { parse_mode: "HTML" });
+    await ctx.reply(t("top.empty"), { parse_mode: "HTML" });
     return;
   }
 
-  let text = uz.top.header;
+  let text = t("top.header");
   const medals = ["🥇", "🥈", "🥉"];
 
   for (let i = 0; i < topPlayers.length; i++) {
     const s = topPlayers[i];
     const pos = medals[i] || `${i + 1}.`;
     text +=
-      uz.top.row
-        .replace("{pos}", pos.toString())
-        .replace("{emoji}", "⭐️")
-        .replace("{name}", s.user.firstName)
-        .replace("{rating}", s.rating.toString())
-        .replace("{wins}", s.gamesWon.toString())
-        .replace("{games}", s.gamesPlayed.toString()) + "\n";
+      t("top.row", {
+        pos: pos.toString(),
+        emoji: "⭐️",
+        name: s.user.firstName,
+        rating: s.rating,
+        wins: s.gamesWon,
+        games: s.gamesPlayed,
+      }) + "\n";
   }
 
   await ctx.reply(text, { parse_mode: "HTML" });

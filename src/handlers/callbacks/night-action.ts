@@ -5,7 +5,7 @@ import { GameController } from "../../game/controller";
 import { gameManager } from "../../game/manager";
 import { sheriffActionKeyboard, robberResponseKeyboard, professorBoxesKeyboard } from "../../keyboards/game";
 import { MAFIA_KILL_VOTERS, ROLE_TEAM, Team, ROLE_EMOJI, ROLE_NAME } from "../../utils/constants";
-import { uz } from "../../locales/uz";
+import { t } from "../../services/text.service";
 
 // Night action callback pattern: night_{role}:{targetPlayerId|skip}
 const NIGHT_ROLE_MAP: Record<string, Role> = {
@@ -45,8 +45,8 @@ const sentStories = new Set<string>();
 async function sendStory(ctx: BotContext, engine: any, role: string): Promise<void> {
   const key = `${engine.gameId}:${role}`;
   if (sentStories.has(key)) return;
-  const story = uz.nightStory[role];
-  if (!story) return;
+  const story = t(`nightStory.${role}`);
+  if (!story || story === `nightStory.${role}`) return;
   sentStories.add(key);
   try {
     await ctx.api.sendMessage(engine.chatTelegramId.toString(), story, { parse_mode: "HTML" });
@@ -146,8 +146,8 @@ export function createNightActionCallbacks(controller: GameController): Composer
       }
 
       const resultText = isMafia
-        ? uz.night.sheriffResult_mafia.replace("{name}", target.firstName)
-        : uz.night.sheriffResult_town.replace("{name}", target.firstName);
+        ? t("night.sheriffResult_mafia", { name: target.firstName })
+        : t("night.sheriffResult_town", { name: target.firstName });
       await ctx.editMessageText(`🔍 <b>Tekshiruv natijasi:</b>\n${resultText}`, { parse_mode: "HTML" }).catch(() => {});
     } else {
       found.engine.submitNightAction(found.player.playerId, targetPlayerId, "SHERIFF");
@@ -171,7 +171,7 @@ export function createNightActionCallbacks(controller: GameController): Composer
     const showSkip = found.engine.currentRound > 1;
     const kb = nightActionKeyboard(alive, "night_sheriff", showSkip);
     await ctx.answerCallbackQuery().catch(() => {});
-    await ctx.editMessageText(uz.night.sheriffPrompt, { parse_mode: "HTML", reply_markup: kb }).catch(() => {});
+    await ctx.editMessageText(t("night.sheriffPrompt"), { parse_mode: "HTML", reply_markup: kb }).catch(() => {});
   });
 
   // ==================== QAROQCHI ====================
@@ -197,7 +197,7 @@ export function createNightActionCallbacks(controller: GameController): Composer
     found.engine.markNightRoleDone("ROBBER");
 
     await ctx.editMessageText(
-      uz.night.robberWaiting.replace("{name}", target.firstName),
+      t("night.robberWaiting", { name: target.firstName }),
       { parse_mode: "HTML" }
     ).catch(() => {});
 
@@ -205,7 +205,7 @@ export function createNightActionCallbacks(controller: GameController): Composer
     try {
       await ctx.api.sendMessage(
         target.telegramId.toString(),
-        uz.night.robberTargetPrompt,
+        t("night.robberTargetPrompt"),
         { parse_mode: "HTML", reply_markup: robberResponseKeyboard(found.engine.gameId) }
       );
     } catch { /* ignore */ }
@@ -241,7 +241,7 @@ export function createNightActionCallbacks(controller: GameController): Composer
     engine.setRobberResponse(choice === "pay" ? "PAY" : "REFUSE");
     await ctx.answerCallbackQuery().catch(() => {});
     await ctx.editMessageText(
-      choice === "pay" ? uz.night.robberTargetPaid : uz.night.robberTargetRefused,
+      choice === "pay" ? t("night.robberTargetPaid") : t("night.robberTargetRefused"),
       { parse_mode: "HTML" }
     ).catch(() => {});
   });
@@ -273,7 +273,7 @@ export function createNightActionCallbacks(controller: GameController): Composer
       try {
         await ctx.api.sendMessage(
           target.telegramId.toString(),
-          uz.night.professorBoxesPrompt,
+          t("night.professorBoxesPrompt"),
           { parse_mode: "HTML", reply_markup: professorBoxesKeyboard(target.playerId) }
         );
       } catch { /* ignore */ }
@@ -318,9 +318,9 @@ export function createNightActionCallbacks(controller: GameController): Composer
 
     await ctx.answerCallbackQuery().catch(() => {});
     let text: string;
-    if (outcome === "DEATH") text = uz.night.professorResult_death;
-    else if (outcome === "HERO") text = uz.night.professorResult_hero;
-    else text = uz.night.professorResult_empty;
+    if (outcome === "DEATH") text = t("night.professorResult_death");
+    else if (outcome === "HERO") text = t("night.professorResult_hero");
+    else text = t("night.professorResult_empty");
     await ctx.editMessageText(text, { parse_mode: "HTML" }).catch(() => {});
   });
 

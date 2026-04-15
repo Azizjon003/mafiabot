@@ -8,7 +8,7 @@ import { sendNightPrompts, sendNightStories } from "./phases/night";
 import { startDayPhase } from "./phases/day";
 import { startVotingPhase } from "./phases/voting";
 import { joinGameKeyboard, kamikazeTargetKeyboard, confirmHangKeyboard } from "../keyboards/game";
-import { uz } from "../locales/uz";
+import { t } from "../services/text.service";
 import { ROLE_EMOJI, ROLE_NAME } from "../utils/constants";
 import { mention } from "../utils/helpers";
 import { statsRepo } from "../database/repositories/stats.repository";
@@ -93,7 +93,7 @@ export class GameController {
     if (engine.getPlayerCount() < engine.settings.minPlayers) {
       await this.notifier.sendToGroup(
         chatTelegramId,
-        uz.game.notEnoughPlayers.replace("{min}", engine.settings.minPlayers.toString())
+        t("game.notEnoughPlayers", { min: engine.settings.minPlayers })
       );
       await engine.cancel();
       await gameManager.endGame(chatTelegramId);
@@ -101,7 +101,7 @@ export class GameController {
     }
 
     // O'yinni boshlash
-    await this.notifier.sendToGroup(chatTelegramId, uz.game.gameStarting);
+    await this.notifier.sendToGroup(chatTelegramId, t("game.gameStarting"));
     await engine.assignRoles();
 
     // Rolllarni shaxsiy xabarda yuborish
@@ -146,7 +146,7 @@ export class GameController {
 
     await this.notifier.sendToGroup(
       chatTelegramId,
-      uz.game.nightStarts.replace("{round}", engine.currentRound.toString())
+      t("game.nightStarts", { round: engine.currentRound })
     );
 
     // Har bir rolga shaxsiy chatda tundagi promptlarni yuborish
@@ -679,6 +679,6 @@ export class GameController {
 
     await engine.cancel();
     await gameManager.endGame(chatTelegramId);
-    await this.notifier.sendToGroup(chatTelegramId, uz.game.gameStopped);
+    await this.notifier.sendToGroup(chatTelegramId, t("game.gameStopped"));
   }
 }

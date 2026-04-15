@@ -1,15 +1,15 @@
 import { GameEngine } from "../engine";
 import { NotificationService } from "../../services/notification.service";
-import { uz } from "../../locales/uz";
+import { t } from "../../services/text.service";
 
 export async function startDayPhase(
   engine: GameEngine,
   notifier: NotificationService
 ): Promise<void> {
   const text =
-    uz.game.dayStarts.replace("{round}", engine.currentRound.toString()) +
+    t("game.dayStarts", { round: engine.currentRound }) +
     "\n\n" +
-    uz.game.discussion.replace("{time}", engine.settings.dayDiscussionTimeout.toString());
+    t("game.discussion", { time: engine.settings.dayDiscussionTimeout });
 
   await notifier.sendToGroup(engine.chatTelegramId, text);
 }

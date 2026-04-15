@@ -2,7 +2,7 @@ import { Composer } from "grammy";
 import { BotContext } from "../../types/context";
 import { GameController } from "../../game/controller";
 import { gameManager } from "../../game/manager";
-import { uz } from "../../locales/uz";
+import { t } from "../../services/text.service";
 import { adminOnlyMiddleware } from "../middleware/admin-only";
 import { groupOnly } from "../middleware/chat-type";
 
@@ -13,7 +13,7 @@ export function createGameCommands(controller: GameController): Composer<BotCont
   composer.command("startgame", groupOnly, adminOnlyMiddleware, async (ctx) => {
     const chatId = BigInt(ctx.chat.id);
     if (gameManager.hasGame(chatId)) {
-      await ctx.reply(uz.game.gameInProgress, { parse_mode: "HTML" });
+      await ctx.reply(t("game.gameInProgress"), { parse_mode: "HTML" });
       return;
     }
     await controller.handleStartGame(chatId, ctx.chat.title);
@@ -24,7 +24,7 @@ export function createGameCommands(controller: GameController): Composer<BotCont
     const chatId = BigInt(ctx.chat.id);
     const engine = gameManager.getGame(chatId);
     if (!engine || engine.status !== "WAITING") {
-      await ctx.reply(uz.game.noActiveGame, { parse_mode: "HTML" });
+      await ctx.reply(t("game.noActiveGame"), { parse_mode: "HTML" });
       return;
     }
     await controller.handleRegistrationEnd(chatId);
@@ -34,7 +34,7 @@ export function createGameCommands(controller: GameController): Composer<BotCont
   composer.command("stopgame", groupOnly, adminOnlyMiddleware, async (ctx) => {
     const chatId = BigInt(ctx.chat.id);
     if (!gameManager.hasGame(chatId)) {
-      await ctx.reply(uz.game.noActiveGame, { parse_mode: "HTML" });
+      await ctx.reply(t("game.noActiveGame"), { parse_mode: "HTML" });
       return;
     }
     await controller.handleStopGame(chatId);
@@ -44,12 +44,12 @@ export function createGameCommands(controller: GameController): Composer<BotCont
   composer.command("extend", groupOnly, adminOnlyMiddleware, async (ctx) => {
     const chatId = BigInt(ctx.chat.id);
     if (!gameManager.hasGame(chatId)) {
-      await ctx.reply(uz.game.noActiveGame, { parse_mode: "HTML" });
+      await ctx.reply(t("game.noActiveGame"), { parse_mode: "HTML" });
       return;
     }
     const extended = await controller.handleExtend(chatId);
     if (extended) {
-      await ctx.reply(uz.game.extended, { parse_mode: "HTML" });
+      await ctx.reply(t("game.extended"), { parse_mode: "HTML" });
     }
   });
 

@@ -3,7 +3,7 @@ import { BotContext } from "../../types/context";
 import { gameManager } from "../../game/manager";
 import { getRegistrationText } from "../../game/phases/registration";
 import { joinGameKeyboard, votingPlayerListKeyboard } from "../../keyboards/game";
-import { uz } from "../../locales/uz";
+import { t } from "../../services/text.service";
 import { mention } from "../../utils/helpers";
 import { botUsername } from "../../config";
 
@@ -11,7 +11,7 @@ export const startCommand = new Composer<BotContext>();
 
 startCommand.command("start", async (ctx) => {
   if (ctx.chat.type !== "private") {
-    await ctx.reply(uz.start.botStartedInGroup, { parse_mode: "HTML" });
+    await ctx.reply(t("start.botStartedInGroup"), { parse_mode: "HTML" });
     return;
   }
 
@@ -122,11 +122,11 @@ startCommand.command("start", async (ctx) => {
   }
 
   // Oddiy /start
-  await ctx.reply(uz.start.welcome, { parse_mode: "HTML" });
+  await ctx.reply(t("start.welcome"), { parse_mode: "HTML" });
 });
 
 startCommand.command("help", async (ctx) => {
-  await ctx.reply(uz.help.text, { parse_mode: "HTML" });
+  await ctx.reply(t("help.text"), { parse_mode: "HTML" });
 });
 
 startCommand.command("rules", async (ctx) => {
