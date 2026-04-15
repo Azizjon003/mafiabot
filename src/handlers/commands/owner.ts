@@ -17,6 +17,16 @@ import {
   giftCategoriesKeyboard,
   configCategoriesKeyboard,
 } from "../../keyboards/admin-panel";
+import {
+  textCategoriesKeyboard,
+  textListKeyboard,
+  textEditKeyboard,
+  textSearchResultsKeyboard,
+  encodeKey,
+  decodeKey,
+} from "../../keyboards/admin-texts";
+import { textService } from "../../services/text.service";
+import { TEXT_CATEGORIES } from "../../services/text-defaults";
 import { privateOnly } from "../middleware/chat-type";
 
 // Pending state — admin "aniq qiymat" yoki "sovg'a miqdori" yozishini kutamiz
@@ -26,7 +36,36 @@ const pendingInputs = new Map<
   | { type: "price"; key: string }
   | { type: "gift"; giftType: string; targetUserId?: number; targetName?: string; targetTgId?: bigint }
   | { type: "search" }
+  | { type: "text"; key: string }
+  | { type: "textsearch" }
+  | { type: "textimport" }
 >();
+
+function escapeHtmlText(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+function textInfoBody(key: string): string {
+  const current = textService.getCurrent(key);
+  const isCustom = textService.isCustom(key);
+  const defText = textService.getDefault(key) ?? "";
+  const placeholders = Array.from(current.matchAll(/\{(\w+)\}/g)).map((m) => m[1]);
+  const placeholderLine = placeholders.length ? placeholders.map((p) => `<code>{${p}}</code>`).join(", ") : "yo'q";
+
+  let body = `📝 <b>${escapeHtmlText(key)}</b>\n\n`;
+  body += `<b>Hozirgi matn:</b>\n<code>${escapeHtmlText(truncateFor(current, 500))}</code>\n\n`;
+  body += `Holat: ${isCustom ? "✏️ <b>Custom</b>" : "📦 Default"}\n`;
+  body += `O'zgaruvchilar: ${placeholderLine}\n`;
+  body += `Uzunlik: ${current.length} belgi`;
+  if (isCustom && defText) {
+    body += `\n\n<b>Default (asl):</b>\n<code>${escapeHtmlText(truncateFor(defText, 300))}</code>`;
+  }
+  return body;
+}
+
+function truncateFor(s: string, n: number): string {
+  return s.length > n ? s.slice(0, n) + "…" : s;
+}
 
 // Faqat bosh admin uchun middleware
 async function ownerOnly(ctx: BotContext, next: NextFunction): Promise<void> {
@@ -384,6 +423,126 @@ ownerCommand.callbackQuery(/^ap:gift:(money|diamond|shield|document|points|vip)$
   ).catch(() => {});
 });
 
+// ==================== MATNLAR ====================
+
+ownerCommand.callbackQuery("ap:texts", ownerOnly, async (ctx) => {
+  await ctx.answerCallbackQuery().catch(() => {});
+  const customCount = textService.getAllKeys().filter((k) => k.isCustom).length;
+  await ctx.editMessageText(
+    `📝 <b>Matnlarni boshqarish</b>\n\n` +
+    `Jami kalitlar: <b>${textService.getAllKeys().length}</b>\n` +
+    `✏️ Custom: <b>${customCount}</b>\n\n` +
+    `Kategoriyani tanlang:`,
+    { parse_mode: "HTML", reply_markup: textCategoriesKeyboard() }
+  ).catch(() => {});
+});
+
+ownerCommand.callbackQuery("ap:texts:nope", ownerOnly, async (ctx) => {
+  await ctx.answerCallbackQuery().catch(() => {});
+});
+
+ownerCommand.callbackQuery(/^ap:texts:cat:([^:]+):(\d+)$/, ownerOnly, async (ctx) => {
+  const catId = ctx.match[1];
+  const page = parseInt(ctx.match[2]);
+  const cat = TEXT_CATEGORIES.find((c) => c.id === catId);
+  if (!cat) {
+    await ctx.answerCallbackQuery({ text: "Kategoriya topilmadi" }).catch(() => {});
+    return;
+  }
+  await ctx.answerCallbackQuery().catch(() => {});
+  await ctx.editMessageText(
+    `${cat.label}\n\nKalitni tanlang (✏️ = o'zgartirilgan):`,
+    { parse_mode: "HTML", reply_markup: textListKeyboard(catId, page) }
+  ).catch(() => {});
+});
+
+ownerCommand.callbackQuery(/^ap:text:(.+)$/, ownerOnly, async (ctx) => {
+  const key = decodeKey(ctx.match[1]);
+  if (textService.getDefault(key) === undefined && !textService.isCustom(key)) {
+    await ctx.answerCallbackQuery({ text: "Kalit topilmadi" }).catch(() => {});
+    return;
+  }
+  await ctx.answerCallbackQuery().catch(() => {});
+  await ctx.editMessageText(textInfoBody(key), {
+    parse_mode: "HTML",
+    reply_markup: textEditKeyboard(key, textService.isCustom(key)),
+  }).catch(() => {});
+});
+
+ownerCommand.callbackQuery(/^ap:tsetexact:(.+)$/, ownerOnly, async (ctx) => {
+  if (!ctx.from) return;
+  const key = decodeKey(ctx.match[1]);
+  pendingInputs.set(ctx.from.id.toString(), { type: "text", key });
+  await ctx.answerCallbackQuery({
+    text: "Yangi matnni yozib yuboring",
+    show_alert: true,
+  }).catch(() => {});
+});
+
+ownerCommand.callbackQuery(/^ap:treset:(.+)$/, ownerOnly, async (ctx) => {
+  const key = decodeKey(ctx.match[1]);
+  await textService.resetText(key);
+  await ctx.answerCallbackQuery({ text: "✅ Default holatga qaytarildi" }).catch(() => {});
+  await ctx.editMessageText(textInfoBody(key), {
+    parse_mode: "HTML",
+    reply_markup: textEditKeyboard(key, false),
+  }).catch(() => {});
+});
+
+ownerCommand.callbackQuery("ap:texts:search", ownerOnly, async (ctx) => {
+  if (!ctx.from) return;
+  pendingInputs.set(ctx.from.id.toString(), { type: "textsearch" });
+  await ctx.answerCallbackQuery({
+    text: "Qidiruv so'zini yozing",
+    show_alert: true,
+  }).catch(() => {});
+});
+
+ownerCommand.callbackQuery("ap:texts:export", ownerOnly, async (ctx) => {
+  await ctx.answerCallbackQuery().catch(() => {});
+  const customs = textService.exportCustoms();
+  const json = JSON.stringify(customs, null, 2);
+  if (Object.keys(customs).length === 0) {
+    await ctx.reply("ℹ️ Hech qanday custom matn yo'q.");
+    return;
+  }
+  const buf = Buffer.from(json, "utf8");
+  const { InputFile } = await import("grammy");
+  await ctx.replyWithDocument(new InputFile(buf, `bot-texts-${Date.now()}.json`), {
+    caption: `📤 ${Object.keys(customs).length} ta custom matn`,
+  });
+});
+
+ownerCommand.callbackQuery("ap:texts:import", ownerOnly, async (ctx) => {
+  if (!ctx.from) return;
+  pendingInputs.set(ctx.from.id.toString(), { type: "textimport" });
+  await ctx.answerCallbackQuery({
+    text: "JSON matn yoki faylni yuboring",
+    show_alert: true,
+  }).catch(() => {});
+});
+
+// JSON import uchun document handler
+ownerCommand.on("message:document", async (ctx, next) => {
+  if (!ctx.from) return next();
+  const ownerId = ctx.from.id.toString();
+  const pending = pendingInputs.get(ownerId);
+  if (!pending || pending.type !== "textimport") return next();
+  if (!isOwner(BigInt(ctx.from.id))) return next();
+
+  pendingInputs.delete(ownerId);
+  try {
+    const file = await ctx.getFile();
+    const url = `https://api.telegram.org/file/bot${ctx.api.token}/${file.file_path}`;
+    const res = await fetch(url);
+    const json = await res.json() as Record<string, string>;
+    const { ok, failed } = await textService.importCustoms(json);
+    await ctx.reply(`✅ Import: <b>${ok}</b> ta saqlandi, <b>${failed}</b> ta rad etildi.`, { parse_mode: "HTML" });
+  } catch (e: any) {
+    await ctx.reply(`❌ Import xatolik: ${e?.message || "noma'lum"}`);
+  }
+});
+
 // ==================== SOZLAMALAR ====================
 
 ownerCommand.callbackQuery("ap:config", ownerOnly, async (ctx) => {
@@ -591,6 +750,49 @@ ownerCommand.on("message:text", async (ctx, next) => {
   if (text.startsWith("/")) {
     pendingInputs.delete(ownerId);
     return next();
+  }
+
+  // TEXT edit input
+  if (pending.type === "text") {
+    pendingInputs.delete(ownerId);
+    const res = await textService.setText(pending.key, text);
+    if (!res.ok) {
+      await ctx.reply(`❌ HTML xato: ${res.error}\n\nQayta urinib ko'ring: /admin`);
+      return;
+    }
+    await ctx.reply(
+      `✅ <b>${pending.key}</b> saqlandi!`,
+      { parse_mode: "HTML" }
+    );
+    return;
+  }
+
+  // TEXT SEARCH input
+  if (pending.type === "textsearch") {
+    pendingInputs.delete(ownerId);
+    const results = textService.search(text);
+    if (results.length === 0) {
+      await ctx.reply(`🔍 "<b>${escapeHtmlText(text)}</b>" bo'yicha topilmadi.`, { parse_mode: "HTML" });
+      return;
+    }
+    await ctx.reply(
+      `🔍 <b>Natijalar (${results.length}):</b>`,
+      { parse_mode: "HTML", reply_markup: textSearchResultsKeyboard(results) }
+    );
+    return;
+  }
+
+  // TEXT IMPORT (JSON sifatida xabarda)
+  if (pending.type === "textimport") {
+    pendingInputs.delete(ownerId);
+    try {
+      const data = JSON.parse(text) as Record<string, string>;
+      const { ok, failed } = await textService.importCustoms(data);
+      await ctx.reply(`✅ Import: <b>${ok}</b> ta saqlandi, <b>${failed}</b> ta rad etildi.`, { parse_mode: "HTML" });
+    } catch (e: any) {
+      await ctx.reply(`❌ JSON xato: ${e?.message || "noma'lum"}`);
+    }
+    return;
   }
 
   // PRICE input

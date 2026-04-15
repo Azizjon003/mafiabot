@@ -8,10 +8,12 @@ export function adminPanelKeyboard(): InlineKeyboard {
     .text("💰 Narxlar", "ap:prices")
     .text("🎁 Sovg'a berish", "ap:gift")
     .row()
+    .text("📝 Matnlar", "ap:texts")
     .text("📊 Bot statistikasi", "ap:botstats")
-    .text("👥 Foydalanuvchilar", "ap:users")
     .row()
+    .text("👥 Foydalanuvchilar", "ap:users")
     .text("⚙️ Sozlamalar", "ap:config")
+    .row()
     .text("❌ Yopish", "ap:close");
 }
 

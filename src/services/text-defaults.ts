@@ -1,0 +1,338 @@
+// Flat matn default'lari — admin DB orqali o'zgartira oladi
+// Kalit formati: "category.key" — uz.ts ichidan yassilangan
+
+export const TEXT_DEFAULTS: Record<string, string> = {
+  // ===== START =====
+  "start.welcome":
+    "🎭 <b>Mafia O'yini Botiga xush kelibsiz!</b>\n\n" +
+    "Guruhga qo'shing va /startgame buyrug'i bilan o'yinni boshlang!\n\n" +
+    "📖 /help — Yordam\n" +
+    "📊 /stats — Statistika",
+  "start.botStartedInGroup": "✅ Bot tayyor! /startgame bilan o'yinni boshlang.",
+
+  // ===== HELP =====
+  "help.text":
+    "🎭 <b>Mafia Bot — Yordam</b>\n\n" +
+    "<b>O'yin buyruqlari:</b>\n" +
+    "/startgame — Yangi o'yin boshlash\n" +
+    "/begingame — O'yinni boshlash\n" +
+    "/stopgame — O'yinni to'xtatish\n" +
+    "/extend — Vaqtni uzaytirish (+30s)\n\n" +
+    "<b>Umumiy:</b>\n" +
+    "/stats — Statistika\n" +
+    "/top — Reyting\n" +
+    "/rules — Qoidalar\n" +
+    "/settings — Sozlamalar",
+
+  // ===== GAME =====
+  "game.started":
+    "🎭 <b>Mafia o'yini boshlanmoqda!</b>\n\n" +
+    "Qo'shilish uchun tugmani bosing.\n" +
+    "⏱ Vaqt: <b>{time} soniya</b>",
+  "game.playerJoined": "✅ <b>{name}</b> qo'shildi! ({count}/{max})",
+  "game.playerLeft": "❌ <b>{name}</b> chiqdi! ({count}/{max})",
+  "game.playerList": "\n👥 <b>O'yinchilar ({count}):</b>\n{list}",
+  "game.notEnoughPlayers": "❌ Yetarli o'yinchi yo'q! (min: {min})",
+  "game.alreadyInGame": "⚠️ Siz allaqachon o'yindasiz!",
+  "game.gameInProgress": "⚠️ Bu guruhda o'yin davom etmoqda!",
+  "game.noActiveGame": "⚠️ Hozir aktiv o'yin yo'q!",
+  "game.gameStarting": "🎭 O'yin boshlanmoqda! Rollar tarqatilmoqda...",
+  "game.gameStopped": "🛑 O'yin to'xtatildi!",
+  "game.startBotFirst": "⚠️ Avval botga shaxsiy xabar yuboring: @{botUsername}",
+  "game.extended": "⏱ Vaqt 30 soniyaga uzaytirildi!",
+  "game.gameFinished": "🏁 <b>O'yin tugadi!</b>",
+  "game.nightStarts": "🌙 <b>Shahar uxlaydi... Kecha #{round}</b>",
+  "game.nightNoAction": "Siz hech narsa qilmadingiz.",
+  "game.nightTimeout": "⏰ Vaqt tugadi! Harakat o'tkazib yuborildi.",
+  "game.dayStarts": "☀️ <b>Shahar uyg'ondi! Kunduz #{round}</b>",
+  "game.noOneDied": "✨ Bugun kechasi hech kim o'lmadi!",
+  "game.playerDied": "💀 <b>{name}</b> o'lik topildi!",
+  "game.playerDiedRole": "💀 <b>{name}</b> o'lik topildi! Roli: {emoji} <b>{role}</b>",
+  "game.discussion": "💬 Muhokama vaqti! (<b>{time} soniya</b>)",
+  "game.votingStarts": "🗳 <b>Ovoz berish vaqti!</b>\nKimni chiqaramiz?",
+  "game.votedOut": "👋 <b>{name}</b> chiqarildi!",
+  "game.votedOutRole": "👋 <b>{name}</b> chiqarildi! Roli: {emoji} <b>{role}</b>",
+  "game.noOneVotedOut": "🤷 Ovozlar teng — hech kim chiqarilmadi!",
+  "game.alreadyVoted": "Siz allaqachon ovoz berdingiz!",
+  "game.kamikazeActivated": "💣 <b>{name}</b> Kamikaze edi! <b>{target}</b>ni o'zi bilan olib ketdi!",
+  "game.townWins": "🏆 <b>Shahar yutdi!</b> Barcha mafiya va yakka rollar yo'q qilindi!",
+  "game.mafiaWins": "🏆 <b>Mafiya yutdi!</b> Shahar qo'lga olindi!",
+  "game.soloWins": "🏆 <b>{role} yutdi!</b> Yolg'iz qoldi!",
+  "game.finalRoles": "\n📋 <b>Rollar:</b>\n{list}",
+
+  // ===== NIGHT STORY =====
+  "nightStory.SHERIFF": "🕵🏻‍♂ Komissar yozuvlarni qidirishga ketdi...",
+  "nightStory.SHERIFF_SHOOT": "🕵🏻‍♂ Komissar katta pistoletini o'qladi...",
+  "nightStory.DON": "🤵🏻 Don qurolini oldi va ko'chaga chiqdi...",
+  "nightStory.MAFIA": "🤵🏼 Mafiya qora plashlarida tunni kezmoqda...",
+  "nightStory.DOCTOR": "👨🏼‍⚕️ Shifokor qutqaruv to'plamini olib chiqdi...",
+  "nightStory.TRAMP": "🧙🏼‍♂️ Daydi qo'shnilarning uyiga bosh urish uchun ketdi...",
+  "nightStory.HOOKER": "💃 Kezuvchining bu tun qandaydir mehmoni bor...",
+  "nightStory.WARLOCK": "⚡️ Koldun qora kitobini ochib sehr o'qimoqda...",
+  "nightStory.SPY": "🦇 Ayg'oqchi tomlardan sakrab soyalar orasida g'oyib bo'ldi...",
+  "nightStory.LAWYER": "👨🏼‍💼 Advokat qog'ozlarini to'plab yo'lga chiqdi...",
+  "nightStory.LAB": "👨‍🔬 Labarant probirkalari bilan biror narsa aralashtirmoqda...",
+  "nightStory.KILLER": "🔪 Qorong'ulikda kimdir pichog'ini charxlayapti...",
+  "nightStory.SNIPER": "👨🏻‍🎤 Snayperchi tomga chiqdi va mo'ljalga tushdi...",
+  "nightStory.ARCHER": "🏹 Qorong'ulikda kamon ipining tovushi eshitildi...",
+  "nightStory.MINER": "☠️ Kimdir eshik oldida bir paket ortib qo'yyapti...",
+  "nightStory.SERGEANT": "👮🏻‍♂ Serjant Komissar bilan radio orqali bog'landi...",
+  "nightStory.KAMIKAZE": "",
+  "nightStory.CIVILIAN": "",
+  "nightStory.SANTA": "🎅🏻 Qorbobo sovg'a xaltasini ko'tarib yo'lga chiqdi...",
+  "nightStory.SNOWBOY": "⛄️ Qorbola katta qor to'plarini tayyorlayapti...",
+  "nightStory.TRAITOR": "🦎 Sotqin kimnidir poylab, jamoasini o'zgartirmoqchi...",
+  "nightStory.ROBBER": "👺 Qaroqchi niqob kiyib ko'chaga chiqdi...",
+  "nightStory.PROFESSOR": "🎩 Professor sirli qutichalarini tayyorlab yo'lga chiqdi...",
+
+  // ===== DEATH STORY =====
+  "deathStory.MAFIA_KILL":
+    "💀 Tunda <b>{name}</b> vaxshiylarcha o'ldirildi. Aytishlaricha uyiga 🤵🏻 Mafiya kelgan.",
+  "deathStory.SHERIFF_KILL":
+    "💀 Tunda <b>{name}</b>ga 🕵🏻‍♂ Komissar o'q uzdi. Ehtimol u bekorga o'lmadi...",
+  "deathStory.KILLER_KILL":
+    "💀 Tunda <b>{name}</b> qorong'u ko'chada 🔪 noma'lum qotil tomonidan pichoqlab o'ldirildi.",
+  "deathStory.SNIPER_KILL":
+    "💀 Tunda <b>{name}</b> uzoqdan 👨🏻‍🎤 snayper o'qi bilan urildi. Hech qanday himoya uni saqlay olmadi.",
+  "deathStory.ARCHER_KILL":
+    "💀 Tunda <b>{name}</b>ning ko'kragida 🏹 kamon o'qi topildi. Kim otganini hech kim ko'rmagan.",
+  "deathStory.MINER_KILL":
+    "💀 Ertalab <b>{name}</b>ning eshigi oldida ☠️ kuchli portlash sodir bo'ldi. Undan hech narsa qolmadi.",
+  "deathStory.SNOWBOY_KILL":
+    "💀 Tunda <b>{name}</b> ⛄️ dahshatli qor bo'ronida nobud bo'ldi.",
+  "deathStory.LAB_KILL":
+    "💀 Tunda <b>{name}</b> 👨‍🔬 sirli kimyoviy moddadan zaharlanib vafot etdi.",
+  "deathStory.WARLOCK_KILL":
+    "💀 Tunda <b>{name}</b>ga ⚡️ Koldunning qorong'u qarg'ishi tushdi.",
+  "deathStory.KAMIKAZE_KILL":
+    "💣 <b>{name}</b> osilgan Kamikaze portlashi natijasida halok bo'ldi.",
+  "deathStory.ROBBER_KILL":
+    "💀 Tunda <b>{name}</b> 👺 Qaroqchining hujumida pul uchun o'ldirildi.",
+  "deathStory.PROFESSOR_KILL":
+    "💀 Tunda <b>{name}</b> 🎩 Professorning sirli qutisidan ⚰️ o'lim chiqargan.",
+  "deathStory.VOTED_OUT":
+    "⚖️ Aholi qaroriga ko'ra <b>{name}</b> maydonda osildi.",
+
+  // ===== ROLES =====
+  "roles.CIVILIAN": "👨🏼 Tinch axoli",
+  "roles.DOCTOR": "👨🏼‍⚕️ Shifokor",
+  "roles.TRAMP": "🧙🏼‍♂️ Daydi",
+  "roles.SHERIFF": "🕵🏻‍♂ Komissar",
+  "roles.KAMIKAZE": "💣 Kamikaze",
+  "roles.HOOKER": "💃 Kezuvchi",
+  "roles.SERGEANT": "👮🏻‍♂ Serjant",
+  "roles.WARLOCK": "⚡️ Koldun",
+  "roles.SANTA": "🎅🏻 Qorbobo",
+  "roles.SNOWBOY": "⛄️ Qorbola",
+  "roles.DON": "🤵🏻 Don",
+  "roles.MAFIA": "🤵🏼 Mafiya",
+  "roles.LAWYER": "👨🏼‍💼 Advokat",
+  "roles.SPY": "🦇 Ayg'oqchi",
+  "roles.LAB": "👨‍🔬 Labarant",
+  "roles.KILLER": "🔪 Qotil",
+  "roles.MINER": "☠️ Minior",
+  "roles.SNIPER": "👨🏻‍🎤 Snayperchi",
+  "roles.ARCHER": "🏹 Kamonchi",
+  "roles.TRAITOR": "🦎 Sotqin",
+  "roles.ROBBER": "👺 Qaroqchi",
+  "roles.PROFESSOR": "🎩 Professor",
+
+  // ===== ROLE ASSIGNED =====
+  "roleAssigned.CIVILIAN":
+    "👨🏼 Siz <b>Tinch axoli</b>siz!\n" +
+    "Vazifangiz: mafiyalarni va yakka rollarni kun davomida osishda faol ishtirok eting.",
+  "roleAssigned.DOCTOR":
+    "👨🏼‍⚕️ Siz <b>Shifokor</b>siz!\n" +
+    "Tunda tanlagan odamingizni otishgan bo'lsa o'limdan qutqarasiz.\n" +
+    "⚠️ O'zingizni faqat 1 marta davolay olasiz!",
+  "roleAssigned.TRAMP":
+    "🧙🏼‍♂️ Siz <b>Daydi</b>siz!\n" +
+    "Tunda tanlagan odamingizning uyiga borasiz va kimlar kelganini ko'rasiz.\n" +
+    "Qotillikka guvoh bo'lasiz!",
+  "roleAssigned.SHERIFF":
+    "🕵🏻‍♂ Siz <b>Komissar</b>siz!\n" +
+    "Shaharning asosiy himoyachisi. Mafiyani toping!\n" +
+    "⚠️ Birinchi tundan tekshirmasdan o'tish taqiqlanadi!",
+  "roleAssigned.KAMIKAZE":
+    "💣 Siz <b>Kamikaze</b>siz!\n" +
+    "Tun va kunda tinch axolisiz, ammo osishganda xohlagan o'yinchini o'zingiz bilan qabrga olib ketishingiz mumkin!",
+  "roleAssigned.HOOKER":
+    "💃 Siz <b>Kezuvchi</b>siz!\n" +
+    "Tunda bir kishini zararsizlantiring (bloklang).\n" +
+    "⚠️ Komissarni uxlatish taqiqlanadi!",
+  "roleAssigned.SERGEANT":
+    "👮🏻‍♂ Siz <b>Serjant</b>siz!\n" +
+    "Komissarga yordam bering. Voqealar haqida xabar olasiz.\n" +
+    "⚠️ Komissar o'lsa — uning o'rnini egallaysiz!",
+  "roleAssigned.WARLOCK":
+    "⚡️ Siz <b>Koldun</b>siz!\n" +
+    "Tunda tanlagan odam tinch axoli bo'lsa — tongda osilishdan saqlaysiz.\n" +
+    "Boshqa taraf bo'lsa — o'ldirasiz!",
+  "roleAssigned.SANTA":
+    "🎅🏻 Siz <b>Qorbobo</b>siz!\n" +
+    "Tunda istagan ishtirokchiga sovg'a ulashishingiz mumkin.",
+  "roleAssigned.SNOWBOY":
+    "⛄️ Siz <b>Qorbola</b>siz!\n" +
+    "Tunda istagan ishtirokchini qorbo'ron qilib nobud qilishingiz mumkin!",
+  "roleAssigned.DON":
+    "🤵🏻 Siz <b>Don</b>siz!\n" +
+    "Mafialar sardori! Tunda ovozingiz ko'proq ahamiyatga ega.\n" +
+    "O'ldirish uchun ko'chaga chiqasiz!",
+  "roleAssigned.MAFIA":
+    "🤵🏼 Siz <b>Mafiya</b>siz!\n" +
+    "Donga bo'ysunasiz va qarshilik qilganlarni o'ldirasiz.\n" +
+    "Don o'lsa — yangi Don bo'lishingiz mumkin!",
+  "roleAssigned.LAWYER":
+    "👨🏼‍💼 Siz <b>Advokat</b>siz!\n" +
+    "Tanlagan mafiyangizni Komissar taniy olmaydi — unga tinch axoli bo'lib ko'rinadi.",
+  "roleAssigned.SPY":
+    "🦇 Siz <b>Ayg'oqchi</b>siz!\n" +
+    "Tunda xohlagan bitta o'yinchining rolini bilishingiz va mafialar uchun oshkor qilishingiz mumkin.",
+  "roleAssigned.LAB":
+    "👨‍🔬 Siz <b>Labarant</b>siz!\n" +
+    "Tanlagan odamingiz mafiya tarafida bo'lsa — davolaysiz.\n" +
+    "Mafiya bo'lmasa — o'ldirasiz!",
+  "roleAssigned.KILLER":
+    "🔪 Siz <b>Qotil</b>siz!\n" +
+    "Shahardagi hamma o'lishi kerak, qotildan tashqari!\n" +
+    "Yakka rolsiz — yolg'iz o'ynaysiz.",
+  "roleAssigned.MINER":
+    "☠️ Siz <b>Minior</b>siz!\n" +
+    "Tunda tanlagan odamingizning eshigi oldiga mina qo'yasiz.\n" +
+    "O'sha uyga kelgan sizdan boshqa hamma o'ladi!",
+  "roleAssigned.SNIPER":
+    "👨🏻‍🎤 Siz <b>Snayperchi</b>siz!\n" +
+    "Tanlagan odamingizda himoya bo'lsa ham o'ladi!\n" +
+    "Daydi sizi ko'ra olmaydi. Eng kuchli rollardan biri!",
+  "roleAssigned.ARCHER":
+    "🏹 Siz <b>Kamonchi</b>siz!\n" +
+    "Maxfiy qotil — Daydi sizning harakatingizni sezmaydi!",
+  "roleAssigned.TRAITOR":
+    "🦎 Siz <b>Sotqin</b>siz!\n" +
+    "Tunda tanlagan odamingiz mafiyadan bo'lsa — mafiyaga aylanasiz.\n" +
+    "Tinch axolidan bo'lsa — serjant bo'lasiz.\n" +
+    "Yakka tarafdan bo'lsa — qotilga aylanasiz!",
+  "roleAssigned.ROBBER":
+    "👺 Siz <b>Qaroqchi</b>siz!\n" +
+    "Tunda birovning uyiga borib pul undirasiz.\n" +
+    "Agar bosh tortsa — o'ldirasiz!",
+  "roleAssigned.PROFESSOR":
+    "🎩 Siz <b>Professor</b>siz!\n" +
+    "Tunda tanlagan ishtirokchiga 3 ta sirli quti taklif qilasiz:\n" +
+    "⚰️ O'lim, 🥡 Bo'sh quti, 🥷 Geroy — u o'z taqdirini o'zi hal qiladi!",
+
+  // ===== NIGHT (prompts + results) =====
+  "night.hookerPrompt": "💃 <b>Kimni bloklaysiz?</b>\n\n⚠️ Komissarni uxlatish taqiqlanadi!",
+  "night.traitorPrompt": "🦎 <b>Kimni tanlaysiz?</b>\n\nUning jamoasiga qarab rolingiz o'zgaradi.",
+  "night.lawyerPrompt": "👨🏼‍💼 <b>Qaysi mafiya a'zosini himoyaga olasiz?</b>\n\nKomissar uni tekshirsa — tinch axoli deb ko'radi.",
+  "night.spyPrompt": "🦇 <b>Kimning rolini aniqlaysiz?</b>\n\nNatijani faqat siz bilasiz.",
+  "night.mafiaPrompt": "🤵🏼 <b>Mafiya jamoasi:</b>\n{members}\n\n<b>Kimni o'ldiramiz?</b>",
+  "night.labPrompt": "👨‍🔬 <b>Kimni tanlaysiz?</b>\n\nAgar u mafiya bo'lsa — davolaysiz.\nAgar mafiya bo'lmasa — zaharlab o'ldirasiz.",
+  "night.sheriffPrompt": "🕵🏻‍♂ <b>Kimni tekshirasiz?</b>\n\nTekshirish yoki otish tanlovi keyingi bosqichda.",
+  "night.sergeantPrompt": "👮🏻‍♂ <b>Serjant</b>siz. Komissar haqida ma'lumot olyapsiz...",
+  "night.doctorPrompt": "👨🏼‍⚕️ <b>Kimni davolaysiz?</b>\n\n⚠️ O'zingizni butun o'yinda faqat 1 marta davolashingiz mumkin!",
+  "night.warlockPrompt": "⚡️ <b>Kimni tanlaysiz?</b>\n\nAgar tinch axoli bo'lsa — himoya qilasiz.\nAgar boshqa taraf bo'lsa — qarg'ish bilan o'ldirasiz.",
+  "night.trampPrompt": "🧙🏼‍♂️ <b>Kimning uyiga borasiz?</b>\n\nSiz u uyga kelganlarni ko'rasiz.",
+  "night.killerPrompt": "🔪 <b>Kimni o'ldirasiz?</b>\n\nYakka rol siz — hammasini tugatishingiz kerak.",
+  "night.sniperPrompt": "👨🏻‍🎤 <b>Kimni otib tushirasiz?</b>\n\n⚠️ Snayper o'qi himoyani ham yorib o'tadi!",
+  "night.archerPrompt": "🏹 <b>Kimni ovlaysiz?</b>\n\nSizning hujumingizni hech kim sezmaydi.",
+  "night.minerPrompt": "☠️ <b>Kimning eshigiga mina qo'yasiz?</b>\n\nO'sha uyga kelganlar ham portlashdan nobud bo'ladi.",
+  "night.snowboyPrompt": "⛄️ <b>Kimni qorbo'ron qilasiz?</b>",
+  "night.santaPrompt": "🎅🏻 <b>Kimga sovg'a berasiz?</b>",
+  "night.robberPrompt": "👺 <b>Kimning uyiga bostirib kirasiz?</b>\n\nUndan pul talab qilasiz — pul bermasa o'ldirasiz.",
+  "night.robberTargetPrompt": "⚠️ <b>Uyingizga Qaroqchi bostirib kirdi!</b>\n\nPul berasizmi yoki jon shirinmi?",
+  "night.robberTargetPaid": "💰 <b>1000 pul to'ladingiz</b> — tirik qoldingiz.\nErtalab butun qishloq bilasan.",
+  "night.robberTargetRefused": "🏃 <b>Bosh tortdingiz.</b>\n\nNatijasi tong otganda ma'lum bo'ladi...",
+  "night.robberWaiting": "👺 <b>{name}</b>ning uyiga bostirib kirdingiz.\nJavobini kutmoqdasiz...",
+  "night.professorPrompt": "🎩 <b>Kimga 3 ta sirli quti taklif qilasiz?</b>\n\nNishoningiz o'z taqdirini o'zi hal qiladi.",
+  "night.professorBoxesPrompt": "🎩 <b>Professor sizga 3 ta sirli quti taklif qildi!</b>\n\nBirini tanlang — taqdiringiz shunda hal bo'ladi:\n⚰️ O'lim\n🥡 Bo'sh\n🥷 Geroy",
+  "night.professorResult_death": "⚰️ <b>Qutidan O'LIM chiqdi!</b>\n\nSiz tongda topilmaysiz...",
+  "night.professorResult_empty": "🥡 <b>Quti bo'sh chiqdi!</b>\n\nOmadingiz bor ekan.",
+  "night.professorResult_hero": "🥷 <b>Qutidan Geroy kuchi chiqdi!</b>\n\nBu sizga keyingi tunda yordam beradi.",
+  "night.sheriffResult_town": "🔍 <b>Tekshiruv natijasi:</b>\n✅ <b>{name}</b> — tinch axoli",
+  "night.sheriffResult_mafia": "🔍 <b>Tekshiruv natijasi:</b>\n🔴 <b>{name}</b> — MAFIYA!",
+  "night.sheriffShoot_hit": "🔫 <b>{name}</b>ga o'q uzdingiz — o'q tekkan!",
+  "night.spyResult": "🦇 <b>{name}</b>ning roli: {role}",
+  "night.trampResult": "🧙🏼‍♂️ <b>{name}</b> uyiga kelganlar:\n{visitors}",
+  "night.trampNoVisitors": "🧙🏼‍♂️ <b>{name}</b> uyiga hech kim kelmadi — tinch tun edi.",
+  "night.trampWitness": "🔴 <b>Diqqat!</b> <b>{name}</b> uyida qotillik sodir bo'ldi!",
+  "night.warlockSaved": "⚡️ <b>{name}</b> tinch axoli edi.\nUni osilishdan sehr bilan saqladingiz.",
+  "night.warlockKilled": "⚡️ <b>{name}</b> dushman edi.\nQorong'u qarg'ish bilan uni o'ldirdingiz!",
+  "night.labHealed": "👨‍🔬 <b>{name}</b> mafiya tarafida edi.\nDavoladingiz.",
+  "night.labKilled": "👨‍🔬 <b>{name}</b> mafiya emas edi.\nZaharladingiz!",
+  "night.sergeantInfo": "👮🏻‍♂ Komissar tirik va faol. Uning harakatlari haqida ma'lumotingiz bor.",
+  "night.sergeantPromoted": "👮🏻‍♂ <b>Komissar vafot etdi!</b>\n\nEndi siz yangi <b>Komissar</b>siz. Shaharni himoya qiling!",
+  "night.donPromote": "🤵🏻 <b>Don vafot etdi!</b>\n\nEndi siz yangi <b>Don</b>siz. Mafiyani boshqaring!",
+  "night.traitorResult_mafia": "🦎 <b>{name}</b> mafiya tarafida edi.\nEndi siz <b>Mafiya</b>siz!",
+  "night.traitorResult_town": "🦎 <b>{name}</b> tinch axoli edi.\nEndi siz <b>Serjant</b>siz!",
+  "night.traitorResult_solo": "🦎 <b>{name}</b> yakka rol edi.\nEndi siz <b>Qotil</b>siz!",
+  "night.skip": "🚫 O'tkazish",
+
+  // ===== ERRORS =====
+  "errors.notAdmin": "⚠️ Bu buyruq faqat adminlar uchun!",
+  "errors.notInGame": "⚠️ Siz o'yinda emassiz!",
+  "errors.notYourTurn": "⚠️ Hozir sizning navbatingiz emas!",
+  "errors.playerDead": "⚠️ Siz allaqachon o'lik ekansiz!",
+  "errors.invalidTarget": "⚠️ Noto'g'ri nishon!",
+  "errors.onlyInGroup": "⚠️ Bu buyruq faqat guruhda ishlaydi!",
+  "errors.onlyInPrivate": "⚠️ Bu buyruq faqat shaxsiy chatda ishlaydi!",
+  "errors.cantTargetSelf": "⚠️ O'zingizni tanlash mumkin emas!",
+  "errors.cantTargetMafia": "⚠️ Mafiya a'zosini tanlash mumkin emas!",
+
+  // ===== STATS =====
+  "stats.header": "📊 <b>{name}</b> statistikasi:",
+  "stats.gamesPlayed": "🎮 O'yinlar: <b>{count}</b>",
+  "stats.wins": "🏆 Yutganlar: <b>{count}</b>",
+  "stats.losses": "💀 Yutqazganlar: <b>{count}</b>",
+  "stats.rating": "⭐️ Reyting: <b>{rating}</b> ({rank})",
+  "stats.killCount": "🔪 O'ldirganlar: <b>{count}</b>",
+  "stats.savedCount": "💊 Saqlab qolganlar: <b>{count}</b>",
+  "stats.noStats": "📊 Hali statistika yo'q. O'yin o'ynang!",
+
+  // ===== TOP =====
+  "top.header": "🏆 <b>Top o'yinchilar:</b>\n",
+  "top.row": "{pos}. {emoji} <b>{name}</b> — {rating} ⭐️ ({wins}W/{games}G)",
+  "top.empty": "Hali hech kim o'ynamagan!",
+
+  // ===== BUTTONS =====
+  "buttons.join": "✅ Qo'shilish",
+  "buttons.leave": "❌ Chiqish",
+  "buttons.noVote": "🚫 Hech kimga",
+  "buttons.skip": "🚫 O'tkazish",
+
+  // ===== SETTINGS =====
+  "settings.title": "⚙️ <b>O'yin sozlamalari</b>",
+  "settings.registrationTimeout": "⏱ Ro'yxatdan o'tish: <b>{value}s</b>",
+  "settings.nightTimeout": "🌙 Tun vaqti: <b>{value}s</b>",
+  "settings.dayDiscussionTimeout": "☀️ Kun muhokama: <b>{value}s</b>",
+  "settings.votingTimeout": "🗳 Ovoz berish: <b>{value}s</b>",
+  "settings.minPlayers": "👥 Min o'yinchilar: <b>{value}</b>",
+  "settings.maxPlayers": "👥 Max o'yinchilar: <b>{value}</b>",
+  "settings.muteOnNight": "🗑 Tunda xabarlarni o'chirish: <b>{value}</b>",
+  "settings.updated": "✅ Sozlama yangilandi!",
+  "settings.back": "🔙 Orqaga",
+  "settings.btn.registrationTimeout": "⏱ Ro'yxatdan o'tish",
+  "settings.btn.nightTimeout": "🌙 Tun",
+  "settings.btn.dayDiscussionTimeout": "☀️ Kun muhokama",
+  "settings.btn.votingTimeout": "🗳 Ovoz berish",
+  "settings.btn.minPlayers": "👥 Min o'yinchilar",
+  "settings.btn.maxPlayers": "👥 Max o'yinchilar",
+  "settings.btn.muteOnNight": "🗑 Tunda o'chirish",
+};
+
+// Kategoriya metadata — admin UI uchun
+export const TEXT_CATEGORIES: { id: string; label: string; prefix: string }[] = [
+  { id: "game", label: "🎮 O'yin xabarlari", prefix: "game." },
+  { id: "nightStory", label: "🌙 Tundagi hikoyalar", prefix: "nightStory." },
+  { id: "deathStory", label: "💀 O'lim hikoyalari", prefix: "deathStory." },
+  { id: "roles", label: "👥 Rol nomlari", prefix: "roles." },
+  { id: "roleAssigned", label: "📜 Rol tavsiflari", prefix: "roleAssigned." },
+  { id: "night", label: "🔔 Tun promptlari", prefix: "night." },
+  { id: "errors", label: "⚠️ Xatolar", prefix: "errors." },
+  { id: "stats", label: "📊 Statistika", prefix: "stats." },
+  { id: "top", label: "🏆 Reyting", prefix: "top." },
+  { id: "buttons", label: "🔘 Tugmalar", prefix: "buttons." },
+  { id: "settings", label: "⚙️ Sozlamalar UI", prefix: "settings." },
+  { id: "start", label: "🚀 Start/Welcome", prefix: "start." },
+  { id: "help", label: "📖 Help/Rules", prefix: "help." },
+];

@@ -42,6 +42,10 @@ async function main() {
   // Do'kon default itemlari
   await shopService.seedDefaultItems();
 
+  // Matnlarni DB'dan yuklash (admin tahrirlagan custom matnlar)
+  const { textService } = await import("./services/text.service");
+  await textService.preloadAll();
+
   // Bot username'ni oldindan olish (getMe)
   const botInfo = await bot.api.getMe();
   setBotUsername(botInfo.username);
