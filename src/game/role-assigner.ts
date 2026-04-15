@@ -31,19 +31,20 @@ const OPTIONAL_ROLES: RoleConfig[] = [
   { role: "PROFESSOR", settingsKey: "enableProfessor" },
 ];
 
-// O'yinchilar soniga qarab mafiya soni
+// O'yinchilar soniga qarab mafiya jamoasi UMUMIY soni (DON + MAFIA)
+// PRD: 4-5:1 / 6-7:2 / 8-9:3 / 10-12:3 / 13-16:4 / 17-20:5 / 21-25:6 / 26-30:7
 function getMafiaCount(playerCount: number): number {
-  if (playerCount <= 5) return 1;
-  if (playerCount <= 7) return 1;
-  if (playerCount <= 9) return 2;
-  if (playerCount <= 12) return 2;
-  if (playerCount <= 16) return 3;
-  if (playerCount <= 20) return 4;
-  if (playerCount <= 25) return 5;
-  return 6; // 26-30
+  if (playerCount <= 5) return 1;    // 1 MAFIA (no DON)
+  if (playerCount <= 7) return 2;    // 1 DON + 1 MAFIA
+  if (playerCount <= 9) return 3;    // 1 DON + 2 MAFIA
+  if (playerCount <= 12) return 3;   // 1 DON + 2 MAFIA
+  if (playerCount <= 16) return 4;   // 1 DON + 3 MAFIA
+  if (playerCount <= 20) return 5;   // 1 DON + 4 MAFIA
+  if (playerCount <= 25) return 6;   // 1 DON + 5 MAFIA
+  return 7;                           // 1 DON + 6 MAFIA (26-30)
 }
 
-// Don bormi
+// Don bormi — 6+ o'yinchi
 function hasDon(playerCount: number): boolean {
   return playerCount >= 6;
 }
@@ -105,6 +106,27 @@ export function assignRoles(playerCount: number, settings: ChatSettings): Role[]
   // 5. Qolganlari — Tinch axoli
   while (roles.length < playerCount) {
     roles.push("CIVILIAN");
+  }
+
+  // 6. Validatsiya — UNIQUE rollarda 1 tadan ortiq bo'lmasligi
+  const UNIQUE_ROLES: Role[] = [
+    "DON", "SHERIFF", "DOCTOR", "KAMIKAZE", "HOOKER", "SERGEANT",
+    "WARLOCK", "SANTA", "SNOWBOY", "LAWYER", "SPY", "LAB",
+    "KILLER", "MINER", "SNIPER", "ARCHER", "TRAITOR", "ROBBER", "PROFESSOR",
+  ];
+  const counts = new Map<Role, number>();
+  for (const r of roles) counts.set(r, (counts.get(r) || 0) + 1);
+  for (const r of UNIQUE_ROLES) {
+    const count = counts.get(r) || 0;
+    while ((counts.get(r) || 0) > 1) {
+      // ortiqcha rolni olib tashlab, CIVILIAN qilamiz
+      const idx = roles.lastIndexOf(r);
+      if (idx >= 0) {
+        roles[idx] = "CIVILIAN";
+        counts.set(r, (counts.get(r) || 0) - 1);
+        counts.set("CIVILIAN", (counts.get("CIVILIAN") || 0) + 1);
+      } else break;
+    }
   }
 
   // Aralashtirish

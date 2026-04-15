@@ -104,7 +104,7 @@ export class GameController {
     await this.notifier.sendToGroup(chatTelegramId, uz.game.gameStarting);
     await engine.assignRoles();
 
-    // Rolllarni yuborish
+    // Rolllarni shaxsiy xabarda yuborish
     for (const player of engine.players.values()) {
       await this.notifier.sendRoleToPlayer(player);
     }
@@ -114,6 +114,15 @@ export class GameController {
     if (mafiaMembers.length > 1) {
       await this.notifier.sendMafiaIntro(mafiaMembers);
     }
+
+    // Guruhga "Mening rolim" tugmasi
+    const { InlineKeyboard } = await import("grammy");
+    const roleKb = new InlineKeyboard().text("🎭 Mening rolim", `showrole:${engine.gameId}`);
+    await this.notifier.sendToGroup(
+      chatTelegramId,
+      `🎭 <b>Rollar tarqatildi!</b>\n\nO'z rolingizni ko'rish uchun tugmani bosing 👇`,
+      roleKb
+    );
 
     // Kecha boshlash
     await this.startNightPhase(chatTelegramId);
