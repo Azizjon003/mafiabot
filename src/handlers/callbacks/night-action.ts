@@ -126,11 +126,13 @@ export function createNightActionCallbacks(controller: GameController): Composer
       let isMafia = ROLE_TEAM[target.role] === Team.MAFIA;
       if (target.isProtectedByLawyer) isMafia = false;
 
-      // Hujjat himoyasi — tekshiruv aldanadi va hujjat sarflanadi
-      if (target.hasDocumentActive) {
+      // Hujjat himoyasi — faqat YOMON rollar uchun ishlaydi (Mafiya va Yakka rollar)
+      // Tinch axoli hujjat sotib olsa ham — aslida u tinch axoli ko'rinadi, hujjat bekor sarflanadi
+      const targetTeam = ROLE_TEAM[target.role];
+      const isBadRole = targetTeam === Team.MAFIA || targetTeam === Team.SOLO;
+      if (target.hasDocumentActive && isBadRole) {
         isMafia = false;
         target.hasDocumentActive = false;
-        // Nishonga PM
         try {
           await ctx.api.sendMessage(
             target.telegramId.toString(),
@@ -138,6 +140,9 @@ export function createNightActionCallbacks(controller: GameController): Composer
             { parse_mode: "HTML" }
           );
         } catch { /* ignore */ }
+      } else if (target.hasDocumentActive && !isBadRole) {
+        // Tinch axoli hujjat ishlatib bo'lmaydi — hujjat saqlanadi
+        // (yoki siz xohlasangiz sarflanadi — hozir saqlaymiz)
       }
 
       const resultText = isMafia
