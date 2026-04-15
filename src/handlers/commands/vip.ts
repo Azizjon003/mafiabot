@@ -1,6 +1,7 @@
 import { Composer } from "grammy";
 import { BotContext } from "../../types/context";
 import { vipService } from "../../services/vip.service";
+import { pricingService, PRICE_KEYS } from "../../services/pricing.service";
 import { privateOnly } from "../middleware/chat-type";
 
 export const vipCommand = new Composer<BotContext>();
@@ -24,9 +25,12 @@ vipCommand.command("vip", async (ctx) => {
       { parse_mode: "HTML" }
     );
   } else {
+    const price = await pricingService.get(PRICE_KEYS.VIP_MONTH);
+    const currency = await pricingService.getCurrency(PRICE_KEYS.VIP_MONTH);
+    const sym = currency === "diamond" ? "💎" : "💰";
     await ctx.reply(
       `⭐️ <b>VIP Status: Faol emas</b>\n\n` +
-      `VIP narxi: <b>100💎</b> / oy\n\n` +
+      `VIP narxi: <b>${price.toLocaleString()}${sym}</b> / oy\n\n` +
       `<b>Imtiyozlar:</b>\n` +
       `✅ Sandiqni cheksiz ochish\n` +
       `✅ Maxsus badge profilda\n` +
@@ -60,9 +64,5 @@ vipCommand.callbackQuery("open_vip", async (ctx) => {
   if (!ctx.dbUser) return;
 
   const isVip = await vipService.isVip(ctx.dbUser.id);
-  const text = isVip
-    ? "⭐️ <b>VIP faol!</b> Barcha imtiyozlardan foydalanishingiz mumkin."
-    : "⭐️ VIP sotib olish uchun /buyvip yozing (100💎)";
-
   await ctx.answerCallbackQuery({ text: isVip ? "⭐️ VIP faol!" : "⭐️ /buyvip yozing", show_alert: true });
 });

@@ -95,12 +95,19 @@ profileCommand.callbackQuery("prof:buy", async (ctx) => {
   }).catch(() => {});
 });
 
+// Valyuta emoji'sini olish
+async function currencyEmoji(priceKey: string): Promise<string> {
+  const c = await pricingService.getCurrency(priceKey);
+  return c === "diamond" ? "💎" : "💰";
+}
+
 // Shield
 profileCommand.callbackQuery("shop:cat:shield", async (ctx) => {
   const price = await pricingService.get(PRICE_KEYS.SHIELD);
+  const emoji = await currencyEmoji(PRICE_KEYS.SHIELD);
   await ctx.answerCallbackQuery().catch(() => {});
   await ctx.editMessageText(
-    `🛡 <b>Himoya (Shield)</b>\n\nO'yinda 1 marta o'limdan saqlaydi (Snayperdan tashqari).\n\n💎 Narxi: <b>${price}</b>`,
+    `🛡 <b>Himoya (Shield)</b>\n\nO'yinda 1 marta o'limdan saqlaydi (Snayperdan tashqari).\n\n${emoji} Narxi: <b>${price.toLocaleString()}</b>`,
     { parse_mode: "HTML", reply_markup: buyItemKeyboard("shield") }
   ).catch(() => {});
 });
@@ -108,9 +115,10 @@ profileCommand.callbackQuery("shop:cat:shield", async (ctx) => {
 // Document
 profileCommand.callbackQuery("shop:cat:document", async (ctx) => {
   const price = await pricingService.get(PRICE_KEYS.DOCUMENT);
+  const emoji = await currencyEmoji(PRICE_KEYS.DOCUMENT);
   await ctx.answerCallbackQuery().catch(() => {});
   await ctx.editMessageText(
-    `📜 <b>Hujjat</b>\n\nKomissar tekshiruvini bekor qiladi (1 marta).\n\n💎 Narxi: <b>${price}</b>`,
+    `📜 <b>Hujjat</b>\n\nKomissar tekshiruvini bekor qiladi (1 marta).\n⚠️ Faqat Mafiya va Yakka rollar uchun foydali.\n\n${emoji} Narxi: <b>${price.toLocaleString()}</b>`,
     { parse_mode: "HTML", reply_markup: buyItemKeyboard("document") }
   ).catch(() => {});
 });
@@ -124,9 +132,10 @@ profileCommand.callbackQuery("shop:cat:hero", async (ctx) => {
 // Chest
 profileCommand.callbackQuery("shop:cat:chest", async (ctx) => {
   const price = await pricingService.get(PRICE_KEYS.CHEST_BASIC);
+  const emoji = await currencyEmoji(PRICE_KEYS.CHEST_BASIC);
   await ctx.answerCallbackQuery().catch(() => {});
   await ctx.editMessageText(
-    `🗃 <b>Sandiq</b>\n\nRandom mukofot oling.\n\n💰 Narxi: <b>${price.toLocaleString()}</b>`,
+    `🗃 <b>Sandiq</b>\n\nRandom mukofot oling.\n\n${emoji} Narxi: <b>${price.toLocaleString()}</b>`,
     { parse_mode: "HTML", reply_markup: buyItemKeyboard("chest") }
   ).catch(() => {});
 });
@@ -134,9 +143,10 @@ profileCommand.callbackQuery("shop:cat:chest", async (ctx) => {
 // VIP
 profileCommand.callbackQuery("shop:cat:vip", async (ctx) => {
   const price = await pricingService.get(PRICE_KEYS.VIP_MONTH);
+  const emoji = await currencyEmoji(PRICE_KEYS.VIP_MONTH);
   await ctx.answerCallbackQuery().catch(() => {});
   await ctx.editMessageText(
-    `⭐️ <b>VIP (1 oy)</b>\n\nSandiqni cheksiz ochish, maxsus badge.\n\n💎 Narxi: <b>${price}</b>`,
+    `⭐️ <b>VIP (1 oy)</b>\n\nSandiqni cheksiz ochish, maxsus badge.\n\n${emoji} Narxi: <b>${price.toLocaleString()}</b>`,
     { parse_mode: "HTML", reply_markup: buyItemKeyboard("vip") }
   ).catch(() => {});
 });
@@ -224,7 +234,8 @@ async function openHeroPage(ctx: BotContext) {
   const dayActions: { canAttack?: boolean; canDefend?: boolean; alreadyDefending?: boolean } = {};
   if (!hero) {
     const price = await pricingService.get(PRICE_KEYS.HERO_CREATE);
-    text = `🥷 <b>Sizda Geroy yo'q</b>\n\nGeroy yarating va o'yinda qo'shimcha kuchga ega bo'ling!\n\n💎 Narxi: <b>${price}</b>`;
+    const emoji = await currencyEmoji(PRICE_KEYS.HERO_CREATE);
+    text = `🥷 <b>Sizda Geroy yo'q</b>\n\nGeroy yarating va o'yinda qo'shimcha kuchga ega bo'ling!\n\n${emoji} Narxi: <b>${price.toLocaleString()}</b>`;
   } else {
     const { maxProtectionForLevel, HERO_MAX_LEVEL } = await import("../../services/hero.service");
     const maxProt = maxProtectionForLevel(hero.level);
