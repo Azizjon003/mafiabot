@@ -47,7 +47,7 @@ chatHandler.command("say", privateOnly, async (ctx) => {
   }
 });
 
-// Asosiy PM text handler — mafiya va o'lganlar chatini boshqaradi
+// Asosiy PM text handler — mafiya, o'lganlar chati, oxirgi so'z
 chatHandler.on("message:text", async (ctx, next) => {
   if (!ctx.from || !ctx.message?.text) return next();
   if (ctx.chat.type !== "private") return next();
@@ -55,8 +55,30 @@ chatHandler.on("message:text", async (ctx, next) => {
   // Buyruqlarni o'tkazish
   if (ctx.message.text.startsWith("/")) return next();
 
-  // O'yinchi o'yindami
+  const text = ctx.message.text.trim();
+  if (!text) return next();
+
   const telegramId = BigInt(ctx.from.id);
+
+  // ===== OXIRGI SO'Z (eng oldin tekshiramiz) =====
+  const { lastWordsService } = await import("../services/last-words.service");
+  const lwWindow = lastWordsService.consume(telegramId);
+  if (lwWindow) {
+    try {
+      await ctx.api.sendMessage(
+        lwWindow.chatTelegramId.toString(),
+        `💀 <b>${escapeHtml(lwWindow.playerName)}ning oxirgi so'zi:</b>\n<i>${escapeHtml(text)}</i>`,
+        { parse_mode: "HTML" }
+      );
+      await ctx.reply("✅ Oxirgi so'zingiz guruhga yetkazildi.");
+    } catch (e) {
+      logger.error(e, "Last words forward error");
+      await ctx.reply("❌ Yuborib bo'lmadi.");
+    }
+    return;
+  }
+
+  // O'yinchi o'yindami
   let foundGame = null;
   for (const game of gameManager.getAllGames()) {
     const player = game.getPlayerByTelegramId(telegramId);
@@ -67,9 +89,6 @@ chatHandler.on("message:text", async (ctx, next) => {
   }
 
   if (!foundGame) return next(); // O'yinda emas
-
-  const text = ctx.message.text.trim();
-  if (!text) return next();
 
   const { player, engine } = foundGame;
 

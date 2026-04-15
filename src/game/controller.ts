@@ -179,6 +179,9 @@ export class GameController {
       engine.settings.showRoleOnDeath
     );
 
+    // O'lganlar uchun oxirgi so'z oynasi (10 sek)
+    await this.openLastWordsForDead(chatTelegramId, nightResult.killed.map((k) => k.player));
+
     // ROBBER_ROB — haqiqiy pul o'tkazish
     for (const event of nightResult.events) {
       if (event.type === "ROBBER_ROB" && event.targetId) {
@@ -246,6 +249,23 @@ export class GameController {
   }
 
   // Tong otganda — geroyga ega ruxsatli rollarga PM
+  // Oxirgi so'z oynasini o'lganlarga ochish (10 sekund)
+  private async openLastWordsForDead(chatTelegramId: bigint, deadPlayers: PlayerState[]): Promise<void> {
+    const { lastWordsService } = await import("../services/last-words.service");
+    const secs = lastWordsService.getWindowSeconds();
+
+    for (const dead of deadPlayers) {
+      lastWordsService.open(dead.telegramId, chatTelegramId, dead.firstName);
+      // O'lgan o'yinchiga PM
+      await this.notifier.sendToPlayer(
+        dead.telegramId,
+        `⏱ <b>Oxirgi so'z vaqti!</b>\n\n` +
+        `Sizda <b>${secs} soniya</b> ichida guruhga oxirgi xabar yuborish imkoniyati bor.\n` +
+        `Shunchaki botga matnni yozing — guruhga yetkaziladi.`,
+      ).catch(() => {});
+    }
+  }
+
   private async sendHeroDayPrompts(engine: GameEngine): Promise<void> {
     const { HERO_ATTACK_ROLES } = await import("../utils/constants");
     const { InlineKeyboard } = await import("grammy");
@@ -388,6 +408,13 @@ export class GameController {
 
         engine.setTimer(15000, async () => {
           await this.notifier.announceVoteResults(chatTelegramId, voteResult, engine.settings.showRoleOnDeath);
+          // Oxirgi so'z — Kamikaze uchun
+          if (voteResult.votedOut) {
+            await this.openLastWordsForDead(chatTelegramId, [voteResult.votedOut]);
+          }
+          if (voteResult.kamikazeTarget) {
+            await this.openLastWordsForDead(chatTelegramId, [voteResult.kamikazeTarget]);
+          }
           engine.resetConfirmVotes();
           await this.afterVoting(chatTelegramId);
         });
@@ -395,6 +422,10 @@ export class GameController {
       }
 
       await this.notifier.announceVoteResults(chatTelegramId, voteResult, engine.settings.showRoleOnDeath);
+      // Oxirgi so'z — osilgan odamga
+      if (voteResult.votedOut) {
+        await this.openLastWordsForDead(chatTelegramId, [voteResult.votedOut]);
+      }
     } else if (candidate.isProtectedByWarlock) {
       await this.notifier.sendToGroup(
         chatTelegramId,
