@@ -47,9 +47,17 @@ export class GameEngine {
   private timerStartedAt: number = 0;
   private timerDuration: number = 0;
   private timerCallback: (() => void) | null = null;
+  // Restart'dan keyin tiklash uchun — keyingi phase qaysi, qachon tugaydi
+  pendingPhaseAction: string | null = null; // "NIGHT_END" | "DAY_END" | "VOTING_END" | "CONFIRM_END" | "REGISTRATION_END" | "KAMIKAZE_DELAY"
+  timerEndsAt: number | null = null; // epoch ms
 
   // Callbacks — bot handlerlar tomonidan o'rnatiladi
   onPhaseEnd?: () => Promise<void>;
+
+  // Fire-and-forget persist — state o'zgarganda DB'ga yozadi
+  private persistSoon(): void {
+    import("./persistence").then((m) => m.persistEngine(this)).catch(() => {});
+  }
 
   constructor(
     gameId: number,
@@ -289,10 +297,12 @@ export class GameEngine {
     // Mafiya ovozi
     if (MAFIA_KILL_VOTERS.includes(role)) {
       this.mafiaVotes.push({ voterId: actorPlayerId, targetId: targetPlayerId });
+      this.persistSoon();
       return true;
     }
 
     this.nightActions.set(role, { actorId: actorPlayerId, targetId: targetPlayerId });
+    this.persistSoon();
     return true;
   }
 
@@ -306,10 +316,12 @@ export class GameEngine {
 
   setSheriffShoot(targetPlayerId: number): void {
     this.sheriffShootTarget = targetPlayerId;
+    this.persistSoon();
   }
 
   setRobberResponse(choice: RobberResponse): void {
     this.robberTargetResponse = choice;
+    this.persistSoon();
   }
 
   markNightRoleDone(role: Role): void {
@@ -324,6 +336,7 @@ export class GameEngine {
     } else {
       this.pendingNightRoles.delete(role);
     }
+    this.persistSoon();
   }
 
   isNightComplete(): boolean {
@@ -969,6 +982,7 @@ export class GameEngine {
     if (!voter || !voter.isAlive) return false;
 
     this.votes.set(voterPlayerId, targetPlayerId);
+    this.persistSoon();
     return true;
   }
 
@@ -1004,6 +1018,7 @@ export class GameEngine {
   // Osishni tasdiqlash
   submitConfirmVote(voterPlayerId: number, approve: boolean): void {
     this.confirmVotes.set(voterPlayerId, approve);
+    this.persistSoon();
   }
 
   getConfirmCounts(): { yes: number; no: number } {
@@ -1024,6 +1039,7 @@ export class GameEngine {
   // Kamikaze nishonini belgilash (osilgandan keyin)
   setKamikazeTarget(targetPlayerId: number): void {
     this.kamikazeTarget = targetPlayerId;
+    this.persistSoon();
   }
 
   processVotes(): VoteResult {
@@ -1120,12 +1136,14 @@ export class GameEngine {
     this.clearTimer();
   }
 
-  setTimer(ms: number, callback: () => void): void {
+  setTimer(ms: number, callback: () => void, pendingPhase?: string): void {
     this.clearTimer();
     this.timerStartedAt = Date.now();
     this.timerDuration = ms;
     this.timerCallback = callback;
     this.phaseTimer = setTimeout(callback, ms);
+    this.timerEndsAt = Date.now() + ms;
+    if (pendingPhase) this.pendingPhaseAction = pendingPhase;
   }
 
   extendTimer(extraMs: number): number {
@@ -1139,6 +1157,7 @@ export class GameEngine {
     const cb = this.timerCallback;
     this.phaseTimer = setTimeout(cb, newDuration);
     this.timerCallback = cb;
+    this.timerEndsAt = Date.now() + newDuration;
     return newDuration;
   }
 
@@ -1147,5 +1166,38 @@ export class GameEngine {
       clearTimeout(this.phaseTimer);
       this.phaseTimer = null;
     }
+    this.timerEndsAt = null;
+    this.pendingPhaseAction = null;
+  }
+
+  // Persistence uchun — private state'ga access
+  getInternalState() {
+    return {
+      nightActions: [...this.nightActions.entries()],
+      mafiaVotes: this.mafiaVotes,
+      pendingNightRoles: [...this.pendingNightRoles],
+      sheriffShootTarget: this.sheriffShootTarget,
+      votes: [...this.votes.entries()],
+      kamikazeTarget: this.kamikazeTarget,
+      confirmVotes: [...this.confirmVotes.entries()],
+    };
+  }
+
+  setInternalState(state: {
+    nightActions: [Role, { actorId: number; targetId: number }][];
+    mafiaVotes: MafiaVote[];
+    pendingNightRoles: Role[];
+    sheriffShootTarget: number | null;
+    votes: [number, number][];
+    kamikazeTarget: number | null;
+    confirmVotes: [number, boolean][];
+  }): void {
+    this.nightActions = new Map(state.nightActions);
+    this.mafiaVotes = state.mafiaVotes;
+    this.pendingNightRoles = new Set(state.pendingNightRoles);
+    this.sheriffShootTarget = state.sheriffShootTarget;
+    this.votes = new Map(state.votes);
+    this.kamikazeTarget = state.kamikazeTarget;
+    this.confirmVotes = new Map(state.confirmVotes);
   }
 }

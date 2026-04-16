@@ -313,6 +313,9 @@ model Game {
   endedAt    DateTime?
   createdAt  DateTime   @default(now())
 
+  // Bot restart'dan keyin tiklash uchun — butun GameEngine snapshot (JSON)
+  state      Json?
+
   players Player[]
   rounds  GameRound[]
 

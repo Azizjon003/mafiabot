@@ -11,6 +11,7 @@ import { joinGameKeyboard, kamikazeTargetKeyboard, confirmHangKeyboard } from ".
 import { t } from "../services/text.service";
 import { ROLE_EMOJI, ROLE_NAME } from "../utils/constants";
 import { buildRoster } from "./roster";
+import { persistEngine } from "./persistence";
 import { mention } from "../utils/helpers";
 import { statsRepo } from "../database/repositories/stats.repository";
 import { economyService } from "../services/economy.service";
@@ -173,7 +174,8 @@ export class GameController {
     // Night timer
     engine.setTimer(engine.settings.nightTimeout * 1000, async () => {
       await this.handleNightEnd(chatTelegramId);
-    });
+    }, "NIGHT_END");
+    await persistEngine(engine);
   }
 
   async handleNightEnd(chatTelegramId: bigint): Promise<void> {
@@ -189,6 +191,8 @@ export class GameController {
 
     // Kecha natijalarini hisoblash
     const nightResult = engine.processNightActions();
+    // Darhol saqlash — o'lganlar + state o'zgarishi DB'da
+    await persistEngine(engine);
 
     // Natijalarni e'lon qilish
     await this.notifier.announceNightResults(
@@ -268,7 +272,8 @@ export class GameController {
     // Muhokama timer → ovoz berishga o'tish
     engine.setTimer(engine.settings.dayDiscussionTimeout * 1000, async () => {
       await this.startVotingPhase(chatTelegramId);
-    });
+    }, "DAY_END");
+    await persistEngine(engine);
   }
 
   // Tong otganda — geroyga ega ruxsatli rollarga PM
@@ -323,7 +328,8 @@ export class GameController {
     // Voting timer
     engine.setTimer(engine.settings.votingTimeout * 1000, async () => {
       await this.handleVotingEnd(chatTelegramId);
-    });
+    }, "VOTING_END");
+    await persistEngine(engine);
   }
 
   async handleVotingEnd(chatTelegramId: bigint): Promise<void> {
@@ -390,7 +396,8 @@ export class GameController {
     // 30 soniya tasdiqlash uchun
     engine.setTimer(30000, async () => {
       await this.handleConfirmEnd(chatTelegramId);
-    });
+    }, "CONFIRM_END");
+    await persistEngine(engine);
   }
 
   // Tasdiqlash tugagach
@@ -432,7 +439,8 @@ export class GameController {
           }
           engine.resetConfirmVotes();
           await this.afterVoting(chatTelegramId);
-        });
+        }, "KAMIKAZE_DELAY");
+        await persistEngine(engine);
         return;
       }
 

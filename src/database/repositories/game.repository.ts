@@ -50,4 +50,11 @@ export const gameRepo = {
       data: { roundCount: { increment: 1 } },
     });
   },
+
+  async clearState(gameId: number) {
+    return prisma.game.update({
+      where: { id: gameId },
+      data: { state: null as any },
+    });
+  },
 };

@@ -29,15 +29,8 @@ async function main() {
   // Database ulanish
   await connectDatabase();
 
-  // Bot restart — eski aktiv o'yinlarni cancel qilish
+  // Bot restart — aktiv o'yinlarni DB'dan tiklash (persistent state)
   const { prisma } = await import("./database/prisma");
-  const cancelledCount = await prisma.game.updateMany({
-    where: { status: { notIn: ["FINISHED", "CANCELLED"] } },
-    data: { status: "CANCELLED", endedAt: new Date() },
-  });
-  if (cancelledCount.count > 0) {
-    logger.info(`${cancelledCount.count} ta eski aktiv o'yin bekor qilindi (bot restart)`);
-  }
 
   // Do'kon default itemlari
   await shopService.seedDefaultItems();
@@ -57,6 +50,11 @@ async function main() {
   // Servislar
   const notifier = new NotificationService(bot);
   const gameController = new GameController(notifier);
+
+  // Aktiv o'yinlarni tiklash (bot restart'dan keyin)
+  await restoreActiveGames(gameController, notifier).catch((e) =>
+    logger.error(e, "Aktiv o'yinlarni tiklashda xatolik")
+  );
 
   // Middleware
   bot.use(authMiddleware);
@@ -111,6 +109,94 @@ process.on("SIGTERM", async () => {
   await disconnectDatabase();
   process.exit(0);
 });
+
+// Bot restart'dan keyin aktiv o'yinlarni DB'dan tiklash
+async function restoreActiveGames(
+  controller: GameController,
+  notifier: NotificationService,
+): Promise<void> {
+  const { loadActiveGames, applySerializedToEngine } = await import("./game/persistence");
+  const { GameEngine } = await import("./game/engine");
+  const { gameManager } = await import("./game/manager");
+  const { prisma } = await import("./database/prisma");
+
+  const snapshots = await loadActiveGames();
+  if (snapshots.length === 0) return;
+
+  let restored = 0;
+  let cancelled = 0;
+
+  for (const s of snapshots) {
+    try {
+      // WAITING (ro'yxatdan o'tish) — tiklash xavfli, cancel qilamiz
+      if (s.status === "WAITING") {
+        await prisma.game.update({
+          where: { id: s.gameId },
+          data: { status: "CANCELLED", endedAt: new Date(), state: null as any },
+        }).catch(() => {});
+        try {
+          await notifier.sendToGroup(
+            BigInt(s.chatTelegramId),
+            "⚠️ Bot qayta ishga tushdi — ro'yxatdan o'tish bekor qilindi. /startgame bilan yangisini boshlang.",
+          );
+        } catch { /* ignore */ }
+        cancelled++;
+        continue;
+      }
+
+      const engine = new GameEngine(s.gameId, s.chatId, BigInt(s.chatTelegramId), s.settings);
+      applySerializedToEngine(engine, s);
+      gameManager.registerEngine(engine);
+
+      // Timer tiklash
+      if (s.pendingPhaseAction && s.timerEndsAt) {
+        const remaining = Math.max(1000, s.timerEndsAt - Date.now()); // min 1s
+        const action = s.pendingPhaseAction;
+        const chatTgId = engine.chatTelegramId;
+
+        const callback = async () => {
+          switch (action) {
+            case "NIGHT_END":
+              await controller.handleNightEnd(chatTgId);
+              break;
+            case "DAY_END":
+              await controller.startVotingPhase(chatTgId);
+              break;
+            case "VOTING_END":
+              await controller.handleVotingEnd(chatTgId);
+              break;
+            case "CONFIRM_END":
+              await controller.handleConfirmEnd(chatTgId);
+              break;
+            default:
+              logger.warn({ action }, "Noma'lum pendingPhaseAction — timer qayta yoqilmadi");
+          }
+        };
+
+        engine.setTimer(remaining, callback, action);
+      }
+
+      // Guruhga xabar
+      try {
+        await notifier.sendToGroup(
+          engine.chatTelegramId,
+          `🔄 <b>Bot qayta ishga tushdi!</b>\n\nO'yin davom etmoqda (bosqich: <code>${engine.status}</code>, kun: ${engine.currentRound}).`,
+        );
+      } catch { /* ignore — guruh o'chirilgan bo'lishi mumkin */ }
+
+      restored++;
+    } catch (e) {
+      logger.error(e, `O'yinni tiklab bo'lmadi, cancel qilinadi (gameId=${s.gameId})`);
+      await prisma.game.update({
+        where: { id: s.gameId },
+        data: { status: "CANCELLED", endedAt: new Date(), state: null as any },
+      }).catch(() => {});
+      cancelled++;
+    }
+  }
+
+  logger.info({ restored, cancelled }, "Aktiv o'yinlar tiklandi");
+}
 
 main().catch((err) => {
   logger.fatal(err, "Bot ishga tushirishda xatolik!");

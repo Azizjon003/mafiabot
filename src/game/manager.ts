@@ -5,6 +5,7 @@ import { playerRepo } from "../database/repositories/player.repository";
 import { chatRepo } from "../database/repositories/chat.repository";
 import { userRepo } from "../database/repositories/user.repository";
 import { inventoryService } from "../services/inventory.service";
+import { persistEngine } from "./persistence";
 import { logger } from "../utils/logger";
 
 class GameManager {
@@ -38,6 +39,7 @@ class GameManager {
     // Engine yaratish
     const engine = new GameEngine(game.id, chat.id, chatTelegramId, settings);
     this.activeGames.set(chatTelegramId.toString(), engine);
+    await persistEngine(engine);
 
     logger.info({ gameId: game.id, chatId: chatTelegramId.toString() }, "Yangi o'yin yaratildi");
     return engine;
@@ -111,6 +113,7 @@ class GameManager {
     };
 
     engine.addPlayer(state);
+    await persistEngine(engine);
     return state;
   }
 
@@ -126,13 +129,21 @@ class GameManager {
 
     await playerRepo.removeFromGame(engine.gameId, player.userId);
     engine.removePlayer(player.playerId);
+    await persistEngine(engine);
     return true;
+  }
+
+  // Engine'ni qayta registratsiya qilish (restart'dan keyin tiklashda)
+  registerEngine(engine: GameEngine): void {
+    this.activeGames.set(engine.chatTelegramId.toString(), engine);
   }
 
   async endGame(chatTelegramId: bigint): Promise<void> {
     const engine = this.getGame(chatTelegramId);
     if (engine) {
       engine.clearTimer();
+      // Restart'dan keyin tiklashga ehtiyoj yo'q — state'ni tozalash
+      await gameRepo.clearState(engine.gameId).catch(() => {});
       this.activeGames.delete(chatTelegramId.toString());
       logger.info({ chatId: chatTelegramId.toString() }, "O'yin tugadi");
     }
