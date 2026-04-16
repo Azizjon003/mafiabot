@@ -318,10 +318,8 @@ export class GameController {
 
       const kb = new InlineKeyboard();
       kb.text("🥷 Otish", "hero:attack");
-      // Himoyalanish faqat hali ishlatilmagan bo'lsa
-      if (!player.heroDefendUsed) {
-        kb.text("⚜️ Himoyalanish", "hero:defend");
-      }
+      // Har kun Himoyalanish tugmasi ko'rsatiladi
+      kb.text("⚜️ Himoyalanish", "hero:defend");
 
       const text = t("game.heroDayPrompt");
 

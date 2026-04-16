@@ -146,13 +146,27 @@ export class GameEngine {
     return this.getAlivePlayers().filter((p) => p.role === role);
   }
 
-  // Himoyalanish faollashtirish (1 o'yinda 1 marta) — hero.protection'ni Player.heroProtection'ga yuklaydi
-  async activateHeroDefense(playerId: number): Promise<{ success: boolean; reason?: string; protection?: number }> {
+  // Himoyalanish faollashtirish — 1 o'yinda 1 marta, lekin tugma har kun ko'rinadi.
+  // Agar allaqachon faol bo'lsa — holatini qaytaradi (qayta yuklamaydi).
+  async activateHeroDefense(playerId: number): Promise<{ success: boolean; reason?: string; protection?: number; alreadyActive?: boolean }> {
     const player = this.getPlayer(playerId);
     if (!player) return { success: false, reason: "O'yinchi topilmadi" };
     if (!player.isAlive) return { success: false, reason: "Siz o'lgansiz" };
     if (!player.hasHeroActive) return { success: false, reason: "Geroy yo'q" };
-    if (player.heroDefendUsed) return { success: false, reason: "Allaqachon ishlatilgan" };
+
+    // Allaqachon faol va qalqon bor — xabar berib qaytamiz (qayta yuklamaymiz)
+    if (player.heroDefendUsed && player.heroProtection > 0) {
+      return {
+        success: true,
+        alreadyActive: true,
+        protection: player.heroProtection,
+        reason: `Allaqachon himoyadasiz — qalqon: ${player.heroProtection}`,
+      };
+    }
+    // Avval ishlatilgan va qalqon tugagan
+    if (player.heroDefendUsed && player.heroProtection <= 0) {
+      return { success: false, reason: "Himoya ishlatilgan va tugagan. Profildan 'Himoyani yangilash' ni bosing." };
+    }
 
     const { heroRepo } = await import("../database/repositories/hero.repository");
     const hero = await heroRepo.findByUser(player.userId);

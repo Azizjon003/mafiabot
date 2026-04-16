@@ -364,7 +364,11 @@ profileCommand.callbackQuery("hero:defend", async (ctx) => {
     return;
   }
 
-  await ctx.answerCallbackQuery({ text: `🛡 Himoya faol! Qalqon: ${result.protection}`, show_alert: true }).catch(() => {});
+  // Allaqachon faol bo'lsa — "davom etyapti" xabari
+  const toast = result.alreadyActive
+    ? `🛡 ${result.reason}`
+    : `🛡 Himoya faol! Qalqon: ${result.protection}`;
+  await ctx.answerCallbackQuery({ text: toast, show_alert: true }).catch(() => {});
   await openHeroPage(ctx);
 });
 
