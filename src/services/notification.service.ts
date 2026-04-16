@@ -12,14 +12,25 @@ import { getPhasePhotos } from "../config";
 export class NotificationService {
   constructor(private bot: Bot<BotContext>) {}
 
-  async sendPhasePhoto(chatId: bigint, phase: "night" | "day"): Promise<void> {
+  async sendPhasePhoto(
+    chatId: bigint,
+    phase: "night" | "day",
+    caption?: string,
+    keyboard?: InlineKeyboard,
+  ): Promise<boolean> {
     try {
       const photos = getPhasePhotos();
       const fileId = photos[phase];
-      if (!fileId) return;
-      await this.bot.api.sendPhoto(chatId.toString(), fileId);
+      if (!fileId) return false;
+      await this.bot.api.sendPhoto(chatId.toString(), fileId, {
+        caption,
+        parse_mode: caption ? "HTML" : undefined,
+        reply_markup: keyboard,
+      });
+      return true;
     } catch (error) {
       logger.error(error, `Faza rasmini yuborishda xatolik: ${chatId} (${phase})`);
+      return false;
     }
   }
 

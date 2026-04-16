@@ -145,25 +145,27 @@ export class GameController {
       await this.notifier.muteGroup(chatTelegramId);
     }
 
-    // Tun rasmi
-    await this.notifier.sendPhasePhoto(chatTelegramId, "night");
-
-    await this.notifier.sendToGroup(
-      chatTelegramId,
-      t("game.nightStarts", { round: engine.currentRound })
-    );
-
-    // Atmosferali tun xabari + "Bot-ga o'tish" tugmasi (DMga chaqirish)
+    // Tun rasmi + atmosferali matn caption sifatida + "Bot-ga o'tish" tugma
     const { InlineKeyboard: NightKb } = await import("grammy");
     const nightKb = new NightKb().url(
       t("game.nightBotButton"),
       `https://t.me/${botUsername}`
     );
-    await this.notifier.sendToGroup(
+    const nightCaption =
+      t("game.nightStarts", { round: engine.currentRound }) +
+      "\n\n" +
+      t("game.nightAtmosphere");
+    const photoSent = await this.notifier.sendPhasePhoto(
       chatTelegramId,
-      t("game.nightAtmosphere"),
-      nightKb
+      "night",
+      nightCaption,
+      nightKb,
     );
+
+    // Rasm yuborilmagan bo'lsa — matnni alohida
+    if (!photoSent) {
+      await this.notifier.sendToGroup(chatTelegramId, nightCaption, nightKb);
+    }
 
     // Har bir rolga shaxsiy chatda tundagi promptlarni yuborish
     await sendNightPrompts(engine, this.notifier);
@@ -250,10 +252,15 @@ export class GameController {
       await this.notifier.unmuteGroup(chatTelegramId);
     }
 
-    // Kunduz rasmi
-    await this.notifier.sendPhasePhoto(chatTelegramId, "day");
+    // Kunduz rasmi + tong otdi matni caption sifatida
+    const photoSent = await this.notifier.sendPhasePhoto(
+      chatTelegramId,
+      "day",
+      t("game.dayStarts", { round: engine.currentRound }),
+    );
 
-    await startDayPhase(engine, this.notifier);
+    // Rasm yuborilmagan bo'lsa (photo yo'q) — matnni alohida xabar sifatida
+    await startDayPhase(engine, this.notifier, !photoSent);
 
     // Geroy egalariga (SNIPER/DON/SHERIFF) PM yuborish
     await this.sendHeroDayPrompts(engine).catch((e) => logger.error(e, "Hero day PM error"));
