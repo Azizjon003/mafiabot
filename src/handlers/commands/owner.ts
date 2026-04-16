@@ -26,7 +26,7 @@ import {
   decodeKey,
 } from "../../keyboards/admin-texts";
 import { textService } from "../../services/text.service";
-import { TEXT_CATEGORIES } from "../../services/text-defaults";
+import { TEXT_CATEGORIES, TEXT_LABELS } from "../../services/text-defaults";
 import { privateOnly } from "../middleware/chat-type";
 
 // Pending state — admin "aniq qiymat" yoki "sovg'a miqdori" yozishini kutamiz
@@ -51,14 +51,16 @@ function textInfoBody(key: string): string {
   const defText = textService.getDefault(key) ?? "";
   const placeholders = Array.from(current.matchAll(/\{(\w+)\}/g)).map((m) => m[1]);
   const placeholderLine = placeholders.length ? placeholders.map((p) => `<code>{${p}}</code>`).join(", ") : "yo'q";
+  const label = TEXT_LABELS[key];
 
-  let body = `📝 <b>${escapeHtmlText(key)}</b>\n\n`;
+  let body = `📝 <b>${label ? escapeHtmlText(label) : escapeHtmlText(key)}</b>\n`;
+  body += `<code>${escapeHtmlText(key)}</code>\n\n`;
   body += `<b>Hozirgi matn:</b>\n<code>${escapeHtmlText(truncateFor(current, 500))}</code>\n\n`;
-  body += `Holat: ${isCustom ? "✏️ <b>Custom</b>" : "📦 Default"}\n`;
+  body += `Holat: ${isCustom ? "✏️ <b>O'zgartirilgan</b>" : "📦 Asl (default)"}\n`;
   body += `O'zgaruvchilar: ${placeholderLine}\n`;
   body += `Uzunlik: ${current.length} belgi`;
   if (isCustom && defText) {
-    body += `\n\n<b>Default (asl):</b>\n<code>${escapeHtmlText(truncateFor(defText, 300))}</code>`;
+    body += `\n\n<b>Asl matn:</b>\n<code>${escapeHtmlText(truncateFor(defText, 300))}</code>`;
   }
   return body;
 }
@@ -451,7 +453,7 @@ ownerCommand.callbackQuery(/^ap:texts:cat:([^:]+):(\d+)$/, ownerOnly, async (ctx
   }
   await ctx.answerCallbackQuery().catch(() => {});
   await ctx.editMessageText(
-    `${cat.label}\n\nKalitni tanlang (✏️ = o'zgartirilgan):`,
+    `${cat.label}\n\nMatnni tanlang (✏️ = o'zgartirilgan):`,
     { parse_mode: "HTML", reply_markup: textListKeyboard(catId, page) }
   ).catch(() => {});
 });

@@ -1,6 +1,14 @@
 import { InlineKeyboard } from "grammy";
-import { TEXT_CATEGORIES } from "../services/text-defaults";
+import { TEXT_CATEGORIES, TEXT_LABELS } from "../services/text-defaults";
 import { textService } from "../services/text.service";
+
+// Kalit uchun inson o'qiydigan label qaytaradi (TEXT_LABELS dan yoki fallback)
+function labelForKey(key: string, stripPrefix?: string): string {
+  const label = TEXT_LABELS[key];
+  if (label) return label;
+  // Fallback — kalit suffixini qaytaramiz
+  return stripPrefix ? key.slice(stripPrefix.length) : key;
+}
 
 export const TEXTS_PER_PAGE = 8;
 
@@ -32,8 +40,7 @@ export function textListKeyboard(categoryId: string, page: number): InlineKeyboa
 
   const kb = new InlineKeyboard();
   for (const { key, isCustom } of slice) {
-    const shortKey = key.slice(cat.prefix.length);
-    const label = (isCustom ? "✏️ " : "") + truncate(shortKey, 30);
+    const label = (isCustom ? "✏️ " : "") + truncate(labelForKey(key, cat.prefix), 38);
     kb.text(label, `ap:text:${encodeKey(key)}`).row();
   }
 
@@ -64,7 +71,7 @@ export function textSearchResultsKeyboard(keys: { key: string; isCustom: boolean
   const kb = new InlineKeyboard();
   const limited = keys.slice(0, 20);
   for (const { key, isCustom } of limited) {
-    const label = (isCustom ? "✏️ " : "") + truncate(key, 35);
+    const label = (isCustom ? "✏️ " : "") + truncate(labelForKey(key), 38);
     kb.text(label, `ap:text:${encodeKey(key)}`).row();
   }
   kb.text("🔙 Matnlar", "ap:texts");
