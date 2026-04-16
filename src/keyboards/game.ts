@@ -69,7 +69,7 @@ export function mafiaTargetKeyboard(
 // Guruhda — faqat "Ovoz berish" URL tugma (botga o'tkazadi)
 export function votingButtonKeyboard(botUsername: string, chatId: bigint): InlineKeyboard {
   return new InlineKeyboard()
-    .url("Ovoz berish", `https://t.me/${botUsername}?start=vote_${chatId}`);
+    .url(t("game.votingButton"), `https://t.me/${botUsername}?start=vote_${chatId}`);
 }
 
 // PMda — o'yinchilar ro'yxati (shaxsiy chatda)

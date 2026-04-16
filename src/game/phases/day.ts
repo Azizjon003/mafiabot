@@ -1,15 +1,24 @@
 import { GameEngine } from "../engine";
 import { NotificationService } from "../../services/notification.service";
 import { t } from "../../services/text.service";
+import { buildRoster } from "../roster";
 
 export async function startDayPhase(
   engine: GameEngine,
   notifier: NotificationService
 ): Promise<void> {
-  const text =
-    t("game.dayStarts", { round: engine.currentRound }) +
-    "\n\n" +
-    t("game.discussion", { time: engine.settings.dayDiscussionTimeout });
+  // 1. Tong otdi xabari
+  await notifier.sendToGroup(
+    engine.chatTelegramId,
+    t("game.dayStarts", { round: engine.currentRound })
+  );
 
-  await notifier.sendToGroup(engine.chatTelegramId, text);
+  // 2. Tirik o'yinchilar roster
+  await notifier.sendToGroup(engine.chatTelegramId, buildRoster(engine));
+
+  // 3. Muhokama e'loni
+  await notifier.sendToGroup(
+    engine.chatTelegramId,
+    t("game.discussion", { time: engine.settings.dayDiscussionTimeout })
+  );
 }

@@ -9,7 +9,8 @@ import { startDayPhase } from "./phases/day";
 import { startVotingPhase } from "./phases/voting";
 import { joinGameKeyboard, kamikazeTargetKeyboard, confirmHangKeyboard } from "../keyboards/game";
 import { t } from "../services/text.service";
-import { ROLE_EMOJI, ROLE_NAME, ROLE_TEAM, Team } from "../utils/constants";
+import { ROLE_EMOJI, ROLE_NAME } from "../utils/constants";
+import { buildRoster } from "./roster";
 import { mention } from "../utils/helpers";
 import { statsRepo } from "../database/repositories/stats.repository";
 import { economyService } from "../services/economy.service";
@@ -125,44 +126,10 @@ export class GameController {
     );
 
     // Roster — tirik o'yinchilar va jamoa bo'yicha rollar
-    await this.notifier.sendToGroup(chatTelegramId, this.buildRoster(engine));
+    await this.notifier.sendToGroup(chatTelegramId, buildRoster(engine));
 
     // Kecha boshlash
     await this.startNightPhase(chatTelegramId);
-  }
-
-  // Tirik o'yinchilar ro'yxati + jamoa breakdown
-  private buildRoster(engine: GameEngine): string {
-    const alive = engine.getAlivePlayers();
-    const playerList = alive.map((p, i) => `${i + 1}. ${p.firstName}`).join("\n");
-
-    const byTeam: Record<string, typeof alive> = { TOWN: [], MAFIA: [], SOLO: [] };
-    for (const p of alive) {
-      const team = ROLE_TEAM[p.role];
-      // NEUTRAL (Sotqin) ni hozircha yomon tarafga qo'yamiz
-      const key = team === Team.NEUTRAL ? "MAFIA" : team;
-      if (byTeam[key]) byTeam[key].push(p);
-    }
-
-    const rolesLine = (players: typeof alive) =>
-      players.map((p) => `${ROLE_EMOJI[p.role]} ${ROLE_NAME[p.role]}`).join(", ");
-
-    const soloBlock = byTeam.SOLO.length > 0
-      ? t("game.playerRosterSoloBlock", {
-          soloCount: byTeam.SOLO.length,
-          soloRoles: rolesLine(byTeam.SOLO),
-        })
-      : "";
-
-    return t("game.playerRoster", {
-      playerList,
-      townCount: byTeam.TOWN.length,
-      townRoles: rolesLine(byTeam.TOWN),
-      mafiaCount: byTeam.MAFIA.length,
-      mafiaRoles: rolesLine(byTeam.MAFIA),
-      soloBlock,
-      total: alive.length,
-    });
   }
 
   // ==================== NIGHT ====================
