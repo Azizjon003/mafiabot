@@ -62,6 +62,11 @@ export function textEditKeyboard(key: string, isCustom: boolean): InlineKeyboard
     kb.text("🔄 Default holatga", `ap:treset:${encodeKey(key)}`).row();
   }
   kb.text("📜 Tarix", `ap:thist:${encodeKey(key)}`).row();
+  // Kalit prefiksi bo'yicha kategoriyani topib, o'sha kategoriyaga qaytish tugmasi
+  const cat = TEXT_CATEGORIES.find((c) => key.startsWith(c.prefix));
+  if (cat) {
+    kb.text(`⬅️ ${cat.label}`, `ap:texts:cat:${cat.id}:0`).row();
+  }
   kb.text("🔙 Matnlar", "ap:texts");
   return kb;
 }
