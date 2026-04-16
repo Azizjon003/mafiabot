@@ -114,6 +114,8 @@ export const TEXT_DEFAULTS: Record<string, string> = {
     "💀 Tunda <b>{name}</b> 🎩 Professorning sirli qutisidan ⚰️ o'lim chiqargan.",
   "deathStory.VOTED_OUT":
     "⚖️ Aholi qaroriga ko'ra <b>{name}</b> maydonda osildi.",
+  "deathStory.INACTIVE":
+    "💤 <b>{name}</b> shahar ishlariga 2 kun mobaynida befarq bo'ldi va g'oyib bo'ldi...",
 
   // ===== ROLES =====
   "roles.CIVILIAN": "👨🏼 Tinch axoli",
@@ -568,6 +570,7 @@ export const TEXT_LABELS: Record<string, string> = {
   "deathStory.ROBBER_KILL": "O'lim — Qaroqchi hujumi",
   "deathStory.PROFESSOR_KILL": "O'lim — Professor qutisi",
   "deathStory.VOTED_OUT": "O'lim — Osildi (ovoz)",
+  "deathStory.INACTIVE": "O'lim — Harakatsizlik (2 kun)",
 
   // ROLES (rol nomlari)
   "roles.CIVILIAN": "Rol nomi — Tinch axoli",

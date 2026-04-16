@@ -792,20 +792,46 @@ export class GameEngine {
       }
     }
 
+    // ==================== HARAKATSIZLIK TEKSHIRUVI ====================
+    // Faol tun rolidagi o'yinchilar harakat qilmasa — inactiveNights oshadi.
+    // 2 ga yetgan bo'lsa — avtomatik o'lim (INACTIVE sababi bilan).
+    // Istisnolar: CIVILIAN va KAMIKAZE (tunda harakati yo'q),
+    // SERGEANT (avtomatik harakat qiladi).
+    const INACTIVITY_EXEMPT: Role[] = ["CIVILIAN", "KAMIKAZE", "SERGEANT"];
+    for (const player of this.getAlivePlayers()) {
+      if (INACTIVITY_EXEMPT.includes(player.role)) continue;
+      if (!this.isNightActiveRole(player.role)) continue;
+      // Bloklangan bo'lsa — harakatsizlikka sanalmaydi
+      if (player.isBlocked) continue;
+
+      const acted = this.hasNightAction(player.role, player.playerId);
+      if (acted) {
+        player.inactiveNights = 0;
+      } else {
+        player.inactiveNights = (player.inactiveNights ?? 0) + 1;
+        if (player.inactiveNights >= 2) {
+          killTargets.set(player.playerId, "INACTIVE" as DeathCause);
+        }
+      }
+    }
+
     // ==================== NATIJALARNI HISOBLASH ====================
 
     for (const [targetId, cause] of killTargets) {
       const target = this.getPlayer(targetId);
       if (!target || !target.isAlive) continue;
 
-      // Shifokor davolagani tekshiruv (sniper bundan mustasno)
-      if (healedTargets.has(targetId) && cause !== "SNIPER_KILL") {
+      // Harakatsizlikdan o'lim — hech narsa saqlamaydi
+      const isInactiveDeath = (cause as string) === "INACTIVE";
+
+      // Shifokor davolagani tekshiruv (sniper va inaktiv bundan mustasno)
+      if (healedTargets.has(targetId) && cause !== "SNIPER_KILL" && !isInactiveDeath) {
         result.saved.push(target);
         continue;
       }
 
-      // Shield tekshiruvi — 1 o'yinda 1 marta (sniper bundan mustasno)
-      if (target.hasShieldActive && cause !== "SNIPER_KILL") {
+      // Shield tekshiruvi — 1 o'yinda 1 marta (sniper va inaktiv bundan mustasno)
+      if (target.hasShieldActive && cause !== "SNIPER_KILL" && !isInactiveDeath) {
         target.hasShieldActive = false;
         target.shieldCharges = 0;
         result.saved.push(target);

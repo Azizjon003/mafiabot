@@ -29,6 +29,8 @@ export interface PlayerState {
   // Professor qutilari — nishonga yuborilgan 3 ta aralashtirilgan natija
   professorBoxes?: ("DEATH" | "EMPTY" | "HERO")[];
   professorChoice?: number; // Nishon tanlagan quti indeksi (0..2)
+  // Faol tun harakatsiz tunlar soni — 2 ga yetsa avtomatik o'lim
+  inactiveNights: number;
 }
 
 export interface KilledPlayer {

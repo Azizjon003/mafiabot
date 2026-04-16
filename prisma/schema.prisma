@@ -404,6 +404,7 @@ enum DeathCause {
   PROFESSOR_KILL
   VOTED_OUT
   LEFT_GAME
+  INACTIVE
 }
 
 // ==================== GAME ROUND ====================

@@ -107,6 +107,7 @@ class GameManager {
       shieldCharges: used.shieldUsed ? 1 : 0,
       hasDocumentActive: used.documentUsed,
       preferredRole: used.activeRole ?? undefined,
+      inactiveNights: 0,
     };
 
     engine.addPlayer(state);
