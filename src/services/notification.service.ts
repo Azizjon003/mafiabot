@@ -132,15 +132,14 @@ export class NotificationService {
     for (const { player: dead, cause } of result.killed) {
       // Atmosferali o'lim hikoyasi
       const nameMention = mention(dead.firstName, dead.telegramId);
-      const story = t(`deathStory.${cause}`, { name: nameMention });
+      const roleInline = showRole
+        ? ` ${ROLE_EMOJI[dead.role]} <b>${ROLE_NAME[dead.role]}</b>`
+        : "";
+      const story = t(`deathStory.${cause}`, { name: nameMention, roleInline });
       // Agar kalit topilmasa (t key'ni qaytaradi) — playerDied ga tushamiz
-      let text = story && story !== `deathStory.${cause}`
+      const text = story && story !== `deathStory.${cause}`
         ? story
-        : t("game.playerDied", { name: nameMention });
-
-      if (showRole) {
-        text += `\nRoli: ${ROLE_EMOJI[dead.role]} <b>${ROLE_NAME[dead.role]}</b>`;
-      }
+        : t("game.playerDied", { name: nameMention, roleInline });
 
       await this.sendToGroup(chatId, text);
       await sleep(2500);
@@ -161,13 +160,14 @@ export class NotificationService {
     if (!result.votedOut) {
       text = t("game.voteInconclusive");
     } else {
-      // Hikoyali matn
+      const roleInline = showRole
+        ? ` ${ROLE_EMOJI[result.votedOut.role]} <b>${ROLE_NAME[result.votedOut.role]}</b>`
+        : "";
       text = t("game.voteEndedPrefix") +
-        t("deathStory.VOTED_OUT", { name: mention(result.votedOut.firstName, result.votedOut.telegramId) });
-
-      if (showRole) {
-        text += `\nRoli: ${ROLE_EMOJI[result.votedOut.role]} <b>${ROLE_NAME[result.votedOut.role]}</b>`;
-      }
+        t("deathStory.VOTED_OUT", {
+          name: mention(result.votedOut.firstName, result.votedOut.telegramId),
+          roleInline,
+        });
     }
 
     // Kamikaze

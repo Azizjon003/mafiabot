@@ -46,13 +46,13 @@ export const TEXT_DEFAULTS: Record<string, string> = {
   "game.nightTimeout": "⏰ Vaqt tugadi! Harakat o'tkazib yuborildi.",
   "game.dayStarts": "Xayrli tong 🙂\n\n📻 <b>Kun:</b> {round}\nShamollar tundagi mish-mishlarni butun shaharga yetkazmoqda..",
   "game.noOneDied": "✨ Bugun kechasi hech kim o'lmadi!",
-  "game.playerDied": "💀 <b>{name}</b> o'lik topildi!",
+  "game.playerDied": "💀 <b>{name}</b>{roleInline} o'lik topildi!",
   "game.playerDiedRole": "💀 <b>{name}</b> o'lik topildi! Roli: {emoji} <b>{role}</b>",
   "game.discussion": "Endi kechaning natijalarini muhokama qilish, sabablari va oqibatlarini tushunish vaqti keldi ...",
   "game.votingStarts": "🗳 <b>Ovoz berish vaqti!</b>\nKimni chiqaramiz?",
   "game.votingAnnounce": "<b>Aybdorlarni aniqlash va jazolash vaqti keldi.</b>\nOvoz berish uchun <b>{seconds} sekund</b>\n<b>Ovoz berish</b>",
   "game.votingButton": "Ovoz berish",
-  "game.votedOut": "👋 <b>{name}</b> chiqarildi!",
+  "game.votedOut": "👋 <b>{name}</b>{roleInline} chiqarildi!",
   "game.votedOutRole": "👋 <b>{name}</b> chiqarildi! Roli: {emoji} <b>{role}</b>",
   "game.noOneVotedOut": "🤷 Ovozlar teng — hech kim chiqarilmadi!",
   "game.alreadyVoted": "Siz allaqachon ovoz berdingiz!",
@@ -89,33 +89,33 @@ export const TEXT_DEFAULTS: Record<string, string> = {
 
   // ===== DEATH STORY =====
   "deathStory.MAFIA_KILL":
-    "💀 Tunda <b>{name}</b> vaxshiylarcha o'ldirildi. Aytishlaricha uyiga 🤵🏻 Mafiya kelgan.",
+    "💀 Tunda <b>{name}</b>{roleInline} vaxshiylarcha o'ldirildi. Aytishlaricha uyiga 🤵🏻 Mafiya kelgan.",
   "deathStory.SHERIFF_KILL":
-    "💀 Tunda <b>{name}</b>ga 🕵🏻‍♂ Komissar o'q uzdi. Ehtimol u bekorga o'lmadi...",
+    "💀 Tunda <b>{name}</b>{roleInline}ga 🕵🏻‍♂ Komissar o'q uzdi. Ehtimol u bekorga o'lmadi...",
   "deathStory.KILLER_KILL":
-    "💀 Tunda <b>{name}</b> qorong'u ko'chada 🔪 noma'lum qotil tomonidan pichoqlab o'ldirildi.",
+    "💀 Tunda <b>{name}</b>{roleInline} qorong'u ko'chada 🔪 noma'lum qotil tomonidan pichoqlab o'ldirildi.",
   "deathStory.SNIPER_KILL":
-    "💀 Tunda <b>{name}</b> uzoqdan 👨🏻‍🎤 snayper o'qi bilan urildi. Hech qanday himoya uni saqlay olmadi.",
+    "💀 Tunda <b>{name}</b>{roleInline} uzoqdan 👨🏻‍🎤 snayper o'qi bilan urildi. Hech qanday himoya uni saqlay olmadi.",
   "deathStory.ARCHER_KILL":
-    "💀 Tunda <b>{name}</b>ning ko'kragida 🏹 kamon o'qi topildi. Kim otganini hech kim ko'rmagan.",
+    "💀 Tunda <b>{name}</b>{roleInline}ning ko'kragida 🏹 kamon o'qi topildi. Kim otganini hech kim ko'rmagan.",
   "deathStory.MINER_KILL":
-    "💀 Ertalab <b>{name}</b>ning eshigi oldida ☠️ kuchli portlash sodir bo'ldi. Undan hech narsa qolmadi.",
+    "💀 Ertalab <b>{name}</b>{roleInline}ning eshigi oldida ☠️ kuchli portlash sodir bo'ldi. Undan hech narsa qolmadi.",
   "deathStory.SNOWBOY_KILL":
-    "💀 Tunda <b>{name}</b> ⛄️ dahshatli qor bo'ronida nobud bo'ldi.",
+    "💀 Tunda <b>{name}</b>{roleInline} ⛄️ dahshatli qor bo'ronida nobud bo'ldi.",
   "deathStory.LAB_KILL":
-    "💀 Tunda <b>{name}</b> 👨‍🔬 sirli kimyoviy moddadan zaharlanib vafot etdi.",
+    "💀 Tunda <b>{name}</b>{roleInline} 👨‍🔬 sirli kimyoviy moddadan zaharlanib vafot etdi.",
   "deathStory.WARLOCK_KILL":
-    "💀 Tunda <b>{name}</b>ga ⚡️ Koldunning qorong'u qarg'ishi tushdi.",
+    "💀 Tunda <b>{name}</b>{roleInline}ga ⚡️ Koldunning qorong'u qarg'ishi tushdi.",
   "deathStory.KAMIKAZE_KILL":
-    "💣 <b>{name}</b> osilgan Kamikaze portlashi natijasida halok bo'ldi.",
+    "💣 <b>{name}</b>{roleInline} osilgan Kamikaze portlashi natijasida halok bo'ldi.",
   "deathStory.ROBBER_KILL":
-    "💀 Tunda <b>{name}</b> 👺 Qaroqchining hujumida pul uchun o'ldirildi.",
+    "💀 Tunda <b>{name}</b>{roleInline} 👺 Qaroqchining hujumida pul uchun o'ldirildi.",
   "deathStory.PROFESSOR_KILL":
-    "💀 Tunda <b>{name}</b> 🎩 Professorning sirli qutisidan ⚰️ o'lim chiqargan.",
+    "💀 Tunda <b>{name}</b>{roleInline} 🎩 Professorning sirli qutisidan ⚰️ o'lim chiqargan.",
   "deathStory.VOTED_OUT":
-    "⚖️ Aholi qaroriga ko'ra <b>{name}</b> maydonda osildi.",
+    "⚖️ Aholi qaroriga ko'ra <b>{name}</b>{roleInline} maydonda osildi.",
   "deathStory.INACTIVE":
-    "💤 <b>{name}</b> shahar ishlariga 2 kun mobaynida befarq bo'ldi va g'oyib bo'ldi...",
+    "💤 <b>{name}</b>{roleInline} shahar ishlariga 2 kun mobaynida befarq bo'ldi va g'oyib bo'ldi...",
 
   // ===== ROLES =====
   "roles.CIVILIAN": "👨🏼 Tinch axoli",
@@ -414,7 +414,7 @@ export const TEXT_DEFAULTS: Record<string, string> = {
   "profile.heroNone":
     "🥷 <b>Sizda Geroy yo'q</b>\n\nGeroy yarating va o'yinda qo'shimcha kuchga ega bo'ling!\n\n{emoji} Narxi: <b>{price}</b>",
   "profile.heroAttackPrompt": "🥷 <b>Kimga hujum qilasiz?</b>\n\nKuch: <b>{power}</b> | Zaryad: <b>{charges}</b>",
-  "profile.heroAttackAnnounceKilled": "🥷 <b>Kimdir hujum qildi!</b>\n💀 <b>{name}</b> halok bo'ldi! Roli: {emoji} <b>{role}</b>",
+  "profile.heroAttackAnnounceKilled": "🥷 <b>Kimdir hujum qildi!</b>\n💀 <b>{name}</b> {emoji} <b>{role}</b> halok bo'ldi!",
   "profile.heroAttackAnnounceSurvived": "🥷 <b>Kimdir hujum qildi!</b>\n🛡 Kimdir geroy bilan omon qoldi.",
   "profile.heroAttacked":
     "🥷 <b>Sizga kimdir hujum qildi!</b>\n\n" +
