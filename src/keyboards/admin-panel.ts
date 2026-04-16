@@ -11,9 +11,10 @@ export function adminPanelKeyboard(): InlineKeyboard {
     .text("📝 Matnlar", "ap:texts")
     .text("📊 Bot statistikasi", "ap:botstats")
     .row()
+    .text("⏱ Default vaqtlar", "ap:timings")
     .text("👥 Foydalanuvchilar", "ap:users")
-    .text("⚙️ Sozlamalar", "ap:config")
     .row()
+    .text("⚙️ Sozlamalar", "ap:config")
     .text("❌ Yopish", "ap:close");
 }
 
@@ -87,7 +88,10 @@ export function priceEditKeyboard(key: string, currentValue: number, currency?: 
     kb.text(label, `ap:toggleCurrency:${key}`).row();
   }
 
-  kb.text("🔙 Narxlar", "ap:prices");
+  // Default vaqt sozlamalari — "Vaqtlar"ga qaytadi, qolgani "Narxlar"ga
+  const backTarget = key.startsWith("default_") ? "ap:timings" : "ap:prices";
+  const backLabel = key.startsWith("default_") ? "🔙 Vaqtlar" : "🔙 Narxlar";
+  kb.text(backLabel, backTarget);
   return kb;
 }
 
@@ -110,6 +114,19 @@ export function giftCategoriesKeyboard(): InlineKeyboard {
 export function giftMethodKeyboard(giftType: string): InlineKeyboard {
   return new InlineKeyboard()
     .text("🔙 Sovg'alar", "ap:gift");
+}
+
+// Default o'yin vaqtlari — yangi guruhlar uchun
+export function timingsKeyboard(vals: Record<string, number>): InlineKeyboard {
+  const kb = new InlineKeyboard();
+  kb.text(`⏱ Ro'yxat: ${vals.registration}s`, "ap:price:default_registration_timeout").row();
+  kb.text(`🌙 Tun: ${vals.night}s`, "ap:price:default_night_timeout").row();
+  kb.text(`☀️ Kun muhokama: ${vals.day}s`, "ap:price:default_day_discussion_timeout").row();
+  kb.text(`🗳 Ovoz berish: ${vals.voting}s`, "ap:price:default_voting_timeout").row();
+  kb.text(`👥 Min: ${vals.minP}`, "ap:price:default_min_players")
+    .text(`👥 Max: ${vals.maxP}`, "ap:price:default_max_players").row();
+  kb.text("🔙 Asosiy", "ap:main");
+  return kb;
 }
 
 // Sozlamalar kategoriyasi

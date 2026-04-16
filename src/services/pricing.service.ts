@@ -34,6 +34,14 @@ export const PRICE_KEYS = {
   REWARD_HERO_POINTS_TOWN: "reward_hero_town",   // Geroy ball (shahar)
   REWARD_HERO_POINTS_MAFIA: "reward_hero_mafia",
   REWARD_HERO_POINTS_SOLO: "reward_hero_solo",
+
+  // Default o'yin vaqtlari (yangi guruhlar uchun)
+  DEFAULT_REGISTRATION_TIMEOUT: "default_registration_timeout",
+  DEFAULT_NIGHT_TIMEOUT: "default_night_timeout",
+  DEFAULT_DAY_DISCUSSION_TIMEOUT: "default_day_discussion_timeout",
+  DEFAULT_VOTING_TIMEOUT: "default_voting_timeout",
+  DEFAULT_MIN_PLAYERS: "default_min_players",
+  DEFAULT_MAX_PLAYERS: "default_max_players",
 } as const;
 
 // Aktiv rol narxi har rol uchun alohida (💰 pulda)
@@ -74,6 +82,14 @@ const DEFAULTS: Record<string, number> = {
   [PRICE_KEYS.REWARD_HERO_POINTS_TOWN]: 100,  // Geroy: shahar yutsa 100 ball
   [PRICE_KEYS.REWARD_HERO_POINTS_MAFIA]: 150, // Mafiya yutsa 150 ball
   [PRICE_KEYS.REWARD_HERO_POINTS_SOLO]: 200,  // Yakka yutsa 200 ball
+
+  // Default o'yin vaqtlari (sekundda / soni)
+  [PRICE_KEYS.DEFAULT_REGISTRATION_TIMEOUT]: 60,
+  [PRICE_KEYS.DEFAULT_NIGHT_TIMEOUT]: 60,
+  [PRICE_KEYS.DEFAULT_DAY_DISCUSSION_TIMEOUT]: 90,
+  [PRICE_KEYS.DEFAULT_VOTING_TIMEOUT]: 45,
+  [PRICE_KEYS.DEFAULT_MIN_PLAYERS]: 4,
+  [PRICE_KEYS.DEFAULT_MAX_PLAYERS]: 20,
 
   // Aktiv rollar (💰 pulda)
   price_role_CIVILIAN: 300,

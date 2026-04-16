@@ -1,7 +1,7 @@
 import { Composer, NextFunction, InlineKeyboard } from "grammy";
 import { BotContext } from "../../types/context";
 import { isOwner } from "../../config";
-import { pricingService } from "../../services/pricing.service";
+import { pricingService, PRICE_KEYS } from "../../services/pricing.service";
 import { economyService } from "../../services/economy.service";
 import { vipService } from "../../services/vip.service";
 import { heroRepo } from "../../database/repositories/hero.repository";
@@ -16,6 +16,7 @@ import {
   priceEditKeyboard,
   giftCategoriesKeyboard,
   configCategoriesKeyboard,
+  timingsKeyboard,
 } from "../../keyboards/admin-panel";
 import {
   textCategoriesKeyboard,
@@ -307,10 +308,29 @@ const CONFIGURABLE_CURRENCY_KEYS = new Set([
   "price_chest_basic", "price_chest_silver", "price_chest_gold",
 ]);
 
+// Default vaqtlar — valyuta yo'q, birlik soniya/o'yinchi
+function isTimingKey(key: string): boolean {
+  return key.startsWith("default_");
+}
+function timingUnit(key: string): string {
+  return key.includes("players") ? "" : "s";
+}
+
 // Bitta narx ekrani — +/- tugmalar va valyuta toggle
 ownerCommand.callbackQuery(/^ap:price:(.+)$/, ownerOnly, async (ctx) => {
   const key = ctx.match[1];
   const value = await pricingService.get(key);
+
+  // Default vaqt sozlamalari — valyuta yo'q
+  if (isTimingKey(key)) {
+    const unit = timingUnit(key);
+    await ctx.answerCallbackQuery().catch(() => {});
+    await ctx.editMessageText(
+      `⏱ <b>${key}</b>\n\nHozirgi qiymat: <b>${value}${unit}</b>\n\nO'zgartiring:`,
+      { parse_mode: "HTML", reply_markup: priceEditKeyboard(key, value) }
+    ).catch(() => {});
+    return;
+  }
 
   let currency: "diamond" | "money" = "diamond";
   let canToggle = false;
@@ -361,6 +381,17 @@ ownerCommand.callbackQuery(/^ap:padj:(.+):(-?\d+)$/, ownerOnly, async (ctx) => {
   const current = await pricingService.get(key);
   const newValue = Math.max(0, current + delta);
   await pricingService.set(key, newValue);
+
+  // Default vaqt sozlamalari — valyuta yo'q
+  if (isTimingKey(key)) {
+    const unit = timingUnit(key);
+    await ctx.answerCallbackQuery({ text: `✅ ${newValue}${unit}` }).catch(() => {});
+    await ctx.editMessageText(
+      `⏱ <b>${key}</b>\n\nHozirgi qiymat: <b>${newValue}${unit}</b>\n\nO'zgartiring:`,
+      { parse_mode: "HTML", reply_markup: priceEditKeyboard(key, newValue) }
+    ).catch(() => {});
+    return;
+  }
 
   const isMoney = key.includes("money") || key.startsWith("price_role_") || key.startsWith("price_chest")
     || key === "price_hero_charge" || key === "price_hero_rename"
@@ -566,6 +597,30 @@ ownerCommand.on("message:document", async (ctx, next) => {
   } catch (e: any) {
     await ctx.reply(`❌ Import xatolik: ${e?.message || "noma'lum"}`);
   }
+});
+
+// ==================== DEFAULT VAQTLAR ====================
+
+ownerCommand.callbackQuery("ap:timings", ownerOnly, async (ctx) => {
+  const [reg, night, day, voting, minP, maxP] = await Promise.all([
+    pricingService.get(PRICE_KEYS.DEFAULT_REGISTRATION_TIMEOUT),
+    pricingService.get(PRICE_KEYS.DEFAULT_NIGHT_TIMEOUT),
+    pricingService.get(PRICE_KEYS.DEFAULT_DAY_DISCUSSION_TIMEOUT),
+    pricingService.get(PRICE_KEYS.DEFAULT_VOTING_TIMEOUT),
+    pricingService.get(PRICE_KEYS.DEFAULT_MIN_PLAYERS),
+    pricingService.get(PRICE_KEYS.DEFAULT_MAX_PLAYERS),
+  ]);
+  await ctx.answerCallbackQuery().catch(() => {});
+  await ctx.editMessageText(
+    `⏱ <b>Default o'yin vaqtlari</b>\n\n` +
+    `Bu qiymatlar <b>yangi guruhlar</b> uchun ishlatiladi.\n` +
+    `Mavjud guruhlar o'zlarida <code>/settings</code> orqali boshqaradi.\n\n` +
+    `O'zgartirish uchun tugmani bosing:`,
+    {
+      parse_mode: "HTML",
+      reply_markup: timingsKeyboard({ registration: reg, night, day, voting, minP, maxP }),
+    }
+  ).catch(() => {});
 });
 
 // ==================== SOZLAMALAR ====================

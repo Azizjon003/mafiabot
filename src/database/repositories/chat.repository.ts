@@ -1,4 +1,5 @@
 import { prisma } from "../prisma";
+import { pricingService, PRICE_KEYS } from "../../services/pricing.service";
 
 export const chatRepo = {
   async findOrCreate(telegramId: bigint, title?: string, type: string = "supergroup") {
@@ -16,8 +17,25 @@ export const chatRepo = {
     });
 
     if (!settings) {
+      // Bosh admin belgilagan default vaqtlarni olamiz
+      const [reg, night, day, voting, minP, maxP] = await Promise.all([
+        pricingService.get(PRICE_KEYS.DEFAULT_REGISTRATION_TIMEOUT),
+        pricingService.get(PRICE_KEYS.DEFAULT_NIGHT_TIMEOUT),
+        pricingService.get(PRICE_KEYS.DEFAULT_DAY_DISCUSSION_TIMEOUT),
+        pricingService.get(PRICE_KEYS.DEFAULT_VOTING_TIMEOUT),
+        pricingService.get(PRICE_KEYS.DEFAULT_MIN_PLAYERS),
+        pricingService.get(PRICE_KEYS.DEFAULT_MAX_PLAYERS),
+      ]);
       settings = await prisma.chatSettings.create({
-        data: { chatId },
+        data: {
+          chatId,
+          registrationTimeout: reg,
+          nightTimeout: night,
+          dayDiscussionTimeout: day,
+          votingTimeout: voting,
+          minPlayers: minP,
+          maxPlayers: maxP,
+        },
       });
     }
 

@@ -1,11 +1,14 @@
 import { GameEngine } from "./engine";
 import { ROLE_EMOJI, ROLE_NAME, ROLE_TEAM, Team } from "../utils/constants";
+import { mention } from "../utils/helpers";
 import { t } from "../services/text.service";
 
 // Tirik o'yinchilar ro'yxati + jamoa breakdown (rollar tarqatilganda va har kun)
 export function buildRoster(engine: GameEngine): string {
   const alive = engine.getAlivePlayers();
-  const playerList = alive.map((p, i) => `${i + 1}. ${p.firstName}`).join("\n");
+  const playerList = alive
+    .map((p, i) => `${i + 1}. ${mention(p.firstName, p.telegramId)}`)
+    .join("\n");
 
   const byTeam: Record<string, typeof alive> = { TOWN: [], MAFIA: [], SOLO: [] };
   for (const p of alive) {
