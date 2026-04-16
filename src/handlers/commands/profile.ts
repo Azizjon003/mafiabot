@@ -21,6 +21,7 @@ import { gameManager } from "../../game/manager";
 import { privateOnly } from "../middleware/chat-type";
 import { ROLE_EMOJI, ROLE_NAME } from "../../utils/constants";
 import { mention } from "../../utils/helpers";
+import { t } from "../../services/text.service";
 
 export const profileCommand = new Composer<BotContext>();
 
@@ -35,34 +36,34 @@ async function buildProfileText(userId: number): Promise<string> {
   const rank = user.stats ? statsRepo.getRank(user.stats.rating) : "Yangi fuqaro";
   const isVip = await vipService.isVip(userId);
 
-  let t = `👤 <b>${user.firstName}</b>\n\n`;
-  t += `⭐️ Reyting: <b>${user.stats?.rating || 1000}</b> (${rank})\n`;
-  t += `💰 Pul: <b>${user.money.toLocaleString()}</b>\n`;
-  t += `💎 Olmos: <b>${user.diamonds}</b>\n`;
-  t += `🛡 Himoya: <b>${user.shieldCount}</b>\n`;
-  t += `📜 Hujjatlar: <b>${user.documentCount}</b>\n`;
-  t += `🥷 Geroy: <b>${user.hero ? user.hero.name + " (lvl " + user.hero.level + ")" : "Yo'q"}</b>\n`;
+  let txt = `👤 <b>${user.firstName}</b>\n\n`;
+  txt += `⭐️ Reyting: <b>${user.stats?.rating || 1000}</b> (${rank})\n`;
+  txt += `💰 Pul: <b>${user.money.toLocaleString()}</b>\n`;
+  txt += `💎 Olmos: <b>${user.diamonds}</b>\n`;
+  txt += `🛡 Himoya: <b>${user.shieldCount}</b>\n`;
+  txt += `📜 Hujjatlar: <b>${user.documentCount}</b>\n`;
+  txt += `🥷 Geroy: <b>${user.hero ? user.hero.name + " (lvl " + user.hero.level + ")" : "Yo'q"}</b>\n`;
   if (user.activeRole) {
     const flagIcon = user.useActiveRoleNextGame ? "✅" : "⬜️";
-    t += `🎭 Aktiv rol: ${ROLE_EMOJI[user.activeRole]} <b>${ROLE_NAME[user.activeRole]}</b> ${flagIcon}\n`;
+    txt += `🎭 Aktiv rol: ${ROLE_EMOJI[user.activeRole]} <b>${ROLE_NAME[user.activeRole]}</b> ${flagIcon}\n`;
   }
-  if (user.useShieldNextGame && user.shieldCount > 0) t += `🛡 Shield keyingi o'yinda ✅\n`;
-  if (user.useDocumentNextGame && user.documentCount > 0) t += `📜 Hujjat keyingi o'yinda ✅\n`;
-  if (user.useHeroNextGame && user.hero) t += `🥷 Geroy keyingi o'yinda ✅\n`;
+  if (user.useShieldNextGame && user.shieldCount > 0) txt += `🛡 Shield keyingi o'yinda ✅\n`;
+  if (user.useDocumentNextGame && user.documentCount > 0) txt += `📜 Hujjat keyingi o'yinda ✅\n`;
+  if (user.useHeroNextGame && user.hero) txt += `🥷 Geroy keyingi o'yinda ✅\n`;
   if (isVip && user.vipExpiresAt) {
-    t += `⭐️ VIP: <b>${user.vipExpiresAt.toLocaleDateString("uz-UZ")}</b> gacha\n`;
+    txt += `⭐️ VIP: <b>${user.vipExpiresAt.toLocaleDateString("uz-UZ")}</b> gacha\n`;
   }
-  t += `\n🎮 O'yinlar: <b>${user.stats?.gamesPlayed || 0}</b> | 🏆 Yutgan: <b>${user.stats?.gamesWon || 0}</b>`;
+  txt += `\n🎮 O'yinlar: <b>${user.stats?.gamesPlayed || 0}</b> | 🏆 Yutgan: <b>${user.stats?.gamesWon || 0}</b>`;
 
   // Obunalar
   const { subscriptionRepo } = await import("../../database/repositories/subscription.repository");
   const subs = await subscriptionRepo.listForUser(userId);
   if (subs.length > 0) {
-    t += `\n\n🔔 <b>Obuna bo'lgan guruhlar:</b> ${subs.length} ta`;
-    t += `\n<i>Bekor qilish uchun shu guruhda /unsubscribe</i>`;
+    txt += `\n\n🔔 <b>Obuna bo'lgan guruhlar:</b> ${subs.length} ta`;
+    txt += `\n<i>Bekor qilish uchun shu guruhda /unsubscribe</i>`;
   }
 
-  return t;
+  return txt;
 }
 
 profileCommand.command("profile", privateOnly, async (ctx) => {
@@ -82,14 +83,14 @@ profileCommand.callbackQuery("prof:back", async (ctx) => {
 // ==================== Do'kon kategoriyalari ====================
 profileCommand.callbackQuery("prof:shop", async (ctx) => {
   await ctx.answerCallbackQuery().catch(() => {});
-  await ctx.editMessageText("🏪 <b>Do'kon</b>\nKategoriyani tanlang:", {
+  await ctx.editMessageText(t("profile.shopTitle"), {
     parse_mode: "HTML",
     reply_markup: shopCategoriesKeyboard(),
   }).catch(() => {});
 });
 profileCommand.callbackQuery("prof:buy", async (ctx) => {
   await ctx.answerCallbackQuery().catch(() => {});
-  await ctx.editMessageText("🛒 Sotib olish — kategoriyani tanlang:", {
+  await ctx.editMessageText(t("profile.shopBuyTitle"), {
     parse_mode: "HTML",
     reply_markup: shopCategoriesKeyboard(),
   }).catch(() => {});
@@ -107,7 +108,7 @@ profileCommand.callbackQuery("shop:cat:shield", async (ctx) => {
   const emoji = await currencyEmoji(PRICE_KEYS.SHIELD);
   await ctx.answerCallbackQuery().catch(() => {});
   await ctx.editMessageText(
-    `🛡 <b>Himoya (Shield)</b>\n\nO'yinda 1 marta o'limdan saqlaydi (Snayperdan tashqari).\n\n${emoji} Narxi: <b>${price.toLocaleString()}</b>`,
+    t("profile.shopShield", { emoji, price: price.toLocaleString() }),
     { parse_mode: "HTML", reply_markup: buyItemKeyboard("shield") }
   ).catch(() => {});
 });
@@ -118,7 +119,7 @@ profileCommand.callbackQuery("shop:cat:document", async (ctx) => {
   const emoji = await currencyEmoji(PRICE_KEYS.DOCUMENT);
   await ctx.answerCallbackQuery().catch(() => {});
   await ctx.editMessageText(
-    `📜 <b>Hujjat</b>\n\nKomissar tekshiruvini bekor qiladi (1 marta).\n⚠️ Faqat Mafiya va Yakka rollar uchun foydali.\n\n${emoji} Narxi: <b>${price.toLocaleString()}</b>`,
+    t("profile.shopDocument", { emoji, price: price.toLocaleString() }),
     { parse_mode: "HTML", reply_markup: buyItemKeyboard("document") }
   ).catch(() => {});
 });
@@ -135,7 +136,7 @@ profileCommand.callbackQuery("shop:cat:chest", async (ctx) => {
   const emoji = await currencyEmoji(PRICE_KEYS.CHEST_BASIC);
   await ctx.answerCallbackQuery().catch(() => {});
   await ctx.editMessageText(
-    `🗃 <b>Sandiq</b>\n\nRandom mukofot oling.\n\n${emoji} Narxi: <b>${price.toLocaleString()}</b>`,
+    t("profile.shopChest", { emoji, price: price.toLocaleString() }),
     { parse_mode: "HTML", reply_markup: buyItemKeyboard("chest") }
   ).catch(() => {});
 });
@@ -146,7 +147,7 @@ profileCommand.callbackQuery("shop:cat:vip", async (ctx) => {
   const emoji = await currencyEmoji(PRICE_KEYS.VIP_MONTH);
   await ctx.answerCallbackQuery().catch(() => {});
   await ctx.editMessageText(
-    `⭐️ <b>VIP (1 oy)</b>\n\nSandiqni cheksiz ochish, maxsus badge.\n\n${emoji} Narxi: <b>${price.toLocaleString()}</b>`,
+    t("profile.shopVip", { emoji, price: price.toLocaleString() }),
     { parse_mode: "HTML", reply_markup: buyItemKeyboard("vip") }
   ).catch(() => {});
 });
@@ -156,7 +157,7 @@ profileCommand.callbackQuery("shop:cat:role", async (ctx) => {
   const prices = await pricingService.getAll();
   await ctx.answerCallbackQuery().catch(() => {});
   await ctx.editMessageText(
-    `🎭 <b>Qaysi rolni sotib olmoqchisiz?</b>\n\nKeyingi o'yinda shu rol tarqatiladi.`,
+    t("profile.shopRole"),
     { parse_mode: "HTML", reply_markup: activeRoleListKeyboard(prices) }
   ).catch(() => {});
 });
@@ -182,7 +183,7 @@ profileCommand.callbackQuery(/^shop:buy:(shield|document|vip|chest)$/, async (ct
       return;
     }
     const r = chestRes.reward!;
-    let rewardText = "🗃 <b>Sandiq ochildi!</b>\n\nMukofot:\n";
+    let rewardText = t("profile.chestOpened");
     if (r.diamonds > 0) rewardText += `💎 <b>${r.diamonds}</b> olmos\n`;
     if (r.money > 0) rewardText += `💰 <b>${r.money.toLocaleString()}</b> pul\n`;
     if (r.hero) rewardText += `🥷 <b>Geroy!</b> 🎉\n`;
@@ -235,7 +236,7 @@ async function openHeroPage(ctx: BotContext) {
   if (!hero) {
     const price = await pricingService.get(PRICE_KEYS.HERO_CREATE);
     const emoji = await currencyEmoji(PRICE_KEYS.HERO_CREATE);
-    text = `🥷 <b>Sizda Geroy yo'q</b>\n\nGeroy yarating va o'yinda qo'shimcha kuchga ega bo'ling!\n\n${emoji} Narxi: <b>${price.toLocaleString()}</b>`;
+    text = t("profile.heroNone", { emoji, price: price.toLocaleString() });
   } else {
     const { maxProtectionForLevel, HERO_MAX_LEVEL } = await import("../../services/hero.service");
     const maxProt = maxProtectionForLevel(hero.level);
@@ -397,7 +398,7 @@ profileCommand.callbackQuery("hero:attack", async (ctx) => {
 
   await ctx.answerCallbackQuery().catch(() => {});
   await ctx.editMessageText(
-    `🥷 <b>Kimga hujum qilasiz?</b>\n\nKuch: <b>${info.power}</b> | Zaryad: <b>${info.charges}</b>`,
+    t("profile.heroAttackPrompt", { power: info.power || 0, charges: info.charges || 0 }),
     { parse_mode: "HTML", reply_markup: heroAttackTargetsKeyboard(targets) }
   ).catch(() => {});
 });
@@ -460,12 +461,13 @@ profileCommand.callbackQuery(/^hero:atk:(\d+)$/, async (ctx) => {
     try {
       await ctx.api.sendMessage(
         target.telegramId.toString(),
-        `🥷 <b>Sizga kimdir hujum qildi!</b>\n\n` +
-        `💪 Hujum kuchi: <b>${result.damage}</b>\n` +
-        `🛡 Himoya yutdi: <b>${result.absorbedByProtection}</b>\n` +
-        `❤️ HP zarar: <b>${result.hpDamage}</b>\n\n` +
-        `❤️ Qolgan HP: <b>${result.remainingHP}/100</b>\n` +
-        `🛡 Qolgan himoya: <b>${result.remainingProtection}</b>`,
+        t("profile.heroAttacked", {
+          damage: result.damage,
+          absorbed: result.absorbedByProtection,
+          hpDamage: result.hpDamage,
+          remainingHP: result.remainingHP,
+          remainingProtection: result.remainingProtection,
+        }),
         { parse_mode: "HTML" }
       );
     } catch { /* ignore */ }
@@ -476,13 +478,17 @@ profileCommand.callbackQuery(/^hero:atk:(\d+)$/, async (ctx) => {
     if (result.killed) {
       await ctx.api.sendMessage(
         game.engine.chatTelegramId.toString(),
-        `🥷 <b>Kimdir hujum qildi!</b>\n💀 <b>${target.firstName}</b> halok bo'ldi! Roli: ${ROLE_EMOJI[target.role]} <b>${ROLE_NAME[target.role]}</b>`,
+        t("profile.heroAttackAnnounceKilled", {
+          name: target.firstName,
+          emoji: ROLE_EMOJI[target.role],
+          role: ROLE_NAME[target.role],
+        }),
         { parse_mode: "HTML" }
       );
     } else {
       await ctx.api.sendMessage(
         game.engine.chatTelegramId.toString(),
-        `🥷 <b>Kimdir hujum qildi!</b>\n🛡 Kimdir geroy bilan omon qoldi.`,
+        t("profile.heroAttackAnnounceSurvived"),
         { parse_mode: "HTML" }
       );
     }
@@ -526,12 +532,12 @@ async function openUsePage(ctx: BotContext) {
   const user = await prisma.user.findUnique({ where: { id: ctx.dbUser.id }, include: { hero: true } });
   if (!user) return;
 
-  const text =
-    `🎁 <b>Keyingi o'yinda nimadan foydalanasiz?</b>\n\n` +
-    `🛡 Himoya: ${user.shieldCount} ta\n` +
-    `📜 Hujjat: ${user.documentCount} ta\n` +
-    `🎭 Aktiv rol: ${user.activeRole ? ROLE_NAME[user.activeRole] : "yo'q"}\n` +
-    `🥷 Geroy: ${user.hero ? "✅" : "❌"}`;
+  const text = t("profile.useTitle", {
+    shieldCount: user.shieldCount,
+    documentCount: user.documentCount,
+    activeRole: user.activeRole ? ROLE_NAME[user.activeRole] : "yo'q",
+    hero: user.hero ? "✅" : "❌",
+  });
 
   const flags = {
     shield: user.useShieldNextGame,
@@ -565,7 +571,7 @@ profileCommand.callbackQuery(/^use:(shield|document|activeRole|hero|premiumEmoji
 profileCommand.callbackQuery("prof:premium", async (ctx) => {
   await ctx.answerCallbackQuery().catch(() => {});
   await ctx.editMessageText(
-    `⭐️ <b>Premium guruhlar</b>\n\nHozircha bo'sh — admin tomonidan qo'shiladi.`,
+    t("profile.premiumGroupsEmpty"),
     { parse_mode: "HTML", reply_markup: premiumGroupsKeyboard() }
   ).catch(() => {});
 });

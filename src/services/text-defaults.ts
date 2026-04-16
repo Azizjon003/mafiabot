@@ -318,6 +318,98 @@ export const TEXT_DEFAULTS: Record<string, string> = {
   "settings.btn.minPlayers": "👥 Min o'yinchilar",
   "settings.btn.maxPlayers": "👥 Max o'yinchilar",
   "settings.btn.muteOnNight": "🗑 Tunda o'chirish",
+
+  // ===== GAME — qo'shimcha (Faza 3) =====
+  "game.rolesDistributed": "🎭 <b>Rollar tarqatildi!</b>\n\nO'z rolingizni ko'rish uchun tugmani bosing 👇",
+  "game.actionTimeout": "⏰ Vaqt tugadi! Harakatingiz o'tkazib yuborildi.",
+  "game.lastWordsPrompt":
+    "⏱ <b>Oxirgi so'z vaqti!</b>\n\n" +
+    "Sizda <b>{seconds} soniya</b> ichida guruhga oxirgi xabar yuborish imkoniyati bor.\n" +
+    "Shunchaki botga matnni yozing — guruhga yetkaziladi.",
+  "game.heroDayPrompt":
+    "🌅 <b>Tong otdi!</b>\n\n" +
+    "🥷 Sizning Geroyingiz tayyor.\n" +
+    "Bugun nima qilasiz?",
+  "game.voteInconclusive": "Ovoz berish yakunlandi:\nAxoli kelisha olmadi... Kelisha olmaslik oqibatida hech kim osilmadi...",
+  "game.warlockProtectedFromHang": "⚡️ <b>{name}</b> sehrli himoya ostida — osib bo'lmadi!",
+  "game.hangConfirmPrompt": "⚖️ <b>{name}</b>ni osmoqchimisiz?\n\n👍 Ha — osish\n👎 Yo'q — qo'yib yuborish",
+  "game.kamikazePrompt": "💣 Siz osildingiz! Kimni o'zingiz bilan olib ketasiz?",
+  "game.hangCancelled": "Axoli kelisha olmadi... <b>{name}</b> osilmadi!",
+  "game.voteEndedPrefix": "Ovoz berish yakunlandi:\n",
+  "game.mafiaIntro": "🤵🏼 <b>Mafiya jamoasi:</b>\n{members}\n\nTunda birgalikda nishon tanlaysiz!",
+  "game.morningRising": "🌅 <b>Tong otmoqda...</b>",
+  "game.doctorSaved": "💊 Shifokor bir kishini saqlab qoldi!",
+  "game.gameEndHeader": "🎉 <b>O'yin tugadi!</b>\n\n",
+  "game.townWinsHeader": "🏆 <b>Shahar yutdi!</b>\n\n",
+  "game.mafiaWinsHeader": "🏆 <b>Mafiya yutdi!</b>\n\n",
+  "game.soloWinsHeader": "🏆 <b>{role} yutdi!</b>\n\n",
+  "game.gameEndDraw": "🏁 <b>O'yin tugadi (durrang)</b>\n\n",
+  "game.gameEndWinnersLabel": "🏆 <b>G'oliblar:</b>\n",
+  "game.gameEndLosersLabel": "💀 <b>Qolgan o'yinchilar:</b>\n",
+  "game.gameEndDuration": "⏱ O'yin: <b>{min}</b> minut davom etdi\n",
+  "game.gameEndFooter": "\n🎭 Yangi o'yin boshlash: /startgame",
+  "game.personalResultWon": "🎉 <b>Siz YUTDINGIZ!</b>\n\n",
+  "game.personalResultLost": "😢 <b>Siz yutqazdingiz</b>\n\n",
+
+  // ===== roleAssigned — qo'shimchalar =====
+  "roleAssigned.shieldActive": "\n\n🛡 <b>Shield faol!</b> 1 marta o'limdan saqlaydi (Snayperdan tashqari).",
+  "roleAssigned.heroActive": "\n\n🥷 <b>Geroy faol!</b> Sizda maxsus qo'shimcha qobiliyat bor.",
+
+  // ===== START / RULES =====
+  "start.rules":
+    "🎭 <b>Mafia o'yini qoidalari</b>\n\n" +
+    "1. Shahar uxlaydi — kechada maxfiy rollar ishlaydi\n" +
+    "2. Shahar uyg'onadi — muhokama va ovoz berish\n" +
+    "3. Eng ko'p ovoz olgan chiqariladi\n\n" +
+    "<b>Jamoalar:</b>\n" +
+    "👨🏼 Tinch axoli — mafiyani toping!\n" +
+    "🤵🏼 Mafiya — shaharlikllarni o'ldiring!\n" +
+    "🔪 Yakka rollar — hammani yo'q qiling!\n\n" +
+    "/help — Barcha buyruqlar",
+  "start.gameNotFound": "⚠️ Bu o'yin allaqachon boshlangan yoki mavjud emas!",
+  "start.alreadyJoined": "⚠️ Siz allaqachon bu o'yinga qo'shilgansiz!",
+  "start.alreadyInOtherGame": "⚠️ Siz allaqachon boshqa guruhda o'yin o'ynayapsiz!",
+  "start.cantJoin": "❌ Qo'shila olmadi! O'yin to'lgan bo'lishi mumkin.",
+  "start.joinedSuccess":
+    "✅ O'yinga muvaffaqiyatli qo'shildingiz!\n\n" +
+    "👥 O'yinchilar: <b>{count}/{max}</b>\n" +
+    "O'yin boshlanishini kuting...",
+  "start.noVotingNow": "⚠️ Hozir ovoz berish vaqti emas!",
+  "start.notInThisGame": "⚠️ Siz bu o'yinda emassiz!",
+  "start.voteWhoPrompt": "🗳 <b>Kimga ovoz berasiz?</b>",
+
+  // ===== PROFILE / SHOP =====
+  "profile.shopTitle": "🏪 <b>Do'kon</b>\nKategoriyani tanlang:",
+  "profile.shopBuyTitle": "🛒 Sotib olish — kategoriyani tanlang:",
+  "profile.shopShield":
+    "🛡 <b>Himoya (Shield)</b>\n\nO'yinda 1 marta o'limdan saqlaydi (Snayperdan tashqari).\n\n{emoji} Narxi: <b>{price}</b>",
+  "profile.shopDocument":
+    "📜 <b>Hujjat</b>\n\nKomissar tekshiruvini bekor qiladi (1 marta).\n⚠️ Faqat Mafiya va Yakka rollar uchun foydali.\n\n{emoji} Narxi: <b>{price}</b>",
+  "profile.shopChest":
+    "🗃 <b>Sandiq</b>\n\nRandom mukofot oling.\n\n{emoji} Narxi: <b>{price}</b>",
+  "profile.shopVip":
+    "⭐️ <b>VIP (1 oy)</b>\n\nSandiqni cheksiz ochish, maxsus badge.\n\n{emoji} Narxi: <b>{price}</b>",
+  "profile.shopRole": "🎭 <b>Qaysi rolni sotib olmoqchisiz?</b>\n\nKeyingi o'yinda shu rol tarqatiladi.",
+  "profile.chestOpened": "🗃 <b>Sandiq ochildi!</b>\n\nMukofot:\n",
+  "profile.heroNone":
+    "🥷 <b>Sizda Geroy yo'q</b>\n\nGeroy yarating va o'yinda qo'shimcha kuchga ega bo'ling!\n\n{emoji} Narxi: <b>{price}</b>",
+  "profile.heroAttackPrompt": "🥷 <b>Kimga hujum qilasiz?</b>\n\nKuch: <b>{power}</b> | Zaryad: <b>{charges}</b>",
+  "profile.heroAttackAnnounceKilled": "🥷 <b>Kimdir hujum qildi!</b>\n💀 <b>{name}</b> halok bo'ldi! Roli: {emoji} <b>{role}</b>",
+  "profile.heroAttackAnnounceSurvived": "🥷 <b>Kimdir hujum qildi!</b>\n🛡 Kimdir geroy bilan omon qoldi.",
+  "profile.heroAttacked":
+    "🥷 <b>Sizga kimdir hujum qildi!</b>\n\n" +
+    "💪 Hujum kuchi: <b>{damage}</b>\n" +
+    "🛡 Himoya yutdi: <b>{absorbed}</b>\n" +
+    "❤️ HP zarar: <b>{hpDamage}</b>\n\n" +
+    "❤️ Qolgan HP: <b>{remainingHP}/100</b>\n" +
+    "🛡 Qolgan himoya: <b>{remainingProtection}</b>",
+  "profile.useTitle":
+    "🎁 <b>Keyingi o'yinda nimadan foydalanasiz?</b>\n\n" +
+    "🛡 Himoya: {shieldCount} ta\n" +
+    "📜 Hujjat: {documentCount} ta\n" +
+    "🎭 Aktiv rol: {activeRole}\n" +
+    "🥷 Geroy: {hero}",
+  "profile.premiumGroupsEmpty": "⭐️ <b>Premium guruhlar</b>\n\nHozircha bo'sh — admin tomonidan qo'shiladi.",
 };
 
 // Kategoriya metadata — admin UI uchun
@@ -335,4 +427,5 @@ export const TEXT_CATEGORIES: { id: string; label: string; prefix: string }[] = 
   { id: "settings", label: "⚙️ Sozlamalar UI", prefix: "settings." },
   { id: "start", label: "🚀 Start/Welcome", prefix: "start." },
   { id: "help", label: "📖 Help/Rules", prefix: "help." },
+  { id: "profile", label: "👤 Profil/Do'kon", prefix: "profile." },
 ];

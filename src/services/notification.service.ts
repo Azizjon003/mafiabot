@@ -71,10 +71,10 @@ export class NotificationService {
 
     // Shield faol bo'lsa — qo'shimcha bildirish
     if (player.hasShieldActive) {
-      roleMessage += `\n\n🛡 <b>Shield faol!</b> 1 marta o'limdan saqlaydi (Snayperdan tashqari).`;
+      roleMessage += t("roleAssigned.shieldActive");
     }
     if (player.hasHeroActive) {
-      roleMessage += `\n\n🥷 <b>Geroy faol!</b> Sizda maxsus qo'shimcha qobiliyat bor.`;
+      roleMessage += t("roleAssigned.heroActive");
     }
 
     await this.sendToPlayer(player.telegramId, roleMessage);
@@ -85,9 +85,7 @@ export class NotificationService {
       .map((m) => `${ROLE_EMOJI[m.role]} ${mention(m.firstName, m.telegramId)}`)
       .join("\n");
 
-    const text =
-      `🤵🏼 <b>Mafiya jamoasi:</b>\n${memberList}\n\n` +
-      `Tunda birgalikda nishon tanlaysiz!`;
+    const text = t("game.mafiaIntro", { members: memberList });
 
     for (const member of mafiaMembers) {
       await this.sendToPlayer(member.telegramId, text);
@@ -96,7 +94,7 @@ export class NotificationService {
 
   async announceNightResults(chatId: bigint, result: NightResult, showRole: boolean): Promise<void> {
     // Tong otmoqda — kirish xabari
-    await this.sendToGroup(chatId, "🌅 <b>Tong otmoqda...</b>");
+    await this.sendToGroup(chatId, t("game.morningRising"));
     await sleep(5000);
 
     // Shield ishlatilganlar — alohida xabar (anonim)
@@ -113,7 +111,7 @@ export class NotificationService {
         (s) => !shieldEvents.some((ev) => ev.actorId === s.playerId)
       );
       if (healedSaves.length > 0) {
-        await this.sendToGroup(chatId, "💊 Shifokor bir kishini saqlab qoldi!");
+        await this.sendToGroup(chatId, t("game.doctorSaved"));
       } else {
         await this.sendToGroup(chatId, t("game.noOneDied"));
       }
@@ -142,7 +140,7 @@ export class NotificationService {
       (s) => !shieldEvents.some((ev) => ev.actorId === s.playerId)
     );
     if (healedSaves.length > 0) {
-      await this.sendToGroup(chatId, "💊 Shifokor bir kishini saqlab qoldi!");
+      await this.sendToGroup(chatId, t("game.doctorSaved"));
     }
   }
 
@@ -150,12 +148,10 @@ export class NotificationService {
     let text: string;
 
     if (!result.votedOut) {
-      text =
-        `Ovoz berish yakunlandi:\n` +
-        `Axoli kelisha olmadi... Kelisha olmaslik oqibatida hech kim osilmadi...`;
+      text = t("game.voteInconclusive");
     } else {
       // Hikoyali matn
-      text = `Ovoz berish yakunlandi:\n` +
+      text = t("game.voteEndedPrefix") +
         t("deathStory.VOTED_OUT", { name: mention(result.votedOut.firstName, result.votedOut.telegramId) });
 
       if (showRole) {
@@ -184,21 +180,21 @@ export class NotificationService {
     isWinnerFn?: (player: PlayerState) => boolean,
     durationMinutes?: number
   ): Promise<void> {
-    let text = "🎉 <b>O'yin tugadi!</b>\n\n";
+    let text = t("game.gameEndHeader");
 
     // Sarlavha
     switch (winner) {
       case "TOWN":
-        text += `🏆 <b>Shahar yutdi!</b>\n\n`;
+        text += t("game.townWinsHeader");
         break;
       case "MAFIA":
-        text += `🏆 <b>Mafiya yutdi!</b>\n\n`;
+        text += t("game.mafiaWinsHeader");
         break;
       case "SOLO":
-        text += `🏆 <b>${soloWinnerRole || "Yakka rol"} yutdi!</b>\n\n`;
+        text += t("game.soloWinsHeader", { role: soloWinnerRole || "Yakka rol" });
         break;
       default:
-        text += `🏁 <b>O'yin tugadi (durrang)</b>\n\n`;
+        text += t("game.gameEndDraw");
     }
 
     // G'oliblar va qolganlar
@@ -206,7 +202,7 @@ export class NotificationService {
     const losers = isWinnerFn ? players.filter((p) => !isWinnerFn(p)) : players;
 
     if (winners.length > 0) {
-      text += `🏆 <b>G'oliblar:</b>\n`;
+      text += t("game.gameEndWinnersLabel");
       winners.forEach((p, i) => {
         text += `   ${i + 1}. ${mention(p.firstName, p.telegramId)} — ${ROLE_EMOJI[p.role]} ${ROLE_NAME[p.role]}\n`;
       });
@@ -214,7 +210,7 @@ export class NotificationService {
     }
 
     if (losers.length > 0) {
-      text += `💀 <b>Qolgan o'yinchilar:</b>\n`;
+      text += t("game.gameEndLosersLabel");
       losers.forEach((p, i) => {
         text += `   ${winners.length + i + 1}. ${mention(p.firstName, p.telegramId)} — ${ROLE_EMOJI[p.role]} ${ROLE_NAME[p.role]}\n`;
       });
@@ -222,10 +218,10 @@ export class NotificationService {
     }
 
     if (durationMinutes !== undefined) {
-      text += `⏱ O'yin: <b>${durationMinutes}</b> minut davom etdi\n`;
+      text += t("game.gameEndDuration", { min: durationMinutes });
     }
 
-    text += `\n🎭 Yangi o'yin boshlash: /startgame`;
+    text += t("game.gameEndFooter");
 
     await this.sendToGroup(chatId, text);
   }

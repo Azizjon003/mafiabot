@@ -120,7 +120,7 @@ export class GameController {
     const roleKb = new InlineKeyboard().text("🎭 Mening rolim", `showrole:${engine.gameId}`);
     await this.notifier.sendToGroup(
       chatTelegramId,
-      `🎭 <b>Rollar tarqatildi!</b>\n\nO'z rolingizni ko'rish uchun tugmani bosing 👇`,
+      t("game.rolesDistributed"),
       roleKb
     );
 
@@ -165,7 +165,7 @@ export class GameController {
     // Harakat qilmaganlarga xabar
     for (const player of engine.getAlivePlayers()) {
       if (engine.isNightActiveRole(player.role) && !engine.hasNightAction(player.role, player.playerId)) {
-        this.notifier.sendToPlayer(player.telegramId, "⏰ Vaqt tugadi! Harakatingiz o'tkazib yuborildi.").catch(() => {});
+        this.notifier.sendToPlayer(player.telegramId, t("game.actionTimeout")).catch(() => {});
       }
     }
 
@@ -259,9 +259,7 @@ export class GameController {
       // O'lgan o'yinchiga PM
       await this.notifier.sendToPlayer(
         dead.telegramId,
-        `⏱ <b>Oxirgi so'z vaqti!</b>\n\n` +
-        `Sizda <b>${secs} soniya</b> ichida guruhga oxirgi xabar yuborish imkoniyati bor.\n` +
-        `Shunchaki botga matnni yozing — guruhga yetkaziladi.`,
+        t("game.lastWordsPrompt", { seconds: secs }),
       ).catch(() => {});
     }
   }
@@ -281,10 +279,7 @@ export class GameController {
         kb.text("⚜️ Himoyalanish", "hero:defend");
       }
 
-      const text =
-        `🌅 <b>Tong otdi!</b>\n\n` +
-        `🥷 Sizning Geroyingiz tayyor.\n` +
-        `Bugun nima qilasiz?`;
+      const text = t("game.heroDayPrompt");
 
       await this.notifier.sendToPlayer(player.telegramId, text, kb).catch(() => {});
     }
@@ -333,10 +328,7 @@ export class GameController {
 
     // Hech kim ovoz bermagan yoki teng
     if (isTie || maxTargetId === null || maxCount === 0) {
-      await this.notifier.sendToGroup(
-        chatTelegramId,
-        `Ovoz berish yakunlandi:\nAxoli kelisha olmadi... Kelisha olmaslik oqibatida hech kim osilmadi...`
-      );
+      await this.notifier.sendToGroup(chatTelegramId, t("game.voteInconclusive"));
       await this.afterVoting(chatTelegramId);
       return;
     }
@@ -351,7 +343,7 @@ export class GameController {
     if (candidate.isProtectedByWarlock) {
       await this.notifier.sendToGroup(
         chatTelegramId,
-        `⚡️ <b>${candidate.firstName}</b> sehrli himoya ostida — osib bo'lmadi!`
+        t("game.warlockProtectedFromHang", { name: candidate.firstName })
       );
       await this.afterVoting(chatTelegramId);
       return;
@@ -364,7 +356,7 @@ export class GameController {
 
     const confirmMsgId = await this.notifier.sendToGroup(
       chatTelegramId,
-      `⚖️ <b>${candidate.firstName}</b>ni osmoqchimisiz?\n\n👍 Ha — osish\n👎 Yo'q — qo'yib yuborish`,
+      t("game.hangConfirmPrompt", { name: candidate.firstName }),
       confirmHangKeyboard(engine.gameId, maxTargetId)
     );
 
@@ -402,7 +394,7 @@ export class GameController {
         const kb = kamikazeTargetKeyboard(aliveNow);
         await this.notifier.sendToPlayer(
           voteResult.votedOut.telegramId,
-          "💣 Siz osildingiz! Kimni o'zingiz bilan olib ketasiz?",
+          t("game.kamikazePrompt"),
           kb
         );
 
@@ -429,13 +421,13 @@ export class GameController {
     } else if (candidate.isProtectedByWarlock) {
       await this.notifier.sendToGroup(
         chatTelegramId,
-        `⚡️ <b>${candidate.firstName}</b> sehrli himoya ostida — osib bo'lmadi!`
+        t("game.warlockProtectedFromHang", { name: candidate.firstName })
       );
     } else {
       // 👎 ko'p yoki teng — OSILMAYDI
       await this.notifier.sendToGroup(
         chatTelegramId,
-        `Axoli kelisha olmadi... <b>${candidate.firstName}</b> osilmadi!`
+        t("game.hangCancelled", { name: candidate.firstName })
       );
     }
 
@@ -550,8 +542,8 @@ export class GameController {
     ratingChange: number,
   ): Promise<void> {
     let text = won
-      ? `🎉 <b>Siz YUTDINGIZ!</b>\n\n`
-      : `😢 <b>Siz yutqazdingiz</b>\n\n`;
+      ? t("game.personalResultWon")
+      : t("game.personalResultLost");
     text += `🎭 Sizning rolingiz: ${ROLE_EMOJI[player.role]} <b>${ROLE_NAME[player.role]}</b>\n\n`;
     text += `💰 Pul: <b>+${money}</b>\n`;
     if (diamonds > 0) text += `💎 Olmos: <b>+${diamonds}</b>\n`;
