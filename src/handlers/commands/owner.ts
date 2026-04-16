@@ -308,6 +308,11 @@ const CONFIGURABLE_CURRENCY_KEYS = new Set([
   "price_chest_basic", "price_chest_silver", "price_chest_gold",
 ]);
 
+// Valyuta o'zgartirish ruxsat etilganmi
+function canToggleCurrencyFor(key: string): boolean {
+  return CONFIGURABLE_CURRENCY_KEYS.has(key) || key.startsWith("price_role_");
+}
+
 // Default vaqtlar — valyuta yo'q, birlik soniya/o'yinchi
 function isTimingKey(key: string): boolean {
   return key.startsWith("default_");
@@ -334,12 +339,19 @@ ownerCommand.callbackQuery(/^ap:price:(.+)$/, ownerOnly, async (ctx) => {
 
   let currency: "diamond" | "money" = "diamond";
   let canToggle = false;
-  if (CONFIGURABLE_CURRENCY_KEYS.has(key)) {
+  if (canToggleCurrencyFor(key)) {
+    // Rollar uchun default — pul, boshqalari DEFAULT_CURRENCIES dan
     currency = await pricingService.getCurrency(key);
+    // Rol uchun default money bo'lmasa — pricingService.getCurrency diamond qaytaradi.
+    // Shu sababli ilk marta explicit set qilinmagan bo'lsa, rolga money deb ko'ramiz:
+    if (key.startsWith("price_role_")) {
+      const raw = await prisma.config.findUnique({ where: { key: `currency_${key}` } });
+      if (!raw) currency = "money";
+    }
     canToggle = true;
   } else {
-    // Qat'iy belgilangan (rewards, rolelar, komissiyalar)
-    const isMoney = key.includes("money") || key.startsWith("price_role_")
+    // Qat'iy belgilangan (rewards, komissiyalar)
+    const isMoney = key.includes("money")
       || key === "reward_winner_bonus" || key === "reward_loser" || key === "fee_money";
     currency = isMoney ? "money" : "diamond";
   }
@@ -355,7 +367,7 @@ ownerCommand.callbackQuery(/^ap:price:(.+)$/, ownerOnly, async (ctx) => {
 // Valyuta almashtirish
 ownerCommand.callbackQuery(/^ap:toggleCurrency:(.+)$/, ownerOnly, async (ctx) => {
   const key = ctx.match[1];
-  if (!CONFIGURABLE_CURRENCY_KEYS.has(key)) {
+  if (!canToggleCurrencyFor(key)) {
     await ctx.answerCallbackQuery({ text: "Bu narxda valyuta o'zgartirib bo'lmaydi" }).catch(() => {});
     return;
   }

@@ -39,12 +39,19 @@ export const inventoryService = {
     return { success: true, price };
   },
 
-  // Aktiv rol sotib olish (💰 pulda) — avtomatik yoqiladi
-  // Hech qanday global tekshiruv yo'q — har kim har qanday rolni sotib olishi mumkin
+  // Aktiv rol sotib olish — valyuta admin paneldan sozlanadi (olmos yoki pul)
   async buyActiveRole(userId: number, role: Role): Promise<{ success: boolean; error?: string; price?: number }> {
-    const price = await pricingService.get(rolePriceKey(role));
-    const spent = await economyService.spendMoney(userId, price, `buy_role_${role}`);
-    if (!spent) return { success: false, error: `Yetarli pulingiz yo'q! (${price}💰)` };
+    const key = rolePriceKey(role);
+    const price = await pricingService.get(key);
+    const currency = await pricingService.getCurrency(key);
+    const spent = currency === "diamond"
+      ? await economyService.spendDiamonds(userId, price, `buy_role_${role}`)
+      : await economyService.spendMoney(userId, price, `buy_role_${role}`);
+    if (!spent) {
+      const sym = currency === "diamond" ? "💎" : "💰";
+      const word = currency === "diamond" ? "olmosingiz" : "pulingiz";
+      return { success: false, error: `Yetarli ${word} yo'q! (${price}${sym})` };
+    }
     await inventoryRepo.setActiveRole(userId, role);
     await inventoryRepo.setUseFlag(userId, "activeRole", true);
     return { success: true, price };

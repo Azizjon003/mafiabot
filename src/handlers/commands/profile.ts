@@ -155,10 +155,21 @@ profileCommand.callbackQuery("shop:cat:vip", async (ctx) => {
 // Aktiv rol ro'yxati
 profileCommand.callbackQuery("shop:cat:role", async (ctx) => {
   const prices = await pricingService.getAll();
+  // Har rol uchun valyutani olish
+  const { ALL_ROLES } = await import("../../keyboards/profile");
+  const currencies: Record<string, "diamond" | "money"> = {};
+  await Promise.all(
+    ALL_ROLES.map(async (r) => {
+      const key = `price_role_${r}`;
+      // Rol valyutasi DB'da yozilmagan bo'lsa — default "money"
+      const saved = await prisma.config.findUnique({ where: { key: `currency_${key}` } });
+      currencies[key] = (saved?.value as "diamond" | "money") ?? "money";
+    })
+  );
   await ctx.answerCallbackQuery().catch(() => {});
   await ctx.editMessageText(
     t("profile.shopRole"),
-    { parse_mode: "HTML", reply_markup: activeRoleListKeyboard(prices) }
+    { parse_mode: "HTML", reply_markup: activeRoleListKeyboard(prices, currencies) }
   ).catch(() => {});
 });
 

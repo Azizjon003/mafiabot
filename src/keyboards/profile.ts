@@ -40,7 +40,7 @@ export function buyItemKeyboard(itemKey: string): InlineKeyboard {
 }
 
 // 3-ekran: Aktiv rol sotib olish — barcha rollar
-const ALL_ROLES: Role[] = [
+export const ALL_ROLES: Role[] = [
   "SNIPER", "MINER", "SHERIFF", "DON",
   "LAB", "WARLOCK", "ARCHER", "KAMIKAZE",
   "ROBBER", "PROFESSOR", "MAFIA", "KILLER",
@@ -48,11 +48,16 @@ const ALL_ROLES: Role[] = [
   "DOCTOR", "SPY", "TRAITOR", "SANTA", "SNOWBOY", "CIVILIAN",
 ];
 
-export function activeRoleListKeyboard(prices: Record<string, number>): InlineKeyboard {
+export function activeRoleListKeyboard(
+  prices: Record<string, number>,
+  currencies?: Record<string, "diamond" | "money">,
+): InlineKeyboard {
   const kb = new InlineKeyboard();
   for (const r of ALL_ROLES) {
     const price = prices[`price_role_${r}`] || 300;
-    kb.text(`${ROLE_EMOJI[r]} ${ROLE_NAME[r]} — ${price}💰`, `shop:role:${r}`).row();
+    const curr = currencies?.[`price_role_${r}`] ?? "money";
+    const sym = curr === "diamond" ? "💎" : "💰";
+    kb.text(`${ROLE_EMOJI[r]} ${ROLE_NAME[r]} — ${price}${sym}`, `shop:role:${r}`).row();
   }
   kb.text("❌ Hozirgi aktiv rolni o'chirish", "shop:role:clear").row();
   kb.text("🔙 Ortga", "prof:shop");
