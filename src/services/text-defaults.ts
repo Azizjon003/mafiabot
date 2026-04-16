@@ -351,6 +351,22 @@ export const TEXT_DEFAULTS: Record<string, string> = {
   "game.personalResultWon": "🎉 <b>Siz YUTDINGIZ!</b>\n\n",
   "game.personalResultLost": "😢 <b>Siz yutqazdingiz</b>\n\n",
 
+  // O'yin roster (rollar tarqatilgandan keyin guruhda)
+  "game.playerRoster":
+    "<b>Tirik o'yinchilar:</b>\n{playerList}\n\n" +
+    "👨🏼 <b>Tinch aholilar</b> — {townCount}\n{townRoles}\n\n" +
+    "🤵🏼 <b>Mafiya</b> — {mafiaCount}\n{mafiaRoles}\n" +
+    "{soloBlock}" +
+    "\n<b>Jami:</b> {total}",
+  "game.playerRosterSoloBlock": "\n🔪 <b>Yakka rollar</b> — {soloCount}\n{soloRoles}\n",
+
+  // Tun atmosferasi (Bot-ga o'tish tugmasi bilan)
+  "game.nightAtmosphere":
+    "🌙 <b>Tun</b>\n\n" +
+    "Ko'chaga faqat jasur va qo'rqmas odamlar chiqishdi. " +
+    "Ertalab tirik qolganlarni sanaymiz...",
+  "game.nightBotButton": "Bot-ga o'tish",
+
   // ===== roleAssigned — qo'shimchalar =====
   "roleAssigned.shieldActive": "\n\n🛡 <b>Shield faol!</b> 1 marta o'limdan saqlaydi (Snayperdan tashqari).",
   "roleAssigned.heroActive": "\n\n🥷 <b>Geroy faol!</b> Sizda maxsus qo'shimcha qobiliyat bor.",
@@ -504,6 +520,10 @@ export const TEXT_LABELS: Record<string, string> = {
   "game.gameEndFooter": "Yakun — yangi o'yin havolasi",
   "game.personalResultWon": "Shaxsiy natija — yutdi",
   "game.personalResultLost": "Shaxsiy natija — yutqazdi",
+  "game.playerRoster": "Roster — tirik o'yinchilar + jamoalar",
+  "game.playerRosterSoloBlock": "Roster — yakka rollar bloki",
+  "game.nightAtmosphere": "Tun atmosferasi (Bot-ga o'tish)",
+  "game.nightBotButton": "Tugma — Bot-ga o'tish",
 
   // NIGHT STORY (guruhga tun xabarlari)
   "nightStory.SHERIFF": "Tun hikoyasi — Komissar tekshirish",
