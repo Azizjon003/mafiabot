@@ -353,12 +353,12 @@ export const TEXT_DEFAULTS: Record<string, string> = {
 
   // O'yin roster (rollar tarqatilgandan keyin guruhda)
   "game.playerRoster":
-    "<b>Tirik o'yinchilar:</b>\n{playerList}\n\n" +
-    "👨🏼 <b>Tinch aholilar</b> — {townCount}\n{townRoles}\n\n" +
-    "🤵🏼 <b>Mafiya</b> — {mafiaCount}\n{mafiaRoles}\n" +
+    "Tirik o'yinchilar:\n{playerList}\n\n" +
+    "🏘 Tinch aholilar — {townCount}\n{townRoles}\n\n" +
+    "🤵🏻 Mafiya — {mafiaCount}\n{mafiaRoles}\n" +
     "{soloBlock}" +
-    "\n<b>Jami:</b> {total}",
-  "game.playerRosterSoloBlock": "\n🔪 <b>Yakka rollar</b> — {soloCount}\n{soloRoles}\n",
+    "\nJami: {total}",
+  "game.playerRosterSoloBlock": "\n🔪 Yakka rollar — {soloCount}\n{soloRoles}\n",
 
   // Tun atmosferasi (Bot-ga o'tish tugmasi bilan)
   "game.nightAtmosphere":
