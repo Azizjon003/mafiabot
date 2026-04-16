@@ -107,7 +107,9 @@ class GameManager {
       heroProtection: 0, // Himoyalanish bosganda User.hero.protection'dan yuklanadi
       hasShieldActive: used.shieldUsed,
       shieldCharges: used.shieldUsed ? 1 : 0,
+      reservedShield: used.shieldUsed,
       hasDocumentActive: used.documentUsed,
+      reservedDocument: used.documentUsed,
       preferredRole: used.activeRole ?? undefined,
       inactiveNights: 0,
     };

@@ -53,7 +53,9 @@ export interface SerializedPlayer {
   heroProtection: number;
   hasShieldActive: boolean;
   shieldCharges: number;
+  reservedShield: boolean;
   hasDocumentActive?: boolean;
+  reservedDocument: boolean;
   preferredRole?: Role;
   originalRole?: Role;
   professorBoxes?: ("DEATH" | "EMPTY" | "HERO")[];
@@ -82,7 +84,9 @@ function serializePlayer(p: PlayerState): SerializedPlayer {
     heroProtection: p.heroProtection,
     hasShieldActive: p.hasShieldActive,
     shieldCharges: p.shieldCharges,
+    reservedShield: p.reservedShield ?? p.hasShieldActive,
     hasDocumentActive: p.hasDocumentActive,
+    reservedDocument: p.reservedDocument ?? !!p.hasDocumentActive,
     preferredRole: p.preferredRole,
     originalRole: p.originalRole,
     professorBoxes: p.professorBoxes,
@@ -112,7 +116,9 @@ function deserializePlayer(s: SerializedPlayer): PlayerState {
     heroProtection: s.heroProtection,
     hasShieldActive: s.hasShieldActive,
     shieldCharges: s.shieldCharges,
+    reservedShield: s.reservedShield ?? s.hasShieldActive,
     hasDocumentActive: s.hasDocumentActive,
+    reservedDocument: s.reservedDocument ?? !!s.hasDocumentActive,
     preferredRole: s.preferredRole,
     originalRole: s.originalRole,
     professorBoxes: s.professorBoxes,

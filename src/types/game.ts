@@ -22,7 +22,9 @@ export interface PlayerState {
   heroProtection: number; // Himoya qoldig'i (damage shield, depleted by attacks)
   hasShieldActive: boolean; // Shield faolmi
   shieldCharges: number; // Shield necha hujumdan saqlay oladi
+  reservedShield: boolean; // O'yin boshida shield reserve qilinganmi (finalize uchun)
   hasDocumentActive?: boolean; // Hujjat faolmi (komissar tekshiruvini aldash)
+  reservedDocument: boolean; // O'yin boshida hujjat reserve qilinganmi
   preferredRole?: Role; // Aktiv rol — tarqatishda ustuvor
   // Sotqin
   originalRole?: Role; // Sotqin uchun — asl rol

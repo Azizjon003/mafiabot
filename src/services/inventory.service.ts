@@ -95,9 +95,11 @@ export const inventoryService = {
     return { enabled: newValue };
   },
 
-  // O'yinga qo'shilishda foydalanish — barcha flag'larni qaytaradi va consume qiladi
+  // O'yinga qo'shilishda — qaysi predmetlar reserve qilinganini qaytaradi.
+  // SHIELD va DOCUMENT: hali DB'dan AYRILMAYDI — o'yin oxirida haqiqatan ishlatilganmi tekshiriladi.
+  // ACTIVE ROLE: darhol iste'mol qilinadi (aktiv rol tarqatishga ishlatiladi).
   async consumeForGame(userId: number): Promise<{
-    shieldUsed: boolean; // 1 o'yin = 1 marta saqlash
+    shieldUsed: boolean;
     documentUsed: boolean;
     activeRole: Role | null;
     heroUsed: boolean;
@@ -115,16 +117,8 @@ export const inventoryService = {
       heroUsed: user.useHeroNextGame && !!user.hero,
     };
 
-    // Consume — har bir item 1 marta ishlatiladi
+    // Faqat aktiv rol darhol iste'mol qilinadi (shield/hujjat — keyin)
     const updates: any = {};
-    if (result.shieldUsed) {
-      updates.shieldCount = { decrement: 1 };
-      updates.useShieldNextGame = false;
-    }
-    if (result.documentUsed) {
-      updates.documentCount = { decrement: 1 };
-      updates.useDocumentNextGame = false;
-    }
     if (result.activeRole) {
       updates.activeRole = null;
       updates.useActiveRoleNextGame = false;
@@ -136,5 +130,32 @@ export const inventoryService = {
     }
 
     return result;
+  },
+
+  // O'yin tugaganda chaqiriladi — shield/hujjat haqiqatan ishlatilgan bo'lsa iste'mol qiladi.
+  // Ishlatilmagan bo'lsa — inventory'da saqlanadi, use flag false qilinadi.
+  async finalizeForGame(
+    userId: number,
+    reserved: { shield: boolean; document: boolean },
+    actuallyUsed: { shield: boolean; document: boolean },
+  ): Promise<void> {
+    const updates: any = {};
+    if (reserved.shield) {
+      if (actuallyUsed.shield) {
+        // Ishlatildi — DB'dan ayiramiz
+        updates.shieldCount = { decrement: 1 };
+      }
+      // Use flag har doim o'chadi (keyingi o'yin uchun qayta yoqilishi kerak)
+      updates.useShieldNextGame = false;
+    }
+    if (reserved.document) {
+      if (actuallyUsed.document) {
+        updates.documentCount = { decrement: 1 };
+      }
+      updates.useDocumentNextGame = false;
+    }
+    if (Object.keys(updates).length > 0) {
+      await prisma.user.update({ where: { id: userId }, data: updates });
+    }
   },
 };

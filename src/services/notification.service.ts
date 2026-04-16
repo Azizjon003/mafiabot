@@ -52,6 +52,24 @@ export class NotificationService {
     }
   }
 
+  async pinMessage(chatId: bigint, messageId: number, silent = true): Promise<void> {
+    try {
+      await this.bot.api.pinChatMessage(chatId.toString(), messageId, {
+        disable_notification: silent,
+      });
+    } catch (error) {
+      logger.error(error, `Xabarni pin qilishda xatolik: ${chatId}/${messageId}`);
+    }
+  }
+
+  async unpinMessage(chatId: bigint, messageId: number): Promise<void> {
+    try {
+      await this.bot.api.unpinChatMessage(chatId.toString(), messageId);
+    } catch (error) {
+      // Allaqachon unpin bo'lgan yoki ruxsat yo'q — ignore
+    }
+  }
+
   async editGroupMessage(chatId: bigint, messageId: number, text: string, keyboard?: InlineKeyboard): Promise<void> {
     try {
       await this.bot.api.editMessageText(chatId.toString(), messageId, text, {

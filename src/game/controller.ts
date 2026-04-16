@@ -42,6 +42,8 @@ export class GameController {
     if (msgId) {
       this.registrationMessageId.set(chatKey, msgId);
       engine.registrationMessageId = msgId;
+      // Registratsiyani guruh tepasiga pin qilish (jim — push yubormaydi)
+      await this.notifier.pinMessage(chatTelegramId, msgId, true);
     }
 
     // /next obunachilariga xabar yuborish (parallel)
@@ -90,6 +92,13 @@ export class GameController {
       this.registrationTimers.delete(chatKey);
     }
     this.registrationTimeLeft.delete(chatKey);
+
+    // Registratsiya xabarini unpin qilish
+    const regMsgId = this.registrationMessageId.get(chatKey);
+    if (regMsgId) {
+      await this.notifier.unpinMessage(chatTelegramId, regMsgId);
+      this.registrationMessageId.delete(chatKey);
+    }
 
     if (engine.getPlayerCount() < engine.settings.minPlayers) {
       await this.notifier.sendToGroup(
@@ -281,13 +290,21 @@ export class GameController {
     const { lastWordsService } = await import("../services/last-words.service");
     const secs = lastWordsService.getWindowSeconds();
 
+    logger.info({ count: deadPlayers.length, chatId: chatTelegramId.toString() }, "openLastWordsForDead — oyna ochilmoqda");
+
     for (const dead of deadPlayers) {
       lastWordsService.open(dead.telegramId, chatTelegramId, dead.firstName);
       // O'lgan o'yinchiga PM
-      await this.notifier.sendToPlayer(
+      const msgId = await this.notifier.sendToPlayer(
         dead.telegramId,
         t("game.lastWordsPrompt", { seconds: secs }),
-      ).catch(() => {});
+      ).catch((e) => {
+        logger.error(e, `Oxirgi so'z PM yuborilmadi (telegramId=${dead.telegramId})`);
+        return undefined;
+      });
+      if (!msgId) {
+        logger.warn({ telegramId: dead.telegramId.toString(), name: dead.firstName }, "Oxirgi so'z PM yuborilmadi — bot DM qilolmadi");
+      }
     }
   }
 
@@ -555,6 +572,18 @@ export class GameController {
 
         // Shaxsiy natija xabari
         await this.sendPersonalGameResult(player, won, moneyEarned, diamondsEarned, ratingChange).catch(() => {});
+
+        // Shield va Hujjat finalize — ishlatilgan bo'lsa iste'mol, bo'lmasa saqlanadi
+        // Shield used = hasShieldActive false bo'ldi (hujum bor edi va shield o'z ishini qildi)
+        // Document used = hasDocumentActive false bo'ldi (Komissar tekshirdi va yomon rolni tinch ko'rsatdi)
+        const shieldUsed = player.reservedShield && !player.hasShieldActive;
+        const documentUsed = player.reservedDocument && !player.hasDocumentActive;
+        const { inventoryService } = await import("../services/inventory.service");
+        await inventoryService.finalizeForGame(
+          player.userId,
+          { shield: player.reservedShield, document: player.reservedDocument },
+          { shield: shieldUsed, document: documentUsed },
+        ).catch((e) => logger.error(e, `finalizeForGame xatolik userId=${player.userId}`));
       } catch (e) {
         logger.error(e, `Statistika yozishda xatolik (userId: ${player.userId})`);
       }
@@ -585,6 +614,9 @@ export class GameController {
   }
 
   private didPlayerWin(player: PlayerState, winner: Winner): boolean {
+    // Faqat tirik qolganlar g'olib sanaladi.
+    // O'lgan jamoa a'zolari — yutqazganlar ro'yxatida.
+    if (!player.isAlive) return false;
     const team = player.role;
     switch (winner) {
       case "TOWN":
@@ -693,6 +725,13 @@ export class GameController {
       this.registrationTimers.delete(chatKey);
     }
     this.registrationTimeLeft.delete(chatKey);
+
+    // Registratsiya xabarini unpin qilish
+    const regMsgId = this.registrationMessageId.get(chatKey);
+    if (regMsgId) {
+      await this.notifier.unpinMessage(chatTelegramId, regMsgId);
+      this.registrationMessageId.delete(chatKey);
+    }
 
     // O'yin to'xtatilganda guruhni unmute qilish
     if (engine.settings.muteOnNight) {

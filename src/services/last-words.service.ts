@@ -1,16 +1,18 @@
-// Oxirgi so'z tizimi — o'lgan o'yinchi 10 soniya ichida guruhga xabar yuborishi mumkin
+// Oxirgi so'z tizimi — o'lgan o'yinchi belgilangan vaqt ichida guruhga xabar yuborishi mumkin
 // Map<playerTelegramId, { chatTelegramId, playerName, expiresAt, timer }>
+import { logger } from "../utils/logger";
 
 interface LastWordsWindow {
   chatTelegramId: bigint;
   playerName: string;
-  expiresAt: number; // Date.now() + 10000
+  expiresAt: number;
   timer: ReturnType<typeof setTimeout>;
 }
 
 const windows = new Map<string, LastWordsWindow>();
 
-const WINDOW_MS = 10_000; // 10 soniya
+// Default oyna — 30 soniya (avval 10s edi, qisqa bo'lganidan ishlamay qolayotgan edi)
+let WINDOW_MS = 30_000;
 
 export const lastWordsService = {
   // O'lim sodir bo'lganda oyna ochish
@@ -37,22 +39,31 @@ export const lastWordsService = {
       expiresAt: Date.now() + WINDOW_MS,
       timer,
     });
+    logger.info({ key, playerName, windowMs: WINDOW_MS }, "Oxirgi so'z oynasi ochildi");
   },
 
   // Oyna mavjudmi? Agar ha — guruh IDsini va ismni qaytaradi
   consume(playerTelegramId: bigint): { chatTelegramId: bigint; playerName: string } | null {
     const key = playerTelegramId.toString();
     const w = windows.get(key);
-    if (!w) return null;
+    if (!w) {
+      logger.debug({ key }, "Oxirgi so'z — oyna topilmadi");
+      return null;
+    }
     if (Date.now() > w.expiresAt) {
       clearTimeout(w.timer);
       windows.delete(key);
+      logger.info({ key, playerName: w.playerName }, "Oxirgi so'z — oyna muddati tugagan");
       return null;
     }
-    // Xabar yubordi — oyna yopiladi
     clearTimeout(w.timer);
     windows.delete(key);
+    logger.info({ key, playerName: w.playerName }, "Oxirgi so'z — xabar qabul qilindi");
     return { chatTelegramId: w.chatTelegramId, playerName: w.playerName };
+  },
+
+  setWindowMs(ms: number): void {
+    WINDOW_MS = ms;
   },
 
   // Ochiq oynani ko'rish (consume qilmasdan)
