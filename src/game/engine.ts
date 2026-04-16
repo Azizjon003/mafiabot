@@ -188,20 +188,17 @@ export class GameEngine {
     if (!attackerHero) return null;
     const damage = Math.floor(Math.random() * (attackerHero.powerMax - attackerHero.powerMin + 1)) + attackerHero.powerMin;
 
-    // Nishon geroy emas — darhol o'ladi (HP tizimi yo'q)
-    if (!target.hasHeroActive) {
-      target.isAlive = false;
-      playerRepo.kill(targetPlayerId, this.currentRound, "MAFIA_KILL").catch((e) =>
-        logger.error(e, "Hero attack kill error")
-      );
-      return {
-        killed: true, damage, absorbedByProtection: 0, hpDamage: damage,
-        remainingHP: 0, remainingProtection: 0, targetHasHero: false,
-      };
+    // Har bir o'yinchi 100 HP bilan boshlaydi (heroHP'ni umumiy HP sifatida qayta ishlatamiz).
+    // Eski o'yinlarda heroHP=0 bo'lishi mumkin (migratsiya) — birinchi hujumda 100 deb hisoblaymiz.
+    if (target.heroHP <= 0 && target.isAlive) {
+      target.heroHP = 100;
     }
 
-    // Nishon geroy — avval Protection, keyin HP
-    const absorbed = Math.min(damage, target.heroProtection);
+    // Geroy bor bo'lsa — avval Protection (qalqon) yutadi, qolgani HP'ga
+    // Geroy yo'q — to'g'ridan-to'g'ri HP'ga
+    const absorbed = target.hasHeroActive
+      ? Math.min(damage, target.heroProtection)
+      : 0;
     target.heroProtection -= absorbed;
     const hpDamage = damage - absorbed;
     target.heroHP -= hpDamage;
@@ -218,13 +215,13 @@ export class GameEngine {
       );
       return {
         killed: true, damage, absorbedByProtection: absorbed, hpDamage,
-        remainingHP: 0, remainingProtection: target.heroProtection, targetHasHero: true,
+        remainingHP: 0, remainingProtection: target.heroProtection, targetHasHero: target.hasHeroActive,
       };
     }
 
     return {
       killed: false, damage, absorbedByProtection: absorbed, hpDamage,
-      remainingHP: target.heroHP, remainingProtection: target.heroProtection, targetHasHero: true,
+      remainingHP: target.heroHP, remainingProtection: target.heroProtection, targetHasHero: target.hasHeroActive,
     };
   }
 

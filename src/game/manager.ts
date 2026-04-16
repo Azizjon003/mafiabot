@@ -103,7 +103,7 @@ class GameManager {
       hasHeroActive: used.heroUsed,
       heroProtectionAvailable: false,
       heroDefendUsed: false,
-      heroHP: used.heroUsed ? 100 : 0, // Geroy bo'lsa 100 jon
+      heroHP: 100, // Har bir o'yinchi 100 HP — geroysiz ham bitta zarbadan o'lmasligi uchun
       heroProtection: 0, // Himoyalanish bosganda User.hero.protection'dan yuklanadi
       hasShieldActive: used.shieldUsed,
       shieldCharges: used.shieldUsed ? 1 : 0,

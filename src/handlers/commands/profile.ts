@@ -454,21 +454,21 @@ profileCommand.callbackQuery(/^hero:atk:(\d+)$/, async (ctx) => {
     `💪 Hujum kuchi: <b>${result.damage}</b>\n`;
   if (result.targetHasHero) {
     attackerText += `🛡 Himoya yutdi: <b>${result.absorbedByProtection}</b>\n`;
-    attackerText += `❤️ HP'ga zarar: <b>${result.hpDamage}</b>\n\n`;
-    if (result.killed) {
-      attackerText += `💀 <b>${target.firstName}</b> halok bo'ldi!`;
-    } else {
-      attackerText += `🩸 <b>${target.firstName}</b> tirik qoldi:\n` +
-        `   ❤️ HP: <b>${result.remainingHP}/100</b>\n` +
-        `   🛡 Himoya: <b>${result.remainingProtection}</b>`;
-    }
+  }
+  attackerText += `❤️ HP'ga zarar: <b>${result.hpDamage}</b>\n\n`;
+  if (result.killed) {
+    attackerText += `💀 <b>${target.firstName}</b> halok bo'ldi!`;
   } else {
-    attackerText += `\n💀 <b>${target.firstName}</b> halok bo'ldi! (Geroy himoyasi yo'q edi)`;
+    attackerText += `🩸 <b>${target.firstName}</b> tirik qoldi:\n` +
+      `   ❤️ HP: <b>${result.remainingHP}/100</b>`;
+    if (result.targetHasHero) {
+      attackerText += `\n   🛡 Himoya: <b>${result.remainingProtection}</b>`;
+    }
   }
   await ctx.editMessageText(attackerText, { parse_mode: "HTML" }).catch(() => {});
 
-  // Nishonga ham PM (agar geroy egasi bo'lsa va tirik qolsa)
-  if (!result.killed && result.targetHasHero) {
+  // Nishonga ham PM (tirik qolsa — ogohlantirish)
+  if (!result.killed) {
     try {
       await ctx.api.sendMessage(
         target.telegramId.toString(),
