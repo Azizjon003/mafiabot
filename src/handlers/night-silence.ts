@@ -6,7 +6,11 @@ import { logger } from "../utils/logger";
 export const nightSilenceHandler = new Composer<BotContext>();
 
 // Tunda guruhda kelgan xabarlarni avtomatik o'chirish (mute o'rniga)
-// Faqat NIGHT fazasida va chat settings.muteOnNight yoqilgan bo'lsa
+// Faqat NIGHT fazasida va chat settings.muteOnNight yoqilgan bo'lsa.
+//
+// Qoida:
+// - Oddiy o'yinchi — xabari o'chiriladi (hech narsa yoza olmaydi)
+// - Admin — xabari "!" bilan boshlansa qoldiriladi, aks holda o'chiriladi
 nightSilenceHandler.on("message", async (ctx, next) => {
   if (!ctx.chat || ctx.chat.type === "private") return next();
   if (!ctx.message) return next();
@@ -23,19 +27,25 @@ nightSilenceHandler.on("message", async (ctx, next) => {
   // Botning o'z xabarini o'chirmaslik
   if (ctx.from?.id === ctx.me.id) return next();
 
-  // Adminlar xabarini o'chirmaymiz
+  // Xabar matnini olish (caption ham bo'lishi mumkin — foto/video)
+  const text = (ctx.message.text ?? ctx.message.caption ?? "").trim();
+
+  // Admin tekshirish
+  let isAdmin = false;
   try {
     const member = await ctx.getChatMember(ctx.from!.id);
-    if (member.status === "creator" || member.status === "administrator") {
-      return next();
-    }
-  } catch { /* ignore */ }
+    isAdmin = member.status === "creator" || member.status === "administrator";
+  } catch { /* ignore — admin emas deb qoldiramiz */ }
 
-  // Xabarni o'chirish
+  // Admin + "!" bilan boshlangan → qoldiramiz
+  if (isAdmin && text.startsWith("!")) {
+    return next();
+  }
+
+  // Qolgan barcha xabar (oddiy o'yinchi yoki admin "!"siz) — o'chirish
   try {
     await ctx.deleteMessage();
   } catch (e) {
-    // Bot huquqi yo'q yoki xabar eski — loglaymiz
     logger.debug(e, "Night delete message failed");
   }
 });
