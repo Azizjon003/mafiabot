@@ -54,9 +54,55 @@ export class GameEngine {
   // Callbacks — bot handlerlar tomonidan o'rnatiladi
   onPhaseEnd?: () => Promise<void>;
 
-  // Fire-and-forget persist — state o'zgarganda DB'ga yozadi
-  private persistSoon(): void {
-    import("./persistence").then((m) => m.persistEngine(this)).catch(() => {});
+  // Persistence — debounced + serialized
+  // 500ms ichida bir necha persistSoon() chaqirilsa — bitta yozishga birlashadi.
+  // Oldingi yozish tugamaguncha yangisi boshlanmaydi (race condition yo'q).
+  private persistTimer: ReturnType<typeof setTimeout> | null = null;
+  private persistInFlight: Promise<void> | null = null;
+  private persistDirty: boolean = false;
+  private static PERSIST_DEBOUNCE_MS = 500;
+
+  persistSoon(): void {
+    this.persistDirty = true;
+    if (this.persistTimer) return; // allaqachon rejalashtirilgan
+    this.persistTimer = setTimeout(() => {
+      this.persistTimer = null;
+      this.flushPersist();
+    }, GameEngine.PERSIST_DEBOUNCE_MS);
+  }
+
+  private async flushPersist(): Promise<void> {
+    // Agar oldingi yozish davom etayotgan bo'lsa — kutamiz
+    if (this.persistInFlight) {
+      await this.persistInFlight.catch(() => {});
+    }
+    if (!this.persistDirty) return;
+    this.persistDirty = false;
+    this.persistInFlight = (async () => {
+      try {
+        const m = await import("./persistence");
+        await m.persistEngine(this);
+      } catch {
+        // persistEngine o'zi log qiladi
+      } finally {
+        this.persistInFlight = null;
+      }
+    })();
+    await this.persistInFlight;
+    // Yozish paytida yana dirty bo'lgan bo'lsa — qayta flush
+    if (this.persistDirty) {
+      this.persistSoon();
+    }
+  }
+
+  // Kritik joylar uchun — darhol yozish (debounce'ni oldin ishlatadi)
+  async persistNow(): Promise<void> {
+    if (this.persistTimer) {
+      clearTimeout(this.persistTimer);
+      this.persistTimer = null;
+    }
+    this.persistDirty = true;
+    await this.flushPersist();
   }
 
   constructor(
