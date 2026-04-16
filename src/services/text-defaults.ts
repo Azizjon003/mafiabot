@@ -371,6 +371,14 @@ export const TEXT_DEFAULTS: Record<string, string> = {
     "Ertalab tirik qolganlarni sanaymiz...",
   "game.nightBotButton": "Bot-ga o'tish",
 
+  // /diamond guruhda — random tarqatish
+  "game.diamondShareAnnounce":
+    "💎 {sender} guruhga <b>{total}</b> olmos tarqatdi!\n\n" +
+    "<b>Oluvchilar:</b>\n{list}\n\n" +
+    "Komissiya: 1💎",
+  "game.diamondShareNoGame": "⚠️ Hozir o'yin yo'q! Avval /startgame qiling.",
+  "game.diamondShareInsufficient": "❌ Yetarli olmosingiz yo'q! ({cost}💎 kerak)",
+
   // ===== roleAssigned — qo'shimchalar =====
   "roleAssigned.shieldActive": "\n\n🛡 <b>Shield faol!</b> 1 marta o'limdan saqlaydi (Snayperdan tashqari).",
   "roleAssigned.heroActive": "\n\n🥷 <b>Geroy faol!</b> Sizda maxsus qo'shimcha qobiliyat bor.",
@@ -530,6 +538,9 @@ export const TEXT_LABELS: Record<string, string> = {
   "game.playerRosterSoloBlock": "Roster — yakka rollar bloki",
   "game.nightAtmosphere": "Tun atmosferasi (Bot-ga o'tish)",
   "game.nightBotButton": "Tugma — Bot-ga o'tish",
+  "game.diamondShareAnnounce": "Olmos random tarqatish e'loni",
+  "game.diamondShareNoGame": "Olmos tarqatish — o'yin yo'q xatosi",
+  "game.diamondShareInsufficient": "Olmos tarqatish — yetarli emas",
 
   // NIGHT STORY (guruhga tun xabarlari)
   "nightStory.SHERIFF": "Tun hikoyasi — Komissar tekshirish",

@@ -5,6 +5,7 @@ import { userRepo } from "../../database/repositories/user.repository";
 import { gameManager } from "../../game/manager";
 import { mention } from "../../utils/helpers";
 import { groupOnly, privateOnly } from "../middleware/chat-type";
+import { t } from "../../services/text.service";
 
 export const economyCommand = new Composer<BotContext>();
 
@@ -68,10 +69,58 @@ economyCommand.command("send", groupOnly, async (ctx) => {
     return;
   }
 
-  // Guruhda — barcha guruh a'zolariga tarqatish (hozircha xabar)
+  // Guruhda — o'yindagi o'yinchilarga random tarqatish
   if (ctx.chat.type !== "private") {
+    const engine = gameManager.getGame(BigInt(ctx.chat.id));
+    const poolPlayers = engine ? [...engine.players.values()] : [];
+    if (poolPlayers.length === 0) {
+      await ctx.reply(t("game.diamondShareNoGame"), { parse_mode: "HTML" });
+      return;
+    }
+
+    // Komissiya: 1💎
+    const totalCost = amount + 1;
+    const canSpend = await economyService.spendDiamonds(ctx.dbUser.id, totalCost, "diamond_share");
+    if (!canSpend) {
+      await ctx.reply(t("game.diamondShareInsufficient", { cost: totalCost }), { parse_mode: "HTML" });
+      return;
+    }
+
+    // Har 1💎 random bir o'yinchiga (takrorlanishi mumkin)
+    type Receiver = { userId: number; telegramId: bigint; firstName: string; count: number };
+    const received: Map<number, Receiver> = new Map();
+    for (let i = 0; i < amount; i++) {
+      const winner = poolPlayers[Math.floor(Math.random() * poolPlayers.length)];
+      const existing = received.get(winner.userId);
+      if (existing) {
+        existing.count += 1;
+      } else {
+        received.set(winner.userId, {
+          userId: winner.userId,
+          telegramId: winner.telegramId,
+          firstName: winner.firstName,
+          count: 1,
+        });
+      }
+    }
+
+    // Olmos yuborish
+    for (const r of received.values()) {
+      await economyService.addDiamonds(r.userId, r.count, "diamond_share_receive");
+    }
+
+    // Ro'yxat (ko'p olganlar tepada)
+    const list = [...received.values()]
+      .sort((a, b) => b.count - a.count)
+      .map((r) => `• ${mention(r.firstName, r.telegramId)} — <b>${r.count}</b>💎`)
+      .join("\n");
+
     await ctx.reply(
-      `💎 ${mention(ctx.from!.first_name, BigInt(ctx.from!.id))} guruhga <b>${amount}</b> olmos tarqatmoqda!`,
+      t("game.diamondShareAnnounce", {
+        sender: mention(ctx.from!.first_name, BigInt(ctx.from!.id)),
+        total: amount,
+        list,
+      }),
       { parse_mode: "HTML" }
     );
   }
