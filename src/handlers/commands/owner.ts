@@ -480,13 +480,33 @@ ownerCommand.callbackQuery(/^ap:tsetexact:(.+)$/, ownerOnly, async (ctx) => {
 });
 
 ownerCommand.callbackQuery(/^ap:treset:(.+)$/, ownerOnly, async (ctx) => {
+  if (!ctx.from) return;
   const key = decodeKey(ctx.match[1]);
-  await textService.resetText(key);
+  await textService.resetText(key, BigInt(ctx.from.id));
   await ctx.answerCallbackQuery({ text: "✅ Default holatga qaytarildi" }).catch(() => {});
   await ctx.editMessageText(textInfoBody(key), {
     parse_mode: "HTML",
     reply_markup: textEditKeyboard(key, false),
   }).catch(() => {});
+});
+
+// Tahrir tarixi
+ownerCommand.callbackQuery(/^ap:thist:(.+)$/, ownerOnly, async (ctx) => {
+  const key = decodeKey(ctx.match[1]);
+  await ctx.answerCallbackQuery().catch(() => {});
+  const history = await textService.getHistory(key, 10);
+  if (history.length === 0) {
+    await ctx.reply(`📜 <b>${key}</b>\n\nHali tahrir tarixi yo'q.`, { parse_mode: "HTML" });
+    return;
+  }
+  let body = `📜 <b>${key} — tahrir tarixi</b>\n\n`;
+  history.forEach((h, i) => {
+    const date = h.createdAt.toLocaleString("uz-UZ");
+    const preview = h.newValue.length > 100 ? h.newValue.slice(0, 100) + "…" : h.newValue;
+    body += `<b>${i + 1}.</b> ${date} — <code>${h.editorTgId}</code>\n`;
+    body += `<i>${escapeHtmlText(preview)}</i>\n\n`;
+  });
+  await ctx.reply(body, { parse_mode: "HTML" });
 });
 
 ownerCommand.callbackQuery("ap:texts:search", ownerOnly, async (ctx) => {
@@ -536,7 +556,7 @@ ownerCommand.on("message:document", async (ctx, next) => {
     const url = `https://api.telegram.org/file/bot${ctx.api.token}/${file.file_path}`;
     const res = await fetch(url);
     const json = await res.json() as Record<string, string>;
-    const { ok, failed } = await textService.importCustoms(json);
+    const { ok, failed } = await textService.importCustoms(json, BigInt(ctx.from.id));
     await ctx.reply(`✅ Import: <b>${ok}</b> ta saqlandi, <b>${failed}</b> ta rad etildi.`, { parse_mode: "HTML" });
   } catch (e: any) {
     await ctx.reply(`❌ Import xatolik: ${e?.message || "noma'lum"}`);
@@ -755,7 +775,8 @@ ownerCommand.on("message:text", async (ctx, next) => {
   // TEXT edit input
   if (pending.type === "text") {
     pendingInputs.delete(ownerId);
-    const res = await textService.setText(pending.key, text);
+    const editorTgId = BigInt(ctx.from.id);
+    const res = await textService.setText(pending.key, text, editorTgId);
     if (!res.ok) {
       await ctx.reply(`❌ HTML xato: ${res.error}\n\nQayta urinib ko'ring: /admin`);
       return;
@@ -787,7 +808,7 @@ ownerCommand.on("message:text", async (ctx, next) => {
     pendingInputs.delete(ownerId);
     try {
       const data = JSON.parse(text) as Record<string, string>;
-      const { ok, failed } = await textService.importCustoms(data);
+      const { ok, failed } = await textService.importCustoms(data, BigInt(ctx.from.id));
       await ctx.reply(`✅ Import: <b>${ok}</b> ta saqlandi, <b>${failed}</b> ta rad etildi.`, { parse_mode: "HTML" });
     } catch (e: any) {
       await ctx.reply(`❌ JSON xato: ${e?.message || "noma'lum"}`);

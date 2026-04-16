@@ -63,23 +63,45 @@ export const textService = {
     return applyParams(template, params);
   },
 
-  async setText(key: string, value: string): Promise<{ ok: true } | { ok: false; error: string }> {
+  async setText(key: string, value: string, editorTgId?: bigint): Promise<{ ok: true } | { ok: false; error: string }> {
     const v = validateHtml(value);
     if (!v.ok) return v;
     const dbKey = DB_PREFIX + key;
+    const oldValue = cache.get(key) ?? null;
     await prisma.config.upsert({
       where: { key: dbKey },
       update: { value },
       create: { key: dbKey, value },
     });
     cache.set(key, value);
+    // Audit log
+    if (editorTgId !== undefined) {
+      await prisma.configAudit.create({
+        data: { key, oldValue, newValue: value, editorTgId },
+      }).catch(() => {});
+    }
     return { ok: true };
   },
 
-  async resetText(key: string): Promise<void> {
+  async resetText(key: string, editorTgId?: bigint): Promise<void> {
     const dbKey = DB_PREFIX + key;
+    const oldValue = cache.get(key) ?? null;
     await prisma.config.deleteMany({ where: { key: dbKey } });
     cache.delete(key);
+    if (editorTgId !== undefined && oldValue !== null) {
+      await prisma.configAudit.create({
+        data: { key, oldValue, newValue: "[RESET TO DEFAULT]", editorTgId },
+      }).catch(() => {});
+    }
+  },
+
+  async getHistory(key: string, limit = 10): Promise<{ oldValue: string | null; newValue: string; editorTgId: bigint; createdAt: Date }[]> {
+    return prisma.configAudit.findMany({
+      where: { key },
+      orderBy: { createdAt: "desc" },
+      take: limit,
+      select: { oldValue: true, newValue: true, editorTgId: true, createdAt: true },
+    });
   },
 
   isCustom(key: string): boolean {
@@ -126,7 +148,7 @@ export const textService = {
   },
 
   // Import — objectdan
-  async importCustoms(data: Record<string, string>): Promise<{ ok: number; failed: number }> {
+  async importCustoms(data: Record<string, string>, editorTgId?: bigint): Promise<{ ok: number; failed: number }> {
     let ok = 0;
     let failed = 0;
     for (const [key, value] of Object.entries(data)) {
@@ -134,7 +156,7 @@ export const textService = {
         failed++;
         continue;
       }
-      const res = await this.setText(key, value);
+      const res = await this.setText(key, value, editorTgId);
       if (res.ok) ok++;
       else failed++;
     }

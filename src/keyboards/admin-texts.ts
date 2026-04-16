@@ -54,6 +54,7 @@ export function textEditKeyboard(key: string, isCustom: boolean): InlineKeyboard
   if (isCustom) {
     kb.text("🔄 Default holatga", `ap:treset:${encodeKey(key)}`).row();
   }
+  kb.text("📜 Tarix", `ap:thist:${encodeKey(key)}`).row();
   kb.text("🔙 Matnlar", "ap:texts");
   return kb;
 }

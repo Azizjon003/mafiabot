@@ -116,6 +116,19 @@ model Config {
   updatedAt DateTime @updatedAt
 }
 
+// Admin matnlarni tahrirlash tarixi
+model ConfigAudit {
+  id         Int      @id @default(autoincrement())
+  key        String
+  oldValue   String?
+  newValue   String
+  editorTgId BigInt
+  createdAt  DateTime @default(now())
+
+  @@index([key, createdAt])
+  @@index([editorTgId])
+}
+
 // ==================== HERO (GEROY) ====================
 
 model Hero {
