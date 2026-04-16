@@ -1,41 +1,62 @@
-version: "3.8"
-
 services:
   bot:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: mafiabot:latest
     restart: unless-stopped
     depends_on:
       db:
         condition: service_healthy
     environment:
-      - BOT_TOKEN=${BOT_TOKEN}
-      - DATABASE_URL=postgresql://mafia:${DB_PASSWORD}@db:5432/mafiabot
-      - NODE_ENV=production
-      - LOG_LEVEL=info
+      BOT_TOKEN: ${BOT_TOKEN}
+      OWNER_IDS: ${OWNER_IDS}
+      DATABASE_URL: postgresql://mafia:${DB_PASSWORD}@db:5432/mafiabot
+      NODE_ENV: production
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    volumes:
+      # Faza rasm file_id'lari va admin sozlagan ma'lumotlar (photos.json)
+      - ./assets:/app/assets
     networks:
       - mafianet
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   db:
     image: postgres:15-alpine
     restart: unless-stopped
     environment:
-      - POSTGRES_DB=mafiabot
-      - POSTGRES_USER=mafia
-      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      POSTGRES_DB: mafiabot
+      POSTGRES_USER: mafia
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
     volumes:
       - pgdata:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
+    # DB port faqat ichki tarmoqda — tashqi dunyoga ochmaymiz (xavfsizlik).
+    # Agar host'dan ulanmoqchi bo'lsangiz, expose'ni ports ga almashtiring:
+    # ports:
+    #   - "127.0.0.1:5432:5432"
+    expose:
+      - "5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U mafia -d mafiabot"]
       interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 10
     networks:
       - mafianet
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
 volumes:
   pgdata:
+    driver: local
 
 networks:
   mafianet:
+    driver: bridge
