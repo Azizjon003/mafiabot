@@ -377,6 +377,7 @@ export const TEXT_DEFAULTS: Record<string, string> = {
     "<b>Oluvchilar:</b>\n{list}\n\n" +
     "Komissiya: 1💎",
   "game.diamondShareNoGame": "⚠️ Hozir o'yin yo'q! Avval /startgame qiling.",
+  "game.diamondShareNoReceivers": "⚠️ Guruhda faol a'zolar topilmadi. Bir nechta kishi yozishi kerak yoki /startgame bilan o'yin boshlang.",
   "game.diamondShareInsufficient": "❌ Yetarli olmosingiz yo'q! ({cost}💎 kerak)",
 
   // ===== roleAssigned — qo'shimchalar =====
@@ -539,7 +540,8 @@ export const TEXT_LABELS: Record<string, string> = {
   "game.nightAtmosphere": "Tun atmosferasi (Bot-ga o'tish)",
   "game.nightBotButton": "Tugma — Bot-ga o'tish",
   "game.diamondShareAnnounce": "Olmos random tarqatish e'loni",
-  "game.diamondShareNoGame": "Olmos tarqatish — o'yin yo'q xatosi",
+  "game.diamondShareNoGame": "Olmos tarqatish — o'yin yo'q xatosi (ishlatilmaydi)",
+  "game.diamondShareNoReceivers": "Olmos tarqatish — faol a'zo topilmadi",
   "game.diamondShareInsufficient": "Olmos tarqatish — yetarli emas",
 
   // NIGHT STORY (guruhga tun xabarlari)

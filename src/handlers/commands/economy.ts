@@ -6,6 +6,7 @@ import { gameManager } from "../../game/manager";
 import { mention } from "../../utils/helpers";
 import { groupOnly, privateOnly } from "../middleware/chat-type";
 import { t } from "../../services/text.service";
+import { chatActivity } from "../../services/chat-activity.service";
 
 export const economyCommand = new Composer<BotContext>();
 
@@ -69,16 +70,29 @@ economyCommand.command("send", groupOnly, async (ctx) => {
     return;
   }
 
-  // Guruhda — o'yindagi o'yinchilarga random tarqatish
+  // Guruhda — random tarqatish (o'yinchilar yoki faol a'zolar orasida)
   if (ctx.chat.type !== "private") {
+    // 1. Pool: avval o'yindagi o'yinchilar, bo'lmasa — guruhdagi faol a'zolar
+    type Receiver = { userId: number; telegramId: bigint; firstName: string; count: number };
     const engine = gameManager.getGame(BigInt(ctx.chat.id));
-    const poolPlayers = engine ? [...engine.players.values()] : [];
-    if (poolPlayers.length === 0) {
-      await ctx.reply(t("game.diamondShareNoGame"), { parse_mode: "HTML" });
+    let pool: Omit<Receiver, "count">[] = [];
+    if (engine && engine.players.size > 0) {
+      pool = [...engine.players.values()].map((p) => ({
+        userId: p.userId,
+        telegramId: p.telegramId,
+        firstName: p.firstName,
+      }));
+    } else {
+      // Faol chat a'zolari (yuborguvchidan tashqari)
+      pool = chatActivity.getActive(BigInt(ctx.chat.id), ctx.dbUser.id);
+    }
+
+    if (pool.length === 0) {
+      await ctx.reply(t("game.diamondShareNoReceivers"), { parse_mode: "HTML" });
       return;
     }
 
-    // Komissiya: 1💎
+    // 2. Komissiya: 1💎
     const totalCost = amount + 1;
     const canSpend = await economyService.spendDiamonds(ctx.dbUser.id, totalCost, "diamond_share");
     if (!canSpend) {
@@ -86,30 +100,24 @@ economyCommand.command("send", groupOnly, async (ctx) => {
       return;
     }
 
-    // Har 1💎 random bir o'yinchiga (takrorlanishi mumkin)
-    type Receiver = { userId: number; telegramId: bigint; firstName: string; count: number };
+    // 3. Har 1💎 random bir a'zoga (takrorlanishi mumkin)
     const received: Map<number, Receiver> = new Map();
     for (let i = 0; i < amount; i++) {
-      const winner = poolPlayers[Math.floor(Math.random() * poolPlayers.length)];
+      const winner = pool[Math.floor(Math.random() * pool.length)];
       const existing = received.get(winner.userId);
       if (existing) {
         existing.count += 1;
       } else {
-        received.set(winner.userId, {
-          userId: winner.userId,
-          telegramId: winner.telegramId,
-          firstName: winner.firstName,
-          count: 1,
-        });
+        received.set(winner.userId, { ...winner, count: 1 });
       }
     }
 
-    // Olmos yuborish
+    // 4. Olmos yuborish
     for (const r of received.values()) {
       await economyService.addDiamonds(r.userId, r.count, "diamond_share_receive");
     }
 
-    // Ro'yxat (ko'p olganlar tepada)
+    // 5. Ro'yxat (ko'p olganlar tepada)
     const list = [...received.values()]
       .sort((a, b) => b.count - a.count)
       .map((r) => `• ${mention(r.firstName, r.telegramId)} — <b>${r.count}</b>💎`)

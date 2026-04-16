@@ -1,6 +1,7 @@
 import { NextFunction } from "grammy";
 import { BotContext } from "../../types/context";
 import { userRepo } from "../../database/repositories/user.repository";
+import { chatActivity } from "../../services/chat-activity.service";
 
 export async function authMiddleware(ctx: BotContext, next: NextFunction): Promise<void> {
   if (ctx.from) {
@@ -27,6 +28,11 @@ export async function authMiddleware(ctx: BotContext, next: NextFunction): Promi
       telegramId: BigInt(ctx.from.id),
       language: user.language,
     };
+
+    // Guruhda faol a'zolarni kuzatib borish (random tarqatish uchun)
+    if (ctx.chat && ctx.chat.type !== "private") {
+      chatActivity.track(BigInt(ctx.chat.id), user.id, BigInt(ctx.from.id), ctx.from.first_name);
+    }
   }
   await next();
 }
