@@ -41,7 +41,7 @@ export function textListKeyboard(categoryId: string, page: number): InlineKeyboa
   const kb = new InlineKeyboard();
   for (const { key, isCustom } of slice) {
     const label = (isCustom ? "✏️ " : "") + truncate(labelForKey(key, cat.prefix), 38);
-    kb.text(label, `ap:text:${encodeKey(key)}`).row();
+    kb.text(label, `ap:text:${encodeKey(key)}:${safePage}`).row();
   }
 
   if (totalPages > 1) {
@@ -55,17 +55,17 @@ export function textListKeyboard(categoryId: string, page: number): InlineKeyboa
 }
 
 // Bitta matnni tahrirlash ekrani
-export function textEditKeyboard(key: string, isCustom: boolean): InlineKeyboard {
+export function textEditKeyboard(key: string, isCustom: boolean, fromPage = 0): InlineKeyboard {
   const kb = new InlineKeyboard()
-    .text("✏️ O'zgartirish", `ap:tsetexact:${encodeKey(key)}`).row();
+    .text("✏️ O'zgartirish", `ap:tsetexact:${encodeKey(key)}:${fromPage}`).row();
   if (isCustom) {
-    kb.text("🔄 Default holatga", `ap:treset:${encodeKey(key)}`).row();
+    kb.text("🔄 Default holatga", `ap:treset:${encodeKey(key)}:${fromPage}`).row();
   }
   kb.text("📜 Tarix", `ap:thist:${encodeKey(key)}`).row();
-  // Kalit prefiksi bo'yicha kategoriyani topib, o'sha kategoriyaga qaytish tugmasi
+  // Kalit prefiksi bo'yicha kategoriyani topib, o'sha sahifaga qaytish tugmasi
   const cat = TEXT_CATEGORIES.find((c) => key.startsWith(c.prefix));
   if (cat) {
-    kb.text(`⬅️ ${cat.label}`, `ap:texts:cat:${cat.id}:0`).row();
+    kb.text(`⬅️ ${cat.label}`, `ap:texts:cat:${cat.id}:${fromPage}`).row();
   }
   kb.text("🔙 Matnlar", "ap:texts");
   return kb;

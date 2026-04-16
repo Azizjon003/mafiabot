@@ -36,7 +36,7 @@ const pendingInputs = new Map<
   | { type: "price"; key: string }
   | { type: "gift"; giftType: string; targetUserId?: number; targetName?: string; targetTgId?: bigint }
   | { type: "search" }
-  | { type: "text"; key: string }
+  | { type: "text"; key: string; fromPage?: number }
   | { type: "textsearch" }
   | { type: "textimport" }
 >();
@@ -458,8 +458,9 @@ ownerCommand.callbackQuery(/^ap:texts:cat:([^:]+):(\d+)$/, ownerOnly, async (ctx
   ).catch(() => {});
 });
 
-ownerCommand.callbackQuery(/^ap:text:(.+)$/, ownerOnly, async (ctx) => {
+ownerCommand.callbackQuery(/^ap:text:([^:]+)(?::(\d+))?$/, ownerOnly, async (ctx) => {
   const key = decodeKey(ctx.match[1]);
+  const fromPage = ctx.match[2] ? parseInt(ctx.match[2]) : 0;
   if (textService.getDefault(key) === undefined && !textService.isCustom(key)) {
     await ctx.answerCallbackQuery({ text: "Kalit topilmadi" }).catch(() => {});
     return;
@@ -467,28 +468,30 @@ ownerCommand.callbackQuery(/^ap:text:(.+)$/, ownerOnly, async (ctx) => {
   await ctx.answerCallbackQuery().catch(() => {});
   await ctx.editMessageText(textInfoBody(key), {
     parse_mode: "HTML",
-    reply_markup: textEditKeyboard(key, textService.isCustom(key)),
+    reply_markup: textEditKeyboard(key, textService.isCustom(key), fromPage),
   }).catch(() => {});
 });
 
-ownerCommand.callbackQuery(/^ap:tsetexact:(.+)$/, ownerOnly, async (ctx) => {
+ownerCommand.callbackQuery(/^ap:tsetexact:([^:]+)(?::(\d+))?$/, ownerOnly, async (ctx) => {
   if (!ctx.from) return;
   const key = decodeKey(ctx.match[1]);
-  pendingInputs.set(ctx.from.id.toString(), { type: "text", key });
+  const fromPage = ctx.match[2] ? parseInt(ctx.match[2]) : 0;
+  pendingInputs.set(ctx.from.id.toString(), { type: "text", key, fromPage });
   await ctx.answerCallbackQuery({
     text: "Yangi matnni yozib yuboring",
     show_alert: true,
   }).catch(() => {});
 });
 
-ownerCommand.callbackQuery(/^ap:treset:(.+)$/, ownerOnly, async (ctx) => {
+ownerCommand.callbackQuery(/^ap:treset:([^:]+)(?::(\d+))?$/, ownerOnly, async (ctx) => {
   if (!ctx.from) return;
   const key = decodeKey(ctx.match[1]);
+  const fromPage = ctx.match[2] ? parseInt(ctx.match[2]) : 0;
   await textService.resetText(key, BigInt(ctx.from.id));
   await ctx.answerCallbackQuery({ text: "✅ Default holatga qaytarildi" }).catch(() => {});
   await ctx.editMessageText(textInfoBody(key), {
     parse_mode: "HTML",
-    reply_markup: textEditKeyboard(key, false),
+    reply_markup: textEditKeyboard(key, false, fromPage),
   }).catch(() => {});
 });
 
