@@ -272,6 +272,12 @@ export const TEXT_DEFAULTS: Record<string, string> = {
   "night.traitorResult_solo": "🦎 <b>{name}</b> yakka rol edi.\nEndi siz <b>Qotil</b>siz!",
   "night.skip": "🚫 O'tkazish",
 
+  // Nishonga xabarlar (kim tashrif buyurganligi haqida)
+  "night.sheriffCheckedYou": "🕵🏻‍♂ <b>Komissar sizning rolingizga qiziqdi.</b>",
+  "night.trampVisitedYou": "🧙🏼‍♂️ <b>Daydi sizning uyingizga tashrif buyurdi.</b>",
+  "night.doctorHealedYou": "👨🏼‍⚕️ <b>Shifokor sizni davolash uchun uyingizga keldi.</b>",
+  "night.doctorHealedConfirm": "👨🏼‍⚕️ Siz <b>{name}</b>ni davoladingiz.",
+
   // ===== ERRORS =====
   "errors.notAdmin": "⚠️ Bu buyruq faqat adminlar uchun!",
   "errors.notInGame": "⚠️ Siz o'yinda emassiz!",
@@ -681,6 +687,10 @@ export const TEXT_LABELS: Record<string, string> = {
   "night.traitorResult_town": "Sotqin natijasi — Serjant",
   "night.traitorResult_solo": "Sotqin natijasi — Qotil",
   "night.skip": "O'tkazish tugmasi",
+  "night.sheriffCheckedYou": "Nishonga — Komissar tekshirdi",
+  "night.trampVisitedYou": "Nishonga — Daydi tashrif buyurdi",
+  "night.doctorHealedYou": "Nishonga — Shifokor keldi",
+  "night.doctorHealedConfirm": "Shifokorga — kimni davoladi",
 
   // ERRORS
   "errors.notAdmin": "Xato — admin emas",

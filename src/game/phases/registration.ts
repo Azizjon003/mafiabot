@@ -1,7 +1,6 @@
 import { GameEngine } from "../engine";
 import { NotificationService } from "../../services/notification.service";
 import { joinGameKeyboard } from "../../keyboards/game";
-import { uz } from "../../locales/uz";
 import { mention } from "../../utils/helpers";
 import { botUsername } from "../../config";
 
@@ -9,7 +8,7 @@ export async function startRegistration(
   engine: GameEngine,
   notifier: NotificationService
 ): Promise<number | undefined> {
-  const text = `📝 <b>Ro'yxatdan o'tish davom etmoqda</b>${getPlayerListText(engine)}`;
+  const text = getRegistrationText(engine, engine.settings.registrationTimeout);
   const messageId = await notifier.sendToGroup(
     engine.chatTelegramId,
     text,
@@ -31,5 +30,12 @@ export function getPlayerListText(engine: GameEngine): string {
 }
 
 export function getRegistrationText(engine: GameEngine, timeLeft: number): string {
-  return `📝 <b>Ro'yxatdan o'tish davom etmoqda</b>` + getPlayerListText(engine);
+  const mins = Math.floor(timeLeft / 60);
+  const secs = timeLeft % 60;
+  const timeStr = mins > 0 ? `${mins}:${String(secs).padStart(2, "0")}` : `${secs}s`;
+  return (
+    `📝 <b>Ro'yxatdan o'tish davom etmoqda</b>\n` +
+    `⏱ Qolgan vaqt: <b>${timeStr}</b>` +
+    getPlayerListText(engine)
+  );
 }

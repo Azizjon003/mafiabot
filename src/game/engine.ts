@@ -575,6 +575,15 @@ export class GameEngine {
           // TEKSHIRISH — natija callback'da darhol ko'rsatilgan, bu yerda faqat advokat tekshiruvi
           const actuallyMafia = ROLE_TEAM[target.role] === Team.MAFIA;
 
+          // Nishonga ogohlantirish — Komissar uni tekshirdi
+          result.events.push({
+            type: "SHERIFF_CHECK_NOTIFY",
+            actorId: sheriffAction.actorId,
+            targetId: sheriffAction.targetId,
+            message: "",
+            targetPrivateMessage: `🕵🏻‍♂ <b>Komissar sizning rolingizga qiziqdi.</b>`,
+          });
+
           // Advokat himoyasi ishlagan bo'lsa — advokatga xabar
           if (actuallyMafia && target.isProtectedByLawyer && lawyerAction) {
             result.events.push({
@@ -624,13 +633,27 @@ export class GameEngine {
     const doctorAction = this.nightActions.get("DOCTOR");
     if (doctorAction) {
       const actor = this.getPlayer(doctorAction.actorId);
-      if (actor && !actor.isBlocked) {
+      const doctorTarget = this.getPlayer(doctorAction.targetId);
+      if (actor && doctorTarget && !actor.isBlocked) {
         healedTargets.add(doctorAction.targetId);
         // O'zini davolash tekshiruvi
         if (doctorAction.actorId === doctorAction.targetId) {
           actor.doctorSelfHealUsed = true;
         }
         this.addVisitor(visitorsMap, doctorAction.targetId, doctorAction.actorId);
+
+        // Shifokorga tasdiq + nishonga (agar o'zi emas) xabar
+        const targetMsg = doctorAction.actorId !== doctorAction.targetId
+          ? `👨🏼‍⚕️ <b>Shifokor sizni davolash uchun uyingizga keldi.</b>`
+          : undefined;
+        result.events.push({
+          type: "DOCTOR_HEAL_NOTIFY",
+          actorId: doctorAction.actorId,
+          targetId: doctorAction.targetId,
+          message: "",
+          privateMessage: `👨🏼‍⚕️ Siz <b>${doctorTarget.firstName}</b>ni davoladingiz.`,
+          targetPrivateMessage: targetMsg,
+        });
       }
     }
 
@@ -687,6 +710,8 @@ export class GameEngine {
             visitorNames.length > 0
               ? `Kelganlar: ${visitorNames.join(", ")}`
               : "Hech kim kelmadi",
+          // Nishonga xabar — Daydi uyiga tashrif buyurdi
+          targetPrivateMessage: `🧙🏼‍♂️ <b>Daydi sizning uyingizga tashrif buyurdi.</b>`,
         });
 
         // Qotillik guvoh

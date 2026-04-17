@@ -397,6 +397,21 @@ export function createNightActionCallbacks(controller: GameController): Composer
       found.engine.markNightRoleDone(found.player.role);
       await ctx.editMessageText(`🤵🏼 Siz <b>${target.firstName}</b>ni tanladingiz.`, { parse_mode: "HTML" }).catch(() => {});
 
+      // Boshqa mafiya a'zolariga xabar — kim kimni tanladi
+      const mafiaMembers = found.engine.getMafiaMembers();
+      const others = mafiaMembers.filter((m: any) => m.playerId !== found.player.playerId && m.isAlive);
+      const roleEmoji = ROLE_EMOJI[found.player.role] || "🤵🏼";
+      const roleName = ROLE_NAME[found.player.role] || found.player.role;
+      for (const mate of others) {
+        try {
+          await ctx.api.sendMessage(
+            mate.telegramId.toString(),
+            `${roleEmoji} <b>${found.player.firstName}</b> (${roleName}) → <b>${target.firstName}</b>ni tanladi`,
+            { parse_mode: "HTML" }
+          );
+        } catch { /* ignore */ }
+      }
+
       // Guruhga hikoya — Don yoki birinchi mafiya
       if (found.player.role === "DON") {
         await sendStory(ctx, found.engine, "DON");

@@ -53,5 +53,43 @@ export function createGameCommands(controller: GameController): Composer<BotCont
     }
   });
 
+  // /quit, /leave, /exit — o'yindan chiqish (faqat WAITING fazasida)
+  const leaveHandler = async (ctx: BotContext) => {
+    if (!ctx.from || !ctx.chat) return;
+    const chatId = BigInt(ctx.chat.id);
+    const engine = gameManager.getGame(chatId);
+    if (!engine) {
+      await ctx.reply(t("game.noActiveGame"), { parse_mode: "HTML" });
+      return;
+    }
+    if (engine.status !== "WAITING") {
+      await ctx.reply("⚠️ O'yin allaqachon boshlangan — chiqib bo'lmaydi.", { parse_mode: "HTML" });
+      return;
+    }
+    const player = engine.getPlayerByTelegramId(BigInt(ctx.from.id));
+    if (!player) {
+      await ctx.reply("⚠️ Siz bu o'yinda emassiz.", { parse_mode: "HTML" });
+      return;
+    }
+    const firstName = player.firstName;
+    const removed = await gameManager.removePlayerFromGame(chatId, BigInt(ctx.from.id));
+    if (!removed) {
+      await ctx.reply("❌ Chiqib bo'lmadi!", { parse_mode: "HTML" });
+      return;
+    }
+    await ctx.reply(
+      t("game.playerLeft", {
+        name: firstName,
+        count: engine.getPlayerCount(),
+        max: engine.settings.maxPlayers,
+      }),
+      { parse_mode: "HTML" }
+    );
+  };
+
+  composer.command("quit", groupOnly, leaveHandler);
+  composer.command("leave", groupOnly, leaveHandler);
+  composer.command("exit", groupOnly, leaveHandler);
+
   return composer;
 }

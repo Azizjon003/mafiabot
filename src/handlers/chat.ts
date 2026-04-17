@@ -118,19 +118,30 @@ async function broadcastMafiaChat(
   const emoji = ROLE_EMOJI[senderRole as keyof typeof ROLE_EMOJI] || "🤵🏼";
   const formatted = `${emoji} <b>${escapeHtml(senderName)}:</b> ${escapeHtml(text)}`;
 
+  logger.info(
+    { senderId, senderName, senderRole, mafiaCount: mafia.length, recipientCount: recipients.length },
+    "Mafiya chat broadcast"
+  );
+
   let sent = 0;
+  let failed = 0;
   for (const mate of recipients) {
     try {
       await ctx.api.sendMessage(mate.telegramId.toString(), formatted, { parse_mode: "HTML" });
       sent++;
-    } catch {
-      // ignore
+    } catch (e) {
+      failed++;
+      logger.warn({ mateTelegramId: mate.telegramId.toString(), err: String(e) }, "Mafiya chat send failed");
     }
   }
 
-  // Yuboruvchiga — tasdiq (tick bilan edit yoki hech narsa)
-  if (sent === 0 && recipients.length === 0) {
+  if (recipients.length === 0) {
     await ctx.reply("ℹ️ Boshqa tirik mafiya a'zosi yo'q.");
+  } else if (sent > 0) {
+    // Tasdiq — hech qursa jo'natildi
+    await ctx.reply(`✅ Mafiya jamoasiga (${sent}/${recipients.length}) yuborildi.`).catch(() => {});
+  } else {
+    await ctx.reply(`❌ Hech kimga yetkazilmadi (${failed} ta xatolik). Bot a'zolarga DM yubora olmayapti.`).catch(() => {});
   }
 }
 
@@ -143,18 +154,29 @@ async function broadcastDeadChat(
 
   const formatted = `💀 <b>${escapeHtml(senderName)}:</b> ${escapeHtml(text)}`;
 
+  logger.info(
+    { senderId, senderName, totalPlayers: allPlayers.length, deadRecipients: deadRecipients.length },
+    "Dead chat broadcast"
+  );
+
   let sent = 0;
+  let failed = 0;
   for (const mate of deadRecipients) {
     try {
       await ctx.api.sendMessage(mate.telegramId.toString(), formatted, { parse_mode: "HTML" });
       sent++;
-    } catch {
-      // ignore
+    } catch (e) {
+      failed++;
+      logger.warn({ mateTelegramId: mate.telegramId.toString(), err: String(e) }, "Dead chat send failed");
     }
   }
 
-  if (sent === 0 && deadRecipients.length === 0) {
+  if (deadRecipients.length === 0) {
     await ctx.reply("ℹ️ Boshqa o'lgan o'yinchi yo'q.");
+  } else if (sent > 0) {
+    await ctx.reply(`✅ O'lganlar chatiga (${sent}/${deadRecipients.length}) yuborildi.`).catch(() => {});
+  } else {
+    await ctx.reply(`❌ Hech kimga yetkazilmadi (${failed} ta xatolik). Bot DM yubora olmayapti.`).catch(() => {});
   }
 }
 

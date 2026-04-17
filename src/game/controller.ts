@@ -652,8 +652,28 @@ export class GameController {
 
     if (engine.status === "WAITING") {
       // Registration fazasi — timeLeft ni 30 soniyaga oshirish
+      // Agar timer allaqachon tugagan bo'lsa — uzaytirib bo'lmaydi
+      if (!this.registrationTimers.has(chatKey)) {
+        logger.warn({ chatId: chatTelegramId.toString() }, "Extend chaqirildi lekin registratsiya timer yo'q");
+        return false;
+      }
       const current = this.registrationTimeLeft.get(chatKey) || 0;
-      this.registrationTimeLeft.set(chatKey, current + 30);
+      const newLeft = current + 30;
+      this.registrationTimeLeft.set(chatKey, newLeft);
+
+      // Xabarni darhol yangilash (10s interval kutmasdan)
+      const msgId = this.registrationMessageId.get(chatKey);
+      if (msgId) {
+        const text = getRegistrationText(engine, newLeft);
+        await this.notifier.editGroupMessage(
+          chatTelegramId,
+          msgId,
+          text,
+          joinGameKeyboard(engine.gameId, botUsername, engine.chatTelegramId)
+        );
+      }
+
+      logger.info({ chatId: chatTelegramId.toString(), newLeft }, "Registration extended +30s");
       return true;
     }
 
