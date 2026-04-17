@@ -52,6 +52,14 @@ export class NotificationService {
     }
   }
 
+  async deleteMessage(chatId: bigint, messageId: number): Promise<void> {
+    try {
+      await this.bot.api.deleteMessage(chatId.toString(), messageId);
+    } catch (error) {
+      // Xabar eski yoki allaqachon o'chirilgan — ignore
+    }
+  }
+
   async pinMessage(chatId: bigint, messageId: number, silent = true): Promise<void> {
     try {
       await this.bot.api.pinChatMessage(chatId.toString(), messageId, {

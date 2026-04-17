@@ -5,12 +5,10 @@ import { logger } from "../utils/logger";
 
 export const nightSilenceHandler = new Composer<BotContext>();
 
-// Tunda guruhda kelgan xabarlarni avtomatik o'chirish (mute o'rniga)
-// Faqat NIGHT fazasida va chat settings.muteOnNight yoqilgan bo'lsa.
-//
-// Qoida:
-// - Oddiy o'yinchi — xabari o'chiriladi (hech narsa yoza olmaydi)
-// - Admin — xabari "!" bilan boshlansa qoldiriladi, aks holda o'chiriladi
+// O'yin davomida guruhdagi xabarlarni filtrlash:
+// - NIGHT fazasi (muteOnNight yoqilgan): hamma mute, faqat admin "!" bilan
+// - DAY / VOTING / CONFIRMING: faqat o'yinchilar va adminlar yoza oladi,
+//   o'yinda bo'lmaganlarning xabari o'chiriladi
 nightSilenceHandler.on("message", async (ctx, next) => {
   if (!ctx.chat || ctx.chat.type === "private") return next();
   if (!ctx.message) return next();
@@ -18,16 +16,23 @@ nightSilenceHandler.on("message", async (ctx, next) => {
   const chatTelegramId = BigInt(ctx.chat.id);
   const engine = gameManager.getGame(chatTelegramId);
 
-  // O'yin yo'q yoki tun emas — hech narsa qilmaymiz
-  if (!engine || engine.status !== "NIGHT") return next();
-
-  // Tun rejimi o'chirilgan bo'lsa — hech narsa qilmaymiz
-  if (!engine.settings.muteOnNight) return next();
+  // O'yin yo'q — hech narsa qilmaymiz
+  if (!engine) return next();
 
   // Botning o'z xabarini o'chirmaslik
   if (ctx.from?.id === ctx.me.id) return next();
 
-  // Xabar matnini olish (caption ham bo'lishi mumkin — foto/video)
+  const status = engine.status;
+  const isNight = status === "NIGHT";
+  const isActivePhase = ["NIGHT", "DAY", "VOTING", "CONFIRMING"].includes(status);
+
+  // Boshqa fazalar (WAITING, STARTING, FINISHED) — hech narsa qilmaymiz
+  if (!isActivePhase) return next();
+
+  // Tun rejimi tekshiruvi — faqat NIGHT uchun
+  if (isNight && !engine.settings.muteOnNight) return next();
+
+  // Xabar matnini olish (caption ham bo'lishi mumkin)
   const text = (ctx.message.text ?? ctx.message.caption ?? "").trim();
 
   // Admin tekshirish
@@ -35,17 +40,27 @@ nightSilenceHandler.on("message", async (ctx, next) => {
   try {
     const member = await ctx.getChatMember(ctx.from!.id);
     isAdmin = member.status === "creator" || member.status === "administrator";
-  } catch { /* ignore — admin emas deb qoldiramiz */ }
+  } catch { /* ignore */ }
 
-  // Admin + "!" bilan boshlangan → qoldiramiz
+  // Admin + "!" bilan boshlangan → har doim qoldiramiz (tunda ham, kunduzda ham)
   if (isAdmin && text.startsWith("!")) {
     return next();
   }
 
-  // Qolgan barcha xabar (oddiy o'yinchi yoki admin "!"siz) — o'chirish
+  // NIGHT: admin "!"siz bo'lsa ham o'chir, o'yinchi ham o'chir — hamma mute
+  if (isNight) {
+    try { await ctx.deleteMessage(); } catch (e) { logger.debug(e, "Night delete failed"); }
+    return;
+  }
+
+  // DAY/VOTING/CONFIRMING: o'yinchi bo'lsa yoki admin bo'lsa — qoldiramiz
+  const isPlayer = engine.getPlayerByTelegramId(BigInt(ctx.from!.id)) !== undefined;
+  if (isPlayer || isAdmin) return next();
+
+  // O'yinchi emas + admin emas → xabar o'chiriladi
   try {
     await ctx.deleteMessage();
   } catch (e) {
-    logger.debug(e, "Night delete message failed");
+    logger.debug(e, "Non-player delete failed");
   }
 });

@@ -27,6 +27,7 @@ export class GameController {
   private votingMessageId: Map<string, number> = new Map();
   private registrationTimers: Map<string, ReturnType<typeof setInterval>> = new Map();
   private registrationTimeLeft: Map<string, number> = new Map();
+  private registrationLastRepostAt: Map<string, number> = new Map(); // epoch ms
 
   constructor(notifier: NotificationService) {
     this.notifier = notifier;
@@ -41,6 +42,7 @@ export class GameController {
 
     if (msgId) {
       this.registrationMessageId.set(chatKey, msgId);
+      this.registrationLastRepostAt.set(chatKey, Date.now());
       engine.registrationMessageId = msgId;
       // Registratsiyani guruh tepasiga pin qilish (jim — push yubormaydi)
       await this.notifier.pinMessage(chatTelegramId, msgId, true);
@@ -53,6 +55,7 @@ export class GameController {
 
     // Registration countdown timer
     this.registrationTimeLeft.set(chatKey, engine.settings.registrationTimeout);
+    const REPOST_EVERY_MS = 60_000; // Har 60 soniyada registratsiya xabarini qayta yuborish (pastda turishi uchun)
     const interval = setInterval(async () => {
       const current = (this.registrationTimeLeft.get(chatKey) || 0) - 10;
       this.registrationTimeLeft.set(chatKey, current);
@@ -60,19 +63,31 @@ export class GameController {
         clearInterval(interval);
         this.registrationTimers.delete(chatKey);
         this.registrationTimeLeft.delete(chatKey);
+        this.registrationLastRepostAt.delete(chatKey);
         await this.handleRegistrationEnd(chatTelegramId);
         return;
       }
-      // Xabarni yangilash
+
+      const text = getRegistrationText(engine, current);
+      const kb = joinGameKeyboard(engine.gameId, botUsername, engine.chatTelegramId);
       const msgId = this.registrationMessageId.get(chatKey);
-      if (msgId) {
-        const text = getRegistrationText(engine, current);
-        await this.notifier.editGroupMessage(
-          chatTelegramId,
-          msgId,
-          text,
-          joinGameKeyboard(engine.gameId, botUsername, engine.chatTelegramId)
-        );
+      const lastRepost = this.registrationLastRepostAt.get(chatKey) || 0;
+      const shouldRepost = current > 20 && Date.now() - lastRepost >= REPOST_EVERY_MS;
+
+      if (shouldRepost && msgId) {
+        // Eski xabarni o'chirib, yangisini pastga yuborish — chat'dagi xabarlar ustidan turishi uchun
+        await this.notifier.unpinMessage(chatTelegramId, msgId).catch(() => {});
+        await this.notifier.deleteMessage(chatTelegramId, msgId).catch(() => {});
+        const newId = await this.notifier.sendToGroup(chatTelegramId, text, kb);
+        if (newId) {
+          this.registrationMessageId.set(chatKey, newId);
+          engine.registrationMessageId = newId;
+          this.registrationLastRepostAt.set(chatKey, Date.now());
+          await this.notifier.pinMessage(chatTelegramId, newId, true).catch(() => {});
+        }
+      } else if (msgId) {
+        // Oddiy edit — countdown yangilash
+        await this.notifier.editGroupMessage(chatTelegramId, msgId, text, kb);
       }
     }, 10000);
 
