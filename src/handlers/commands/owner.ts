@@ -611,6 +611,157 @@ ownerCommand.on("message:document", async (ctx, next) => {
   }
 });
 
+// ==================== ROL BALANSI ====================
+
+ownerCommand.callbackQuery("ap:roles", ownerOnly, async (ctx) => {
+  const { roleTemplatesService } = await import("../../services/role-templates.service");
+  const { roleTemplatesKeyboard } = await import("../../keyboards/admin-roles");
+  const brackets = await roleTemplatesService.getTemplates();
+  await ctx.answerCallbackQuery().catch(() => {});
+  await ctx.editMessageText(
+    `🎭 <b>Rol balansi</b>\n\n` +
+    `O'yinchi soniga qarab bracket tanlang va har bracket uchun majburiy rollarni sozlang:\n\n` +
+    `📌 — majburiy rollar soni\n` +
+    `🎲 — qo'shimcha random slotlar`,
+    { parse_mode: "HTML", reply_markup: roleTemplatesKeyboard(brackets) }
+  ).catch(() => {});
+});
+
+ownerCommand.callbackQuery("ap:roles:noop", ownerOnly, async (ctx) => {
+  await ctx.answerCallbackQuery().catch(() => {});
+});
+
+ownerCommand.callbackQuery(/^ap:roles:b:(.+)$/, ownerOnly, async (ctx) => {
+  const { roleTemplatesService } = await import("../../services/role-templates.service");
+  const { bracketEditKeyboard, bracketBody } = await import("../../keyboards/admin-roles");
+  const bracketId = ctx.match[1];
+  const bracket = await roleTemplatesService.getBracket(bracketId);
+  if (!bracket) {
+    await ctx.answerCallbackQuery({ text: "Bracket topilmadi" }).catch(() => {});
+    return;
+  }
+  await ctx.answerCallbackQuery().catch(() => {});
+  await ctx.editMessageText(bracketBody(bracket), {
+    parse_mode: "HTML",
+    reply_markup: bracketEditKeyboard(bracket),
+  }).catch(() => {});
+});
+
+ownerCommand.callbackQuery(/^ap:roles:pick:(.+)$/, ownerOnly, async (ctx) => {
+  const { rolePickerKeyboard } = await import("../../keyboards/admin-roles");
+  const bracketId = ctx.match[1];
+  await ctx.answerCallbackQuery().catch(() => {});
+  await ctx.editMessageText(
+    `🎭 <b>Qaysi rolni majburiy qilamiz?</b>\n\nBracket: <b>${escapeHtmlText(bracketId)}</b>`,
+    { parse_mode: "HTML", reply_markup: rolePickerKeyboard(bracketId) }
+  ).catch(() => {});
+});
+
+ownerCommand.callbackQuery(/^ap:roles:add:([^:]+):(.+)$/, ownerOnly, async (ctx) => {
+  const { roleTemplatesService } = await import("../../services/role-templates.service");
+  const { bracketEditKeyboard, bracketBody } = await import("../../keyboards/admin-roles");
+  const bracketId = ctx.match[1];
+  const role = ctx.match[2] as any;
+  const res = await roleTemplatesService.addRole(bracketId, role);
+  if (!res.ok) {
+    await ctx.answerCallbackQuery({ text: `❌ ${res.error}`, show_alert: true }).catch(() => {});
+    return;
+  }
+  await ctx.answerCallbackQuery({ text: "✅ Qo'shildi" }).catch(() => {});
+  const bracket = await roleTemplatesService.getBracket(bracketId);
+  if (bracket) {
+    await ctx.editMessageText(bracketBody(bracket), {
+      parse_mode: "HTML",
+      reply_markup: bracketEditKeyboard(bracket),
+    }).catch(() => {});
+  }
+});
+
+ownerCommand.callbackQuery(/^ap:roles:adj:([^:]+):([^:]+):(-?\d+)$/, ownerOnly, async (ctx) => {
+  const { roleTemplatesService } = await import("../../services/role-templates.service");
+  const { bracketEditKeyboard, bracketBody } = await import("../../keyboards/admin-roles");
+  const bracketId = ctx.match[1];
+  const role = ctx.match[2] as any;
+  const delta = parseInt(ctx.match[3]);
+  const res = await roleTemplatesService.adjustRoleCount(bracketId, role, delta);
+  if (!res.ok) {
+    await ctx.answerCallbackQuery({ text: `❌ ${res.error}`, show_alert: true }).catch(() => {});
+    return;
+  }
+  await ctx.answerCallbackQuery({ text: `✅ ${delta > 0 ? "+" : ""}${delta}` }).catch(() => {});
+  const bracket = await roleTemplatesService.getBracket(bracketId);
+  if (bracket) {
+    await ctx.editMessageText(bracketBody(bracket), {
+      parse_mode: "HTML",
+      reply_markup: bracketEditKeyboard(bracket),
+    }).catch(() => {});
+  }
+});
+
+ownerCommand.callbackQuery(/^ap:roles:del:([^:]+):(.+)$/, ownerOnly, async (ctx) => {
+  const { roleTemplatesService } = await import("../../services/role-templates.service");
+  const { bracketEditKeyboard, bracketBody } = await import("../../keyboards/admin-roles");
+  const bracketId = ctx.match[1];
+  const role = ctx.match[2] as any;
+  await roleTemplatesService.removeRole(bracketId, role);
+  await ctx.answerCallbackQuery({ text: "🗑 Olib tashlandi" }).catch(() => {});
+  const bracket = await roleTemplatesService.getBracket(bracketId);
+  if (bracket) {
+    await ctx.editMessageText(bracketBody(bracket), {
+      parse_mode: "HTML",
+      reply_markup: bracketEditKeyboard(bracket),
+    }).catch(() => {});
+  }
+});
+
+ownerCommand.callbackQuery(/^ap:roles:rnd:([^:]+):(-?\d+)$/, ownerOnly, async (ctx) => {
+  const { roleTemplatesService } = await import("../../services/role-templates.service");
+  const { bracketEditKeyboard, bracketBody } = await import("../../keyboards/admin-roles");
+  const bracketId = ctx.match[1];
+  const delta = parseInt(ctx.match[2]);
+  const res = await roleTemplatesService.adjustRandomSlots(bracketId, delta);
+  if (!res.ok) {
+    await ctx.answerCallbackQuery({ text: `❌ ${res.error}`, show_alert: true }).catch(() => {});
+    return;
+  }
+  await ctx.answerCallbackQuery({ text: `✅ Random slot: ${delta > 0 ? "+" : ""}${delta}` }).catch(() => {});
+  const bracket = await roleTemplatesService.getBracket(bracketId);
+  if (bracket) {
+    await ctx.editMessageText(bracketBody(bracket), {
+      parse_mode: "HTML",
+      reply_markup: bracketEditKeyboard(bracket),
+    }).catch(() => {});
+  }
+});
+
+ownerCommand.callbackQuery("ap:roles:reset:all", ownerOnly, async (ctx) => {
+  const { roleTemplatesService } = await import("../../services/role-templates.service");
+  const { roleTemplatesKeyboard } = await import("../../keyboards/admin-roles");
+  await roleTemplatesService.resetAllToDefaults();
+  await ctx.answerCallbackQuery({ text: "🔄 Hammasi default'ga qaytarildi", show_alert: true }).catch(() => {});
+  const brackets = await roleTemplatesService.getTemplates();
+  await ctx.editMessageText(
+    `🎭 <b>Rol balansi</b>\n\nDefault holatga qaytarildi.`,
+    { parse_mode: "HTML", reply_markup: roleTemplatesKeyboard(brackets) }
+  ).catch(() => {});
+});
+
+ownerCommand.callbackQuery(/^ap:roles:reset:(.+)$/, ownerOnly, async (ctx) => {
+  const bracketId = ctx.match[1];
+  if (bracketId === "all") return; // "all" yuqoridagi handler ishlaydi
+  const { roleTemplatesService } = await import("../../services/role-templates.service");
+  const { bracketEditKeyboard, bracketBody } = await import("../../keyboards/admin-roles");
+  await roleTemplatesService.resetBracketToDefault(bracketId);
+  await ctx.answerCallbackQuery({ text: "🔄 Bracket default'ga qaytarildi" }).catch(() => {});
+  const bracket = await roleTemplatesService.getBracket(bracketId);
+  if (bracket) {
+    await ctx.editMessageText(bracketBody(bracket), {
+      parse_mode: "HTML",
+      reply_markup: bracketEditKeyboard(bracket),
+    }).catch(() => {});
+  }
+});
+
 // ==================== DEFAULT VAQTLAR ====================
 
 ownerCommand.callbackQuery("ap:timings", ownerOnly, async (ctx) => {

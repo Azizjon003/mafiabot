@@ -12,9 +12,11 @@ export function adminPanelKeyboard(): InlineKeyboard {
     .text("📊 Bot statistikasi", "ap:botstats")
     .row()
     .text("⏱ Default vaqtlar", "ap:timings")
-    .text("👥 Foydalanuvchilar", "ap:users")
+    .text("🎭 Rol balansi", "ap:roles")
     .row()
+    .text("👥 Foydalanuvchilar", "ap:users")
     .text("⚙️ Sozlamalar", "ap:config")
+    .row()
     .text("❌ Yopish", "ap:close");
 }
 
