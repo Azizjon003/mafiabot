@@ -251,7 +251,7 @@ export class GameEngine {
 
   async assignRoles(): Promise<{ refundUserIds: { userId: number; role: Role }[] }> {
     const playerCount = this.players.size;
-    let availableRoles = assignRoles(playerCount, this.settings);
+    let availableRoles = await assignRoles(playerCount, this.settings);
     const refundUserIds: { userId: number; role: Role }[] = [];
 
     // O'yinchilarni aralashtirish (adolat uchun — bir xil rol sotgan o'yinchilar tarqatish tartibi random)
