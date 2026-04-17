@@ -9,10 +9,18 @@ import { groupOnly } from "../middleware/chat-type";
 export function createGameCommands(controller: GameController): Composer<BotContext> {
   const composer = new Composer<BotContext>();
 
-  // /startgame — Yangi o'yin boshlash (faqat guruhda, faqat admin)
+  // /startgame — Yangi o'yin boshlash (faqat guruhda, faqat admin).
+  // Agar o'yin allaqachon WAITING fazasida bo'lsa — registratsiya xabari
+  // pastga qayta yuboriladi (bump).
   composer.command("startgame", groupOnly, adminOnlyMiddleware, async (ctx) => {
     const chatId = BigInt(ctx.chat.id);
-    if (gameManager.hasGame(chatId)) {
+    const engine = gameManager.getGame(chatId);
+    if (engine) {
+      if (engine.status === "WAITING") {
+        // Ro'yxatdan o'tish davom etmoqda — xabarni pastga ko'chirish
+        await controller.bumpRegistration(chatId);
+        return;
+      }
       await ctx.reply(t("game.gameInProgress"), { parse_mode: "HTML" });
       return;
     }

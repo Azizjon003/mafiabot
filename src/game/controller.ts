@@ -95,6 +95,31 @@ export class GameController {
     return engine;
   }
 
+  // Registratsiya xabarini pastga qayta yuborish (/startgame qayta bosilganda)
+  async bumpRegistration(chatTelegramId: bigint): Promise<void> {
+    const engine = gameManager.getGame(chatTelegramId);
+    if (!engine || engine.status !== "WAITING") return;
+    const chatKey = chatTelegramId.toString();
+    const currentLeft = this.registrationTimeLeft.get(chatKey) ?? engine.settings.registrationTimeout;
+
+    const text = getRegistrationText(engine, currentLeft);
+    const kb = joinGameKeyboard(engine.gameId, botUsername, engine.chatTelegramId);
+
+    const oldMsgId = this.registrationMessageId.get(chatKey);
+    if (oldMsgId) {
+      await this.notifier.unpinMessage(chatTelegramId, oldMsgId).catch(() => {});
+      await this.notifier.deleteMessage(chatTelegramId, oldMsgId).catch(() => {});
+    }
+
+    const newId = await this.notifier.sendToGroup(chatTelegramId, text, kb);
+    if (newId) {
+      this.registrationMessageId.set(chatKey, newId);
+      engine.registrationMessageId = newId;
+      this.registrationLastRepostAt.set(chatKey, Date.now());
+      await this.notifier.pinMessage(chatTelegramId, newId, true).catch(() => {});
+    }
+  }
+
   async handleRegistrationEnd(chatTelegramId: bigint): Promise<void> {
     const chatKey = chatTelegramId.toString();
     const engine = gameManager.getGame(chatTelegramId);
