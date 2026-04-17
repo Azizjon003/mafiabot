@@ -121,6 +121,22 @@ export class NotificationService {
     }
   }
 
+  // Komissar + Serjant — bir-birini bilishi uchun
+  async sendTownTeamIntro(sheriff: PlayerState | undefined, sergeant: PlayerState | undefined): Promise<void> {
+    if (!sheriff || !sergeant) return; // ikkalasi ham bo'lsa gina xabar boradi
+
+    const sheriffLine = `${ROLE_EMOJI[sheriff.role]} ${mention(sheriff.firstName, sheriff.telegramId)}`;
+    const sergeantLine = `${ROLE_EMOJI[sergeant.role]} ${mention(sergeant.firstName, sergeant.telegramId)}`;
+
+    const text =
+      `🤝 <b>Shahar jamoasi:</b>\n` +
+      `${sheriffLine}\n${sergeantLine}\n\n` +
+      `Komissar va Serjant birgalikda ishlashadi.`;
+
+    await this.sendToPlayer(sheriff.telegramId, text);
+    await this.sendToPlayer(sergeant.telegramId, text);
+  }
+
   async announceNightResults(chatId: bigint, result: NightResult, showRole: boolean): Promise<void> {
     // Tong otmoqda — kirish xabari
     await this.sendToGroup(chatId, t("game.morningRising"));

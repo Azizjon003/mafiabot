@@ -39,11 +39,11 @@ function findPlayerGame(telegramId: bigint) {
   return null;
 }
 
-// Guruhga hikoya matni — har rol faqat 1 marta
+// Guruhga hikoya matni — har tun alohida yuboriladi (round bilan kalitlangan)
 const sentStories = new Set<string>();
 
 async function sendStory(ctx: BotContext, engine: any, role: string): Promise<void> {
-  const key = `${engine.gameId}:${role}`;
+  const key = `${engine.gameId}:${role}:${engine.currentRound}`;
   if (sentStories.has(key)) return;
   const story = t(`nightStory.${role}`);
   if (!story || story === `nightStory.${role}`) return;

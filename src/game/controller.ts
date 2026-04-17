@@ -125,6 +125,13 @@ export class GameController {
       await this.notifier.sendMafiaIntro(mafiaMembers);
     }
 
+    // Komissar + Serjant bir-birini bilishi uchun
+    const sheriff = engine.getAlivePlayers().find((p) => p.role === "SHERIFF");
+    const sergeant = engine.getAlivePlayers().find((p) => p.role === "SERGEANT");
+    if (sheriff && sergeant) {
+      await this.notifier.sendTownTeamIntro(sheriff, sergeant);
+    }
+
     // Guruhga "Mening rolim" tugmasi
     const { InlineKeyboard } = await import("grammy");
     const roleKb = new InlineKeyboard().text("🎭 Mening rolim", `showrole:${engine.gameId}`);
