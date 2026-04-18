@@ -25,6 +25,9 @@ export class GameEngine {
   // Komissar otish
   private sheriffShootTarget: number | null = null;
 
+  // Komissar tekshiruvi natijasi — tongda DM yuboriladi
+  private pendingSheriffCheck: { sheriffId: number; targetId: number; disguiseAsTown: boolean } | null = null;
+
   // Ovoz berish
   private votes: Map<number, number> = new Map(); // voterId -> targetPlayerId
   private kamikazeTarget: number | null = null;
@@ -304,9 +307,11 @@ export class GameEngine {
     this.nightActions.clear();
     this.mafiaVotes = [];
     this.pendingNightRoles.clear();
+    this.nightStartedAt = Date.now();
 
     this.sheriffShootTarget = null;
     this.robberTargetResponse = null;
+    this.pendingSheriffCheck = null;
 
     await gameRepo.updateStatus(this.gameId, "NIGHT");
     await gameRepo.incrementRound(this.gameId);
@@ -376,6 +381,11 @@ export class GameEngine {
     this.persistSoon();
   }
 
+  setPendingSheriffCheck(sheriffId: number, targetId: number, disguiseAsTown: boolean): void {
+    this.pendingSheriffCheck = { sheriffId, targetId, disguiseAsTown };
+    this.persistSoon();
+  }
+
   setRobberResponse(choice: RobberResponse): void {
     this.robberTargetResponse = choice;
     this.persistSoon();
@@ -396,8 +406,23 @@ export class GameEngine {
     this.persistSoon();
   }
 
+  // Tun boshlangan vaqt — minimum tun muddatini hisoblash uchun
+  private nightStartedAt: number = 0;
+
+  // Hamma submit qilgan bo'lsa ham, MIN_NIGHT_RATIO ga yetmasa false qaytaradi
+  // (mafiya chat qilishga va o'yin tezligi uchun)
+  private static MIN_NIGHT_RATIO = 0.4; // 40% — 90s dan 36s minimum
+
   isNightComplete(): boolean {
-    return this.pendingNightRoles.size === 0;
+    if (this.pendingNightRoles.size !== 0) return false;
+    // Minimum tun muddatidan oldin tugamaydi
+    if (this.nightStartedAt > 0) {
+      const elapsedMs = Date.now() - this.nightStartedAt;
+      const totalMs = this.settings.nightTimeout * 1000;
+      const minMs = totalMs * GameEngine.MIN_NIGHT_RATIO;
+      if (elapsedMs < minMs) return false;
+    }
+    return true;
   }
 
   // Professor qutilari — nishonga 3 ta aralashtirilgan quti tayyorlaydi.
@@ -498,18 +523,36 @@ export class GameEngine {
       }
     }
 
-    // 4. Ayg'oqchi tekshiruvi
+    // 4. Ayg'oqchi tekshiruvi — Hujjat himoyasi ham ishlaydi (mafiya/yakka tinch axoli bo'lib ko'rinadi)
     const spyAction = this.nightActions.get("SPY");
     if (spyAction) {
       const actor = this.getPlayer(spyAction.actorId);
       const target = this.getPlayer(spyAction.targetId);
       if (actor && target && !actor.isBlocked) {
+        const targetTeam = ROLE_TEAM[target.role];
+        const isBadRole = targetTeam === Team.MAFIA || targetTeam === Team.SOLO;
+        const spyHiddenByDoc = target.hasDocumentActive && isBadRole;
+        if (spyHiddenByDoc) {
+          target.hasDocumentActive = false;
+          try {
+            // Nishonga xabar — hujjat sarflandi
+            // (async — engine imkon bersa)
+          } catch { /* ignore */ }
+        }
+
+        const displayRole: Role = spyHiddenByDoc ? "CIVILIAN" : target.role;
+        const displayEmoji = ROLE_EMOJI[displayRole] || "";
+        const displayName = ROLE_NAME[displayRole] || displayRole;
+
         result.events.push({
           type: "SPY_CHECK",
           actorId: spyAction.actorId,
           targetId: spyAction.targetId,
           message: `Ayg'oqchi tekshirdi`,
-          privateMessage: `${ROLE_EMOJI[target.role]} ${ROLE_NAME[target.role]}`,
+          privateMessage: `🦇 <b>${target.firstName}</b> — ${displayName} ${displayEmoji}`,
+          targetPrivateMessage: spyHiddenByDoc
+            ? `📜 Sizning hujjatingiz ishlatildi! Ayg'oqchi sizni tinch axoli deb ko'rdi.`
+            : undefined,
         });
       }
     }
@@ -572,7 +615,7 @@ export class GameEngine {
             message: `Komissar otdi`,
           });
         } else {
-          // TEKSHIRISH — natija callback'da darhol ko'rsatilgan, bu yerda faqat advokat tekshiruvi
+          // TEKSHIRISH — natija tongda (DM) yuboriladi
           const actuallyMafia = ROLE_TEAM[target.role] === Team.MAFIA;
 
           // Nishonga ogohlantirish — Komissar uni tekshirdi
@@ -583,6 +626,23 @@ export class GameEngine {
             message: "",
             targetPrivateMessage: `🕵🏻‍♂ <b>Komissar sizning rolingizga qiziqdi.</b>`,
           });
+
+          // Komissarning o'ziga natija — tongda DM
+          if (this.pendingSheriffCheck) {
+            // Yashirinishi (Hujjat yoki Advokat) bo'lsa — tinch axoli deb ko'rsatamiz
+            const displayRole: Role = this.pendingSheriffCheck.disguiseAsTown ? "CIVILIAN" : target.role;
+            const displayEmoji = ROLE_EMOJI[displayRole] || "";
+            const displayName = ROLE_NAME[displayRole] || displayRole;
+
+            result.events.push({
+              type: "SHERIFF_CHECK_RESULT",
+              actorId: sheriffAction.actorId,
+              targetId: sheriffAction.targetId,
+              message: "",
+              privateMessage:
+                `🔎 <b>${target.firstName}</b> — ${displayName} ${displayEmoji}`,
+            });
+          }
 
           // Advokat himoyasi ishlagan bo'lsa — advokatga xabar
           if (actuallyMafia && target.isProtectedByLawyer && lawyerAction) {
@@ -949,6 +1009,33 @@ export class GameEngine {
       playerRepo.kill(targetId, this.currentRound, cause).catch((e) =>
         logger.error(e, "O'yinchini o'ldirishda xatolik")
       );
+
+      // O'lgan o'yinchi o'z uyiga kelganlarni ko'rsin
+      const visitors = visitorsMap.get(targetId) || [];
+      if (visitors.length > 0) {
+        const seen = new Set<number>();
+        const visitorLines: string[] = [];
+        for (const vId of visitors) {
+          if (seen.has(vId)) continue;
+          seen.add(vId);
+          if (vId === -1) {
+            visitorLines.push(`🤵🏼 Mafiya`);
+          } else {
+            const vp = this.getPlayer(vId);
+            if (vp) {
+              visitorLines.push(`${ROLE_EMOJI[vp.role]} ${ROLE_NAME[vp.role]} (${vp.firstName})`);
+            }
+          }
+        }
+        if (visitorLines.length > 0) {
+          result.events.push({
+            type: "DEATH_VISITORS",
+            actorId: targetId,
+            message: "",
+            privateMessage: `💀 <b>Tunda sizning uyingizga kelganlar:</b>\n${visitorLines.join("\n")}`,
+          });
+        }
+      }
     }
 
     // Doktor natija xabari

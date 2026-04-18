@@ -1,7 +1,7 @@
 import { Composer } from "grammy";
 import { BotContext } from "../types/context";
 import { gameManager } from "../game/manager";
-import { MAFIA_ROLES, ROLE_EMOJI } from "../utils/constants";
+import { MAFIA_ROLES, ROLE_EMOJI, ROLE_NAME } from "../utils/constants";
 import { logger } from "../utils/logger";
 import { privateOnly } from "./middleware/chat-type";
 
@@ -116,7 +116,9 @@ async function broadcastMafiaChat(
   const recipients = mafia.filter((m: any) => m.playerId !== senderId && m.isAlive);
 
   const emoji = ROLE_EMOJI[senderRole as keyof typeof ROLE_EMOJI] || "🤵🏼";
-  const formatted = `${emoji} <b>${escapeHtml(senderName)}:</b> ${escapeHtml(text)}`;
+  const roleName = ROLE_NAME[senderRole as keyof typeof ROLE_NAME] || senderRole;
+  // Format: "🤵🏻 Don Ali: xabar" — rol emoji + rol nomi + ism
+  const formatted = `${emoji} <b>${roleName} ${escapeHtml(senderName)}:</b> ${escapeHtml(text)}`;
 
   logger.info(
     { senderId, senderName, senderRole, mafiaCount: mafia.length, recipientCount: recipients.length },

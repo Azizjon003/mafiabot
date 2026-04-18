@@ -429,8 +429,10 @@ export const TEXT_DEFAULTS: Record<string, string> = {
   "profile.heroNone":
     "🥷 <b>Sizda Geroy yo'q</b>\n\nGeroy yarating va o'yinda qo'shimcha kuchga ega bo'ling!\n\n{emoji} Narxi: <b>{price}</b>",
   "profile.heroAttackPrompt": "🥷 <b>Kimga hujum qilasiz?</b>\n\nKuch: <b>{power}</b> | Zaryad: <b>{charges}</b>",
-  "profile.heroAttackAnnounceKilled": "🥷 <b>Kimdir hujum qildi!</b>\n💀 <b>{name}</b> {emoji} <b>{role}</b> halok bo'ldi!",
-  "profile.heroAttackAnnounceSurvived": "🥷 <b>Kimdir hujum qildi!</b>\n🛡 Kimdir geroy bilan omon qoldi.",
+  "profile.heroAttackAnnounceKilled": "🥷 <b>{attackerRole}</b> o'z geroyi orqali <b>{name}</b>ni yakson qildi!",
+  "profile.heroAttackAnnounceSurvived":
+    "🥷 <b>{attackerRole}</b> o'z geroyi orqali <b>{name}</b>ning <b>{damagePct}%</b> jonini oldi. " +
+    "Hozirda uning <b>{remainingPct}%</b> joni bor!",
   "profile.heroAttacked":
     "🥷 <b>Sizga kimdir hujum qildi!</b>\n\n" +
     "💪 Hujum kuchi: <b>{damage}</b>\n" +

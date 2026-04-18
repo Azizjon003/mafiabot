@@ -201,7 +201,7 @@ export class GameController {
       await this.notifier.muteGroup(chatTelegramId);
     }
 
-    // Tun rasmi + atmosferali matn caption sifatida + "Bot-ga o'tish" tugma
+    // Tun rasmi + atmosferali matn caption sifatida + roster + "Bot-ga o'tish" tugma
     const { InlineKeyboard: NightKb } = await import("grammy");
     const nightKb = new NightKb().url(
       t("game.nightBotButton"),
@@ -210,7 +210,9 @@ export class GameController {
     const nightCaption =
       t("game.nightStarts", { round: engine.currentRound }) +
       "\n\n" +
-      t("game.nightAtmosphere");
+      t("game.nightAtmosphere") +
+      "\n\n" +
+      buildRoster(engine);
     const photoSent = await this.notifier.sendPhasePhoto(
       chatTelegramId,
       "night",

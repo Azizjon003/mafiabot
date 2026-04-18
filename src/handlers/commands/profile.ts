@@ -488,22 +488,30 @@ profileCommand.callbackQuery(/^hero:atk:(\d+)$/, async (ctx) => {
     } catch { /* ignore */ }
   }
 
-  // Guruhga anonim xabar
+  // Guruhga xabar — hujumchi roli + HP% bilan
   try {
+    const attackerRoleName = ROLE_NAME[game.player.role] || game.player.role;
     if (result.killed) {
       await ctx.api.sendMessage(
         game.engine.chatTelegramId.toString(),
         t("profile.heroAttackAnnounceKilled", {
+          attackerRole: attackerRoleName,
           name: target.firstName,
-          emoji: ROLE_EMOJI[target.role],
-          role: ROLE_NAME[target.role],
         }),
         { parse_mode: "HTML" }
       );
     } else {
+      // HP foizi — heroHP 100 dan hisoblanadi. hpDamage HP'dan olingan zarar.
+      const damagePct = Math.round(result.hpDamage);
+      const remainingPct = Math.round(result.remainingHP);
       await ctx.api.sendMessage(
         game.engine.chatTelegramId.toString(),
-        t("profile.heroAttackAnnounceSurvived"),
+        t("profile.heroAttackAnnounceSurvived", {
+          attackerRole: attackerRoleName,
+          name: target.firstName,
+          damagePct,
+          remainingPct,
+        }),
         { parse_mode: "HTML" }
       );
     }

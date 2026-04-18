@@ -123,15 +123,11 @@ export function createNightActionCallbacks(controller: GameController): Composer
       found.engine.submitNightAction(found.player.playerId, targetPlayerId, "SHERIFF");
       found.engine.markNightRoleDone("SHERIFF");
 
-      let isMafia = ROLE_TEAM[target.role] === Team.MAFIA;
-      if (target.isProtectedByLawyer) isMafia = false;
-
-      // Hujjat himoyasi — faqat YOMON rollar uchun ishlaydi (Mafiya va Yakka rollar)
-      // Tinch axoli hujjat sotib olsa ham — aslida u tinch axoli ko'rinadi, hujjat bekor sarflanadi
+      // Natijani engine'ga saqlaymiz — tongda (handleNightEnd dispatch'ida) DM yuboriladi
       const targetTeam = ROLE_TEAM[target.role];
       const isBadRole = targetTeam === Team.MAFIA || targetTeam === Team.SOLO;
-      if (target.hasDocumentActive && isBadRole) {
-        isMafia = false;
+      const usedDocument = target.hasDocumentActive && isBadRole;
+      if (usedDocument) {
         target.hasDocumentActive = false;
         try {
           await ctx.api.sendMessage(
@@ -140,15 +136,18 @@ export function createNightActionCallbacks(controller: GameController): Composer
             { parse_mode: "HTML" }
           );
         } catch { /* ignore */ }
-      } else if (target.hasDocumentActive && !isBadRole) {
-        // Tinch axoli hujjat ishlatib bo'lmaydi — hujjat saqlanadi
-        // (yoki siz xohlasangiz sarflanadi — hozir saqlaymiz)
       }
 
-      const resultText = isMafia
-        ? t("night.sheriffResult_mafia", { name: target.firstName })
-        : t("night.sheriffResult_town", { name: target.firstName });
-      await ctx.editMessageText(`🔍 <b>Tekshiruv natijasi:</b>\n${resultText}`, { parse_mode: "HTML" }).catch(() => {});
+      // Hujjatli yoki Advokat himoyali mafiya → tinch axoli ko'rinadi
+      // Aks holda — target rol nomi ko'rsatiladi
+      const disguiseAsTown = usedDocument || (target.isProtectedByLawyer && targetTeam === Team.MAFIA);
+      found.engine.setPendingSheriffCheck(found.player.playerId, targetPlayerId, disguiseAsTown);
+
+      await ctx.editMessageText(
+        `🔍 <b>Tekshiruv yuborildi!</b>\n\n` +
+        `<b>${target.firstName}</b> haqidagi natija <b>tongda</b> keladi.`,
+        { parse_mode: "HTML" }
+      ).catch(() => {});
     } else {
       found.engine.submitNightAction(found.player.playerId, targetPlayerId, "SHERIFF");
       found.engine.setSheriffShoot(targetPlayerId);

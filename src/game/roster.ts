@@ -4,10 +4,17 @@ import { mention } from "../utils/helpers";
 import { t } from "../services/text.service";
 
 // Tirik o'yinchilar ro'yxati + jamoa breakdown (rollar tarqatilganda va har kun)
+// Geroydan zarar olganlar HP% bilan ko'rsatiladi: "3. Javohir — 56%"
 export function buildRoster(engine: GameEngine): string {
   const alive = engine.getAlivePlayers();
   const playerList = alive
-    .map((p, i) => `${i + 1}. ${mention(p.firstName, p.telegramId)}`)
+    .map((p, i) => {
+      // HP 100 dan kam bo'lsa — HP% ko'rsat
+      const hpSuffix = p.heroHP > 0 && p.heroHP < 100
+        ? ` — <b>${Math.round(p.heroHP)}%</b> 🫀`
+        : "";
+      return `${i + 1}. ${mention(p.firstName, p.telegramId)}${hpSuffix}`;
+    })
     .join("\n");
 
   const byTeam: Record<string, typeof alive> = { TOWN: [], MAFIA: [], SOLO: [] };
