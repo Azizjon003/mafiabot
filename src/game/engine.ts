@@ -754,12 +754,21 @@ export class GameEngine {
       const actor = this.getPlayer(trampAction.actorId);
       if (actor && !actor.isBlocked) {
         const visitors = visitorsMap.get(trampAction.targetId) || [];
-        const visitorNames = visitors
-          .filter((id) => id !== -1)
-          .map((id) => {
-            const p = this.getPlayer(id);
-            return p ? p.firstName : "Noma'lum";
-          });
+        // Mafiya (-1) ham ko'rinadi, boshqa rollar nomi bilan
+        const seen = new Set<number>();
+        const visitorLines: string[] = [];
+        for (const vId of visitors) {
+          if (seen.has(vId)) continue;
+          seen.add(vId);
+          if (vId === -1) {
+            visitorLines.push(`🤵🏼 Mafiya`);
+          } else if (vId === trampAction.actorId) {
+            continue; // Daydi o'zi — ko'rsatmaymiz
+          } else {
+            const p = this.getPlayer(vId);
+            if (p) visitorLines.push(`${ROLE_EMOJI[p.role]} ${ROLE_NAME[p.role]} (${p.firstName})`);
+          }
+        }
 
         result.events.push({
           type: "TRAMP_VISIT",
@@ -767,9 +776,9 @@ export class GameEngine {
           targetId: trampAction.targetId,
           message: `Daydi kuzatdi`,
           privateMessage:
-            visitorNames.length > 0
-              ? `Kelganlar: ${visitorNames.join(", ")}`
-              : "Hech kim kelmadi",
+            visitorLines.length > 0
+              ? `🧙🏼‍♂️ <b>Uyga kelganlar:</b>\n${visitorLines.join("\n")}`
+              : "🧙🏼‍♂️ Hech kim kelmadi — tinch tun edi.",
           // Nishonga xabar — Daydi uyiga tashrif buyurdi
           targetPrivateMessage: `🧙🏼‍♂️ <b>Daydi sizning uyingizga tashrif buyurdi.</b>`,
         });

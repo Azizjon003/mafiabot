@@ -57,7 +57,14 @@ nightSilenceHandler.on("message", async (ctx, next) => {
   const isPlayer = engine.getPlayerByTelegramId(BigInt(ctx.from!.id)) !== undefined;
   if (isPlayer || isAdmin) return next();
 
-  // O'yinchi emas + admin emas → xabar o'chiriladi
+  // O'yinchi emas + admin emas:
+  // - Rasm / video / media → qoldiramiz (hamma yubora oladi)
+  // - Faqat matn → o'chiriladi
+  const msg: any = ctx.message;
+  const isMediaOnly = !!(msg.photo || msg.video || msg.animation || msg.sticker || msg.document || msg.video_note || msg.voice);
+  if (isMediaOnly && !msg.text) return next();
+
+  // Matn xabari — o'chiriladi
   try {
     await ctx.deleteMessage();
   } catch (e) {
