@@ -141,10 +141,20 @@ export class GameController {
     }
 
     if (engine.getPlayerCount() < engine.settings.minPlayers) {
-      await this.notifier.sendToGroup(
+      // Kam o'yinchi — registratsiya va xato xabarlarini tozalab tashlash
+      if (regMsgId) {
+        await this.notifier.deleteMessage(chatTelegramId, regMsgId).catch(() => {});
+      }
+      // Xato xabarini yuboramiz va 15 sekunddan keyin o'chiradi (chat tozaligi uchun)
+      const errMsgId = await this.notifier.sendToGroup(
         chatTelegramId,
         t("game.notEnoughPlayers", { min: engine.settings.minPlayers })
       );
+      if (errMsgId) {
+        setTimeout(() => {
+          this.notifier.deleteMessage(chatTelegramId, errMsgId).catch(() => {});
+        }, 15000);
+      }
       await engine.cancel();
       await gameManager.endGame(chatTelegramId);
       return;
