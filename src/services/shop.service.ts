@@ -68,7 +68,7 @@ export const shopService = {
           emoji: "🥷",
           category: "HERO",
           priceType: "DIAMOND",
-          price: 100,
+          price: 25,
         },
         {
           name: "Shield",
@@ -76,7 +76,7 @@ export const shopService = {
           emoji: "🛡",
           category: "SHIELD",
           priceType: "DIAMOND",
-          price: 50,
+          price: 10,
         },
         {
           name: "Sandiq",
@@ -84,7 +84,7 @@ export const shopService = {
           emoji: "🗃",
           category: "CHEST",
           priceType: "MONEY",
-          price: 10000,
+          price: 2000,
         },
         {
           name: "VIP (1 oy)",
@@ -92,7 +92,7 @@ export const shopService = {
           emoji: "⭐️",
           category: "VIP",
           priceType: "DIAMOND",
-          price: 100,
+          price: 20,
         },
       ],
     });

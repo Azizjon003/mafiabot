@@ -277,8 +277,10 @@ export class GameController {
         const actor = engine.getPlayer(event.actorId);
         const target = engine.getPlayer(event.targetId);
         if (actor && target) {
-          await economyService.spendMoney(target.userId, 1000, "robbed").catch(() => false);
-          await economyService.addMoney(actor.userId, 1000, "robber_rob").catch(() => {});
+          // Faqat nishonda pul bo'lsa o'g'irlanadi (yo'qdan pul yaratilmaydi)
+          const ROB_AMOUNT = 100;
+          const stole = await economyService.spendMoney(target.userId, ROB_AMOUNT, "robbed").catch(() => false);
+          if (stole) await economyService.addMoney(actor.userId, ROB_AMOUNT, "robber_rob").catch(() => {});
         }
       }
     }

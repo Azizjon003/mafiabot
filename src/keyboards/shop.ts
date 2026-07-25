@@ -13,7 +13,7 @@ export function shopKeyboard(items: ShopItem[]): InlineKeyboard {
 
 export function chestOpenKeyboard(): InlineKeyboard {
   return new InlineKeyboard()
-    .text("🗃 Sandiq ochish (10,000💰)", "chest_open")
+    .text("🗃 Sandiq ochish (2,000💰)", "chest_open")
     .row()
     .text("❌ Yopish", "shop_close");
 }
