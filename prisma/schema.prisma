@@ -57,7 +57,7 @@ model User {
   chests       Chest[]
   hero         Hero?
 
-  @@index([telegramId])
+  // @unique allaqachon indeks yaratadi — qo'shimcha @@index([telegramId]) olib tashlandi (dublikat)
 }
 
 model UserStats {
@@ -256,7 +256,7 @@ model Chat {
   games    Game[]
   settings ChatSettings?
 
-  @@index([telegramId])
+  // @unique allaqachon indeks yaratadi — dublikat @@index([telegramId]) olib tashlandi
 }
 
 model ChatSettings {
@@ -264,17 +264,17 @@ model ChatSettings {
   chatId Int  @unique
   chat   Chat @relation(fields: [chatId], references: [id])
 
-  registrationTimeout  Int @default(90)
-  nightTimeout         Int @default(60)
-  dayDiscussionTimeout Int @default(90)
-  votingTimeout        Int @default(60)
+  registrationTimeout  Int @default(60)
+  nightTimeout         Int @default(30)
+  dayDiscussionTimeout Int @default(30)
+  votingTimeout        Int @default(30)
 
   minPlayers Int @default(4)
   maxPlayers Int @default(30)
 
   showRoleOnDeath Boolean @default(true)
   allowSelfVote   Boolean @default(false)
-  muteOnNight     Boolean @default(false)
+  muteOnNight     Boolean @default(true)
 
   // Tinch axoli rollari
   enableTramp    Boolean @default(true)

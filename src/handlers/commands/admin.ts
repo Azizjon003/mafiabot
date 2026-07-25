@@ -1,4 +1,4 @@
-import { Composer } from "grammy";
+import { Composer, NextFunction } from "grammy";
 import { BotContext } from "../../types/context";
 import { adminOnlyMiddleware } from "../middleware/admin-only";
 import { userRepo } from "../../database/repositories/user.repository";
@@ -7,10 +7,20 @@ import { gameManager } from "../../game/manager";
 import { prisma } from "../../database/prisma";
 import { mention } from "../../utils/helpers";
 import { settingsText, settingsMainKeyboard } from "../../keyboards/game";
-import { setPhasePhoto } from "../../config";
+import { setPhasePhoto, isOwner } from "../../config";
 import { groupOnly } from "../middleware/chat-type";
 
 export const adminCommand = new Composer<BotContext>();
+
+// Faqat bosh admin (owner) uchun. ban/unban GLOBAL isBanned flagini o'zgartiradi,
+// shuning uchun uni guruh adminiga emas, faqat owner'ga cheklaymiz.
+async function ownerOnly(ctx: BotContext, next: NextFunction): Promise<void> {
+  if (!ctx.from || !isOwner(BigInt(ctx.from.id))) {
+    await ctx.reply("⚠️ Bu buyruq faqat bosh admin uchun!");
+    return;
+  }
+  await next();
+}
 
 // Targetni olish — reply yoki id orqali
 async function getTargetUserId(ctx: BotContext): Promise<{ telegramId: bigint; firstName: string } | null> {
@@ -90,8 +100,8 @@ adminCommand.command("kick", groupOnly, adminOnlyMiddleware, async (ctx) => {
   );
 });
 
-// /ban — Botdan ban
-adminCommand.command("ban", groupOnly, adminOnlyMiddleware, async (ctx) => {
+// /ban — Botdan ban (GLOBAL — faqat owner)
+adminCommand.command("ban", groupOnly, ownerOnly, async (ctx) => {
   if (ctx.chat.type === "private") return;
 
   const target = await getTargetUserId(ctx);
@@ -114,8 +124,8 @@ adminCommand.command("ban", groupOnly, adminOnlyMiddleware, async (ctx) => {
   );
 });
 
-// /unban
-adminCommand.command("unban", adminOnlyMiddleware, async (ctx) => {
+// /unban — GLOBAL isBanned flagini olib tashlaydi (faqat owner, guruhda)
+adminCommand.command("unban", groupOnly, ownerOnly, async (ctx) => {
   const target = await getTargetUserId(ctx);
   if (!target) {
     await ctx.reply("⚠️ Reply qilib yoki ID bilan yozing: /unban 123456789");

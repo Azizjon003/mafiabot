@@ -38,15 +38,56 @@ export const chestService = {
   },
 
   async openChest(userId: number): Promise<{ success: boolean; reward?: ChestReward; error?: string }> {
-    const check = await this.canOpenChest(userId);
-    if (!check.canOpen) return { success: false, error: check.reason };
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { lastChestOpenedAt: true },
+    });
+    if (!user) return { success: false, error: "Foydalanuvchi topilmadi!" };
 
     const cost = await pricingService.get(PRICE_KEYS.CHEST_BASIC);
     const currency = await pricingService.getCurrency(PRICE_KEYS.CHEST_BASIC);
+
+    const isVip = await vipService.isVip(userId);
+    const now = new Date();
+    const prevLastOpened = user.lastChestOpenedAt;
+    let claimedCooldown = false;
+
+    // Oyiga 1 marta cheklovi — atomik "claim" (VIP uchun cheksiz).
+    // Bir vaqtda ikkita /openchest kelsa faqat bittasi count===1 oladi.
+    if (!isVip) {
+      const oneMonthAgo = new Date();
+      oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+      const gate = await prisma.user.updateMany({
+        where: {
+          id: userId,
+          OR: [
+            { lastChestOpenedAt: null },
+            { lastChestOpenedAt: { lt: oneMonthAgo } },
+          ],
+        },
+        data: { lastChestOpenedAt: now },
+      });
+      if (gate.count === 0) {
+        return { success: false, error: "Oyiga 1 marta ochish mumkin! ⭐️ VIP bo'lsangiz cheksiz!" };
+      }
+      claimedCooldown = true;
+    }
+
+    // To'lov (atomik spend)
     const spent = currency === "diamond"
       ? await economyService.spendDiamonds(userId, cost, "chest_open")
       : await economyService.spendMoney(userId, cost, "chest_open");
-    if (!spent) return { success: false, error: "Mablag' yetarli emas!" };
+    if (!spent) {
+      // Spend muvaffaqiyatsiz — cooldown "claim"ni ortga qaytaramiz
+      if (claimedCooldown) {
+        await prisma.user.update({
+          where: { id: userId },
+          data: { lastChestOpenedAt: prevLastOpened },
+        });
+      }
+      const sym = currency === "diamond" ? "💎" : "💰";
+      return { success: false, error: `Yetarli ${currency === "diamond" ? "olmosingiz" : "pulingiz"} yo'q! (${cost}${sym} kerak)` };
+    }
 
     // Random reward
     const reward = this.generateReward();
@@ -75,11 +116,14 @@ export const chestService = {
       },
     });
 
-    // Oxirgi ochilgan vaqtni yangilash
-    await prisma.user.update({
-      where: { id: userId },
-      data: { lastChestOpenedAt: new Date() },
-    });
+    // Oxirgi ochilgan vaqtni yangilash.
+    // Non-VIP uchun yuqoridagi atomik "gate" allaqachon o'rnatgan; VIP uchun bu yerda.
+    if (isVip) {
+      await prisma.user.update({
+        where: { id: userId },
+        data: { lastChestOpenedAt: now },
+      });
+    }
 
     return { success: true, reward };
   },

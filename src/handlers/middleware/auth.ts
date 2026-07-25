@@ -5,22 +5,21 @@ import { chatActivity } from "../../services/chat-activity.service";
 
 export async function authMiddleware(ctx: BotContext, next: NextFunction): Promise<void> {
   if (ctx.from) {
-    const user = await userRepo.findOrCreate(
-      BigInt(ctx.from.id),
-      ctx.from.first_name,
-      ctx.from.username,
-      ctx.from.last_name
-    );
+    // Hot-path: har bir xabarda YOZISH o'rniga avval O'QIYMIZ.
+    // Foydalanuvchi mavjud bo'lsa — bitta read; faqat topilmasa yaratamiz.
+    let user = await userRepo.findByTelegramId(BigInt(ctx.from.id));
+    if (!user) {
+      user = await userRepo.findOrCreate(
+        BigInt(ctx.from.id),
+        ctx.from.first_name,
+        ctx.from.username,
+        ctx.from.last_name
+      );
+    }
 
     // Ban tekshirish
     if (user.isBanned) {
       return; // Hech narsa qilmaslik
-    }
-
-    // Mute tekshirish — mute muddati tugaganmi
-    if (user.isMuted && user.muteExpiresAt && user.muteExpiresAt < new Date()) {
-      // Mute muddati tugagan — olib tashlash
-      // Bu yerda prisma import qilish shart emas, keyingi safar yangilanadi
     }
 
     ctx.dbUser = {

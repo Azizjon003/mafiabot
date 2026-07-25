@@ -45,6 +45,15 @@ export class GameEngine {
   // Registration xabar ID (yangilash uchun)
   registrationMessageId: number | null = null;
 
+  // O'yinni yaratgan foydalanuvchi (u ham /stopgame qila oladi)
+  creatorTelegramId: bigint | null = null;
+
+  // Faza yakunlanishi reentrancy guard — timer va oxirgi harakat bir vaqtda
+  // kelganda faza ikki marta hisoblanmasligi uchun (double-resolution oldini oladi).
+  phaseResolving: boolean = false;
+  // O'yin yakunlanishi guard — endGame faqat bir marta ishlashi uchun.
+  ending: boolean = false;
+
   // Timerlar
   private phaseTimer: ReturnType<typeof setTimeout> | null = null;
   private timerStartedAt: number = 0;
@@ -358,9 +367,14 @@ export class GameEngine {
     const actor = this.getPlayer(actorPlayerId);
     if (!actor || !actor.isAlive) return false;
 
-    // Mafiya ovozi
+    // Mafiya ovozi — bitta mafioz uchun bitta ovoz (qayta bosса — eski ovoz almashtiriladi)
     if (MAFIA_KILL_VOTERS.includes(role)) {
-      this.mafiaVotes.push({ voterId: actorPlayerId, targetId: targetPlayerId });
+      const existing = this.mafiaVotes.find((v) => v.voterId === actorPlayerId);
+      if (existing) {
+        existing.targetId = targetPlayerId;
+      } else {
+        this.mafiaVotes.push({ voterId: actorPlayerId, targetId: targetPlayerId });
+      }
       this.persistSoon();
       return true;
     }
@@ -776,7 +790,7 @@ export class GameEngine {
               });
             } else {
               // Boshqa taraf — o'ldiradi (1 marta zaryad)
-              if (!hasCharge(actor.chargesLeft, "WARLOCK")) {
+              if (!hasCharge(actor, "WARLOCK")) {
                 result.events.push({
                   type: "WARLOCK_NO_CHARGE",
                   actorId: warlockAction.actorId,
@@ -785,7 +799,7 @@ export class GameEngine {
                 });
               } else {
                 killTargets.set(warlockAction.targetId, "WARLOCK_KILL");
-                useCharge(actor.chargesLeft, "WARLOCK");
+                useCharge(actor, "WARLOCK");
                 result.events.push({
                   type: "WARLOCK_KILL",
                   actorId: warlockAction.actorId,
@@ -884,7 +898,7 @@ export class GameEngine {
               const actor = this.getPlayer(sniperAction.actorId);
               if (actor && !actor.isBlocked) {
                 // Zaryad tekshiruvi
-                if (!hasCharge(actor.chargesLeft, "SNIPER")) {
+                if (!hasCharge(actor, "SNIPER")) {
                   result.events.push({
                     type: "SNIPER_NO_CHARGE",
                     actorId: sniperAction.actorId,
@@ -896,7 +910,7 @@ export class GameEngine {
                   healedTargets.delete(sniperAction.targetId);
                   killTargets.set(sniperAction.targetId, "SNIPER_KILL");
                   // Daydi ko'rmaydi — visitor qo'shmaymiz
-                  useCharge(actor.chargesLeft, "SNIPER");
+                  useCharge(actor, "SNIPER");
                   result.events.push({
                     type: "SNIPER_SHOT",
                     actorId: sniperAction.actorId,
@@ -913,7 +927,7 @@ export class GameEngine {
                 if (archerAction) {
                   const actor = this.getPlayer(archerAction.actorId);
                   if (actor && !actor.isBlocked) {
-                    if (!hasCharge(actor.chargesLeft, "ARCHER")) {
+                    if (!hasCharge(actor, "ARCHER")) {
                       result.events.push({
                         type: "ARCHER_NO_CHARGE",
                         actorId: archerAction.actorId,
@@ -922,7 +936,7 @@ export class GameEngine {
                       });
                     } else {
                       killTargets.set(archerAction.targetId, "ARCHER_KILL");
-                      useCharge(actor.chargesLeft, "ARCHER");
+                      useCharge(actor, "ARCHER");
                       result.events.push({
                         type: "ARCHER_SHOT",
                         actorId: archerAction.actorId,
@@ -939,7 +953,7 @@ export class GameEngine {
     if (snowboyAction) {
       const actor = this.getPlayer(snowboyAction.actorId);
       if (actor && !actor.isBlocked) {
-        if (!hasCharge(actor.chargesLeft, "SNOWBOY")) {
+        if (!hasCharge(actor, "SNOWBOY")) {
           result.events.push({
             type: "SNOWBOY_NO_CHARGE",
             actorId: snowboyAction.actorId,
@@ -948,7 +962,7 @@ export class GameEngine {
           });
         } else {
           killTargets.set(snowboyAction.targetId, "SNOWBOY_KILL");
-          useCharge(actor.chargesLeft, "SNOWBOY");
+          useCharge(actor, "SNOWBOY");
           this.addVisitor(visitorsMap, snowboyAction.targetId, snowboyAction.actorId);
           result.events.push({
             type: "SNOWBOY_KILL",
@@ -1003,8 +1017,8 @@ export class GameEngine {
             actorId: robberAction.actorId,
             targetId: robberAction.targetId,
             message: `Qaroqchi pul undirdi`,
-            privateMessage: `👺 ${target.firstName}dan 1000 pul undirdingiz`,
-            targetPrivateMessage: `👺 Tunda siznikiga qaroqchi keldi va 1000 pul olib ketdi!`,
+            privateMessage: `👺 ${target.firstName}dan 100 pul undirdingiz`,
+            targetPrivateMessage: `👺 Tunda siznikiga qaroqchi keldi va 100 pul olib ketdi!`,
           });
         } else {
           killTargets.set(robberAction.targetId, "ROBBER_KILL");

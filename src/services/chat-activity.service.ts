@@ -12,8 +12,11 @@ export interface ChatMember {
 const ACTIVITY_TTL_MS = 24 * 60 * 60 * 1000;
 // Guruhiga maksimal saqlanadigan faol a'zolar soni
 const MAX_PER_CHAT = 500;
+// Kuzatiladigan guruhlar maksimal soni — cheksiz o'sishning oldini oladi
+const MAX_CHATS = 2000;
 
 // chatTelegramId -> Map<userId, ChatMember>
+// Map insertion tartibini saqlaydi; oxirgi tegilgan chatni oxiriga ko'chirib LRU emulyatsiya qilamiz.
 const activity = new Map<bigint, Map<number, ChatMember>>();
 
 export const chatActivity = {
@@ -22,9 +25,19 @@ export const chatActivity = {
     let perChat = activity.get(chatTelegramId);
     if (!perChat) {
       perChat = new Map();
-      activity.set(chatTelegramId, perChat);
+    } else {
+      // LRU: mavjud chatni delete+set orqali Map oxiriga ko'chiramiz (eng yangi tegilgan)
+      activity.delete(chatTelegramId);
     }
+    activity.set(chatTelegramId, perChat);
     perChat.set(userId, { userId, telegramId, firstName, lastSeenAt: Date.now() });
+
+    // MAX_CHATS dan oshsa — eng eski tegilgan chatlarni (Map boshidagilar) tozalash
+    while (activity.size > MAX_CHATS) {
+      const oldestKey = activity.keys().next().value;
+      if (oldestKey === undefined) break;
+      activity.delete(oldestKey);
+    }
     // MAX limitdan oshsa — eng eski yozuvlarni tozalash
     if (perChat.size > MAX_PER_CHAT) {
       const sorted = [...perChat.entries()].sort((a, b) => a[1].lastSeenAt - b[1].lastSeenAt);

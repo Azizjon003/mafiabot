@@ -2,17 +2,36 @@ import { Composer } from "grammy";
 import { BotContext } from "../../types/context";
 import { GameController } from "../../game/controller";
 import { gameManager } from "../../game/manager";
+import { GameEngine } from "../../game/engine";
 import { t } from "../../services/text.service";
-import { adminOnlyMiddleware } from "../middleware/admin-only";
 import { groupOnly } from "../middleware/chat-type";
+
+// Guruh admini (yoki egasi) ekanligini tekshirish
+async function isChatAdmin(ctx: BotContext): Promise<boolean> {
+  if (!ctx.from) return false;
+  try {
+    const member = await ctx.getChatMember(ctx.from.id);
+    return member.status === "creator" || member.status === "administrator";
+  } catch {
+    return false;
+  }
+}
+
+// O'yinni boshqarishga ruxsat: o'yinni YARATGAN foydalanuvchi YOKI guruh admini
+async function canControlGame(ctx: BotContext, engine: GameEngine): Promise<boolean> {
+  if (ctx.from && engine.creatorTelegramId != null && BigInt(ctx.from.id) === engine.creatorTelegramId) {
+    return true;
+  }
+  return isChatAdmin(ctx);
+}
 
 export function createGameCommands(controller: GameController): Composer<BotContext> {
   const composer = new Composer<BotContext>();
 
-  // /startgame — Yangi o'yin boshlash (faqat guruhda, faqat admin).
+  // /startgame — Yangi o'yin boshlash (guruhda ISTALGAN foydalanuvchi yarata oladi).
   // Agar o'yin allaqachon WAITING fazasida bo'lsa — registratsiya xabari
   // pastga qayta yuboriladi (bump).
-  composer.command("startgame", groupOnly, adminOnlyMiddleware, async (ctx) => {
+  composer.command("startgame", groupOnly, async (ctx) => {
     const chatId = BigInt(ctx.chat.id);
     const engine = gameManager.getGame(chatId);
     if (engine) {
@@ -24,35 +43,50 @@ export function createGameCommands(controller: GameController): Composer<BotCont
       await ctx.reply(t("game.gameInProgress"), { parse_mode: "HTML" });
       return;
     }
-    await controller.handleStartGame(chatId, ctx.chat.title);
+    // Yaratuvchini eslab qolamiz — u ham o'yinni to'xtata/boshqara oladi
+    await controller.handleStartGame(chatId, ctx.chat.title, ctx.from ? BigInt(ctx.from.id) : undefined);
   });
 
-  // /begingame — O'yinni boshlash (ro'yxatni yopish)
-  composer.command("begingame", groupOnly, adminOnlyMiddleware, async (ctx) => {
+  // /begingame — O'yinni boshlash (ro'yxatni yopish) — yaratuvchi yoki admin
+  composer.command("begingame", groupOnly, async (ctx) => {
     const chatId = BigInt(ctx.chat.id);
     const engine = gameManager.getGame(chatId);
     if (!engine || engine.status !== "WAITING") {
       await ctx.reply(t("game.noActiveGame"), { parse_mode: "HTML" });
       return;
     }
+    if (!(await canControlGame(ctx, engine))) {
+      await ctx.reply(t("errors.notAdmin"), { parse_mode: "HTML" });
+      return;
+    }
     await controller.handleRegistrationEnd(chatId);
   });
 
-  // /stopgame — O'yinni to'xtatish
-  composer.command("stopgame", groupOnly, adminOnlyMiddleware, async (ctx) => {
+  // /stopgame — O'yinni to'xtatish — o'yinni YARATGAN kishi yoki guruh admini
+  composer.command("stopgame", groupOnly, async (ctx) => {
     const chatId = BigInt(ctx.chat.id);
-    if (!gameManager.hasGame(chatId)) {
+    const engine = gameManager.getGame(chatId);
+    if (!engine) {
       await ctx.reply(t("game.noActiveGame"), { parse_mode: "HTML" });
+      return;
+    }
+    if (!(await canControlGame(ctx, engine))) {
+      await ctx.reply(t("errors.notAdmin"), { parse_mode: "HTML" });
       return;
     }
     await controller.handleStopGame(chatId);
   });
 
-  // /extend — Vaqtni uzaytirish
-  composer.command("extend", groupOnly, adminOnlyMiddleware, async (ctx) => {
+  // /extend — Vaqtni uzaytirish — yaratuvchi yoki admin
+  composer.command("extend", groupOnly, async (ctx) => {
     const chatId = BigInt(ctx.chat.id);
-    if (!gameManager.hasGame(chatId)) {
+    const engine = gameManager.getGame(chatId);
+    if (!engine) {
       await ctx.reply(t("game.noActiveGame"), { parse_mode: "HTML" });
+      return;
+    }
+    if (!(await canControlGame(ctx, engine))) {
+      await ctx.reply(t("errors.notAdmin"), { parse_mode: "HTML" });
       return;
     }
     const extended = await controller.handleExtend(chatId);

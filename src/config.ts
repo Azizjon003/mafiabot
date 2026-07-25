@@ -19,10 +19,10 @@ export const config = {
 
   // O'yin default vaqtlari (sekundlarda)
   defaults: {
-    registrationTimeout: 90,
-    nightTimeout: 60,
-    dayDiscussionTimeout: 90,
-    votingTimeout: 60,
+    registrationTimeout: 60,
+    nightTimeout: 30,
+    dayDiscussionTimeout: 30,
+    votingTimeout: 30,
     minPlayers: 4,
     maxPlayers: 30,
   },

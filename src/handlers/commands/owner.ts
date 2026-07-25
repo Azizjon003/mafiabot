@@ -163,7 +163,11 @@ ownerCommand.command("givemoney", ownerOnly, async (ctx) => {
   if (amount > 0) {
     await economyService.addMoney(target.id, amount, "owner_gift");
   } else {
-    await economyService.spendMoney(target.id, -amount, "owner_take");
+    const ok = await economyService.spendMoney(target.id, -amount, "owner_take");
+    if (!ok) {
+      await ctx.reply("❌ Foydalanuvchida yetarli mablag' yo'q!");
+      return;
+    }
   }
   await ctx.reply(
     `✅ ${mention(target.firstName, target.telegramId)}ga <b>${amount.toLocaleString()}</b>💰`,
@@ -188,7 +192,11 @@ ownerCommand.command("givediamond", ownerOnly, async (ctx) => {
   if (amount > 0) {
     await economyService.addDiamonds(target.id, amount, "owner_gift");
   } else {
-    await economyService.spendDiamonds(target.id, -amount, "owner_take");
+    const ok = await economyService.spendDiamonds(target.id, -amount, "owner_take");
+    if (!ok) {
+      await ctx.reply("❌ Foydalanuvchida yetarli mablag' yo'q!");
+      return;
+    }
   }
   await ctx.reply(
     `✅ ${mention(target.firstName, target.telegramId)}ga <b>${amount}</b>💎`,
@@ -1089,7 +1097,7 @@ ownerCommand.on("message:text", async (ctx, next) => {
     users.forEach((u: any, i: number) => {
       const r = u.stats?.rating ?? 1000;
       const g = u.stats?.gamesPlayed ?? 0;
-      resultText += `${i + 1}. <b>${u.firstName}</b> <code>${u.telegramId}</code>\n`;
+      resultText += `${i + 1}. <b>${escapeHtml(u.firstName)}</b> <code>${u.telegramId}</code>\n`;
       resultText += `   ${u.diamonds}💎 ${u.money.toLocaleString()}💰 ⭐${r} 🎮${g}\n`;
     });
 
@@ -1144,12 +1152,26 @@ ownerCommand.on("message:text", async (ctx, next) => {
     switch (pending.giftType) {
       case "money":
         if (amount > 0) await economyService.addMoney(user.id, amount, "owner_gift");
-        else if (amount < 0) await economyService.spendMoney(user.id, -amount, "owner_take");
+        else if (amount < 0) {
+          const ok = await economyService.spendMoney(user.id, -amount, "owner_take");
+          if (!ok) {
+            pendingInputs.delete(ownerId);
+            await ctx.reply("❌ Foydalanuvchida yetarli mablag' yo'q!");
+            return;
+          }
+        }
         resultText = `💰 ${amount.toLocaleString()} pul`;
         break;
       case "diamond":
         if (amount > 0) await economyService.addDiamonds(user.id, amount, "owner_gift");
-        else if (amount < 0) await economyService.spendDiamonds(user.id, -amount, "owner_take");
+        else if (amount < 0) {
+          const ok = await economyService.spendDiamonds(user.id, -amount, "owner_take");
+          if (!ok) {
+            pendingInputs.delete(ownerId);
+            await ctx.reply("❌ Foydalanuvchida yetarli mablag' yo'q!");
+            return;
+          }
+        }
         resultText = `💎 ${amount} olmos`;
         break;
       case "shield":

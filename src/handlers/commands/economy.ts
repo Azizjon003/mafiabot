@@ -77,11 +77,14 @@ economyCommand.command("send", groupOnly, async (ctx) => {
     const engine = gameManager.getGame(BigInt(ctx.chat.id));
     let pool: Omit<Receiver, "count">[] = [];
     if (engine && engine.players.size > 0) {
-      pool = [...engine.players.values()].map((p) => ({
-        userId: p.userId,
-        telegramId: p.telegramId,
-        firstName: p.firstName,
-      }));
+      // Yuboruvchini o'zini pooldan chiqaramiz (o'ziga olmos tushmasin)
+      pool = [...engine.players.values()]
+        .filter((p) => p.userId !== ctx.dbUser!.id)
+        .map((p) => ({
+          userId: p.userId,
+          telegramId: p.telegramId,
+          firstName: p.firstName,
+        }));
     } else {
       // Faol chat a'zolari (yuborguvchidan tashqari)
       pool = chatActivity.getActive(BigInt(ctx.chat.id), ctx.dbUser.id);
@@ -205,14 +208,20 @@ economyCommand.command("gsend", groupOnly, async (ctx) => {
     return;
   }
 
-  const totalCost = amount + 1; // 1 olmos komissiya
+  const perPlayer = Math.floor(amount / players.length);
+  if (perPlayer < 1) {
+    await ctx.reply("⚠️ Har o'yinchiga kamida 1💎 tushishi uchun ko'proq yuboring!");
+    return;
+  }
+
+  // Faqat haqiqatda tarqatiladigan miqdor uchun yechamiz (+1 komissiya)
+  const totalCost = perPlayer * players.length + 1;
   const canSpend = await economyService.spendDiamonds(ctx.dbUser.id, totalCost, "gsend");
   if (!canSpend) {
     await ctx.reply(`❌ Yetarli olmosigiz yo'q! (${totalCost}💎 kerak)`);
     return;
   }
 
-  const perPlayer = Math.floor(amount / players.length);
   for (const player of players) {
     await economyService.addDiamonds(player.userId, perPlayer, "gsend_receive");
   }

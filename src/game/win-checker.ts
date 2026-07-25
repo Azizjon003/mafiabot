@@ -1,6 +1,6 @@
 import { Winner } from "@prisma/client";
 import { PlayerState } from "../types";
-import { ROLE_TEAM, Team, MAFIA_ROLES } from "../utils/constants";
+import { ROLE_TEAM, Team, MAFIA_ROLES, SOLO_ROLES } from "../utils/constants";
 
 /**
  * G'olib aniqlash.
@@ -25,17 +25,7 @@ export function checkWinCondition(
     p.role === "TRAMP" || p.role === "SHERIFF" || p.role === "KAMIKAZE" || 
     p.role === "HOOKER" || p.role === "SERGEANT" || p.role === "WARLOCK" || 
     p.role === "SANTA" || p.role === "SNOWBOY");
-  const soloAlive = alive.filter((p) => 
-    p.role === "KILLER" || p.role === "MINER" || p.role === "SNIPER" || 
-    p.role === "ARCHER" || p.role === "TRAITOR" || p.role === "ROBBER" || 
-    p.role === "PROFESSOR"
-  );
-
-  // Max rounds check - if reached, it's a draw (or special condition)
-  // This will be handled by the game engine when maxRounds is reached
-
-  // NO ONE LEFT
-  if (alive.length === 0) return { winner: "DRAW", winners: [] };
+  const soloAlive = alive.filter((p) => SOLO_ROLES.includes(p.role));
 
   // MAFIA WINS: mafiaAlive >= all other alive players combined
   // (mafia >= townAlive + soloAlive)
@@ -64,6 +54,12 @@ export function checkWinCondition(
       winner: "TOWN", 
       winners: townAlive.map(p => p.playerId) 
     };
+  }
+
+  // MAX ROUNDS — chegaraga yetildi va hali g'olib yo'q → DURANG
+  // (o'ldira olmaydigan rollar tiqilib qolganda o'yin cheksiz cho'zilmasligi uchun)
+  if (maxRounds !== undefined && currentRound !== undefined && maxRounds > 0 && currentRound >= maxRounds) {
+    return { winner: "DRAW", winners: alive.map((p) => p.playerId) };
   }
 
   // GAME CONTINUES

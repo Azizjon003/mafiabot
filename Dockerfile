@@ -44,5 +44,9 @@ USER bot
 ENTRYPOINT ["dumb-init", "--"]
 
 # Prod'da migration o'rniga `db push` — schema hali migration tarixida yo'q (Config, ConfigAudit, Game.state kabi yangi maydonlar).
-# Keyinchalik `prisma migrate dev --name init` qilsangiz, CMD'ni `migrate deploy` ga o'tkazish kerak.
-CMD ["sh", "-c", "npx prisma db push --accept-data-loss && node dist/index.js"]
+# DIQQAT: --accept-data-loss OLIB TASHLANDI. U bilan `db push` ustunlarni jimgina o'chirib yuborishi
+# (prod ma'lumot yo'qolishi) mumkin edi. Endi buzg'unchi (destructive) o'zgarish bo'lsa push xato bilan
+# to'xtaydi — ma'lumot o'chmaydi.
+# TODO: migration tarixi to'liq emas. To'g'ri yechim — `prisma migrate dev --name init` bilan
+# migration yaratib, bu yerni `npx prisma migrate deploy` ga o'tkazish.
+CMD ["sh", "-c", "npx prisma db push && node dist/index.js"]

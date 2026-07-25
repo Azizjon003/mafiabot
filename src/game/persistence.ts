@@ -28,6 +28,7 @@ export interface SerializedEngine {
   // Vaqt va xabar
   gameStartedAt: string | null; // ISO
   registrationMessageId: number | null;
+  creatorTelegramId: string | null; // bigint → string
   // Timer tiklash uchun
   pendingPhaseAction: string | null;
   timerEndsAt: number | null; // epoch ms
@@ -61,6 +62,7 @@ export interface SerializedPlayer {
   professorBoxes?: ("DEATH" | "EMPTY" | "HERO")[];
   professorChoice?: number;
   inactiveNights: number;
+  chargesLeft?: Record<string, number>; // butun o'yin bo'yicha zaryad qoldig'i (Sniper/Archer/...)
 }
 
 function serializePlayer(p: PlayerState): SerializedPlayer {
@@ -92,6 +94,7 @@ function serializePlayer(p: PlayerState): SerializedPlayer {
     professorBoxes: p.professorBoxes,
     professorChoice: p.professorChoice,
     inactiveNights: p.inactiveNights ?? 0,
+    chargesLeft: p.chargesLeft,
   };
 }
 
@@ -124,6 +127,7 @@ function deserializePlayer(s: SerializedPlayer): PlayerState {
     professorBoxes: s.professorBoxes,
     professorChoice: s.professorChoice,
     inactiveNights: s.inactiveNights ?? 0,
+    chargesLeft: s.chargesLeft,
   };
 }
 
@@ -149,6 +153,7 @@ export function serializeEngine(engine: GameEngine): SerializedEngine {
     pendingHangTarget: engine.pendingHangTarget,
     gameStartedAt: engine.gameStartedAt ? engine.gameStartedAt.toISOString() : null,
     registrationMessageId: engine.registrationMessageId,
+    creatorTelegramId: engine.creatorTelegramId ? engine.creatorTelegramId.toString() : null,
     pendingPhaseAction: engine.pendingPhaseAction,
     timerEndsAt: engine.timerEndsAt,
   };
@@ -174,6 +179,7 @@ export function applySerializedToEngine(engine: GameEngine, s: SerializedEngine)
   engine.pendingHangTarget = s.pendingHangTarget;
   engine.gameStartedAt = s.gameStartedAt ? new Date(s.gameStartedAt) : null;
   engine.registrationMessageId = s.registrationMessageId;
+  engine.creatorTelegramId = s.creatorTelegramId ? BigInt(s.creatorTelegramId) : null;
   engine.pendingPhaseAction = s.pendingPhaseAction;
   engine.timerEndsAt = s.timerEndsAt;
 }

@@ -29,28 +29,30 @@ export const economyService = {
     await transactionRepo.create(userId, "EARN", "MONEY", amount, reason);
   },
 
-  // Olmos sarflash
+  // Olmos sarflash (atomik — shartli update, poyga xavfsiz)
   async spendDiamonds(userId: number, amount: number, reason: string): Promise<boolean> {
-    const user = await prisma.user.findUnique({ where: { id: userId } });
-    if (!user || user.diamonds < amount) return false;
+    if (!Number.isFinite(amount) || amount <= 0) return false;
 
-    await prisma.user.update({
-      where: { id: userId },
+    const res = await prisma.user.updateMany({
+      where: { id: userId, diamonds: { gte: amount } },
       data: { diamonds: { decrement: amount } },
     });
+    if (res.count === 0) return false;
+
     await transactionRepo.create(userId, "SPEND", "DIAMOND", amount, reason);
     return true;
   },
 
-  // Pul sarflash
+  // Pul sarflash (atomik — shartli update, poyga xavfsiz)
   async spendMoney(userId: number, amount: number, reason: string): Promise<boolean> {
-    const user = await prisma.user.findUnique({ where: { id: userId } });
-    if (!user || user.money < amount) return false;
+    if (!Number.isFinite(amount) || amount <= 0) return false;
 
-    await prisma.user.update({
-      where: { id: userId },
+    const res = await prisma.user.updateMany({
+      where: { id: userId, money: { gte: amount } },
       data: { money: { decrement: amount } },
     });
+    if (res.count === 0) return false;
+
     await transactionRepo.create(userId, "SPEND", "MONEY", amount, reason);
     return true;
   },
@@ -64,22 +66,25 @@ export const economyService = {
     const { pricingService, PRICE_KEYS } = await import("./pricing.service");
     const fee = await pricingService.get(PRICE_KEYS.FEE_DIAMOND_TRANSFER);
     const totalCost = amount + fee;
-    const sender = await prisma.user.findUnique({ where: { id: senderId } });
 
-    if (!sender || sender.diamonds < totalCost) {
+    try {
+      await prisma.$transaction(async (tx) => {
+        // Atomik shartli debit — balans yetarli bo'lmasa count===0 → rollback
+        const debit = await tx.user.updateMany({
+          where: { id: senderId, diamonds: { gte: totalCost } },
+          data: { diamonds: { decrement: totalCost } },
+        });
+        if (debit.count === 0) {
+          throw new Error("INSUFFICIENT");
+        }
+        await tx.user.update({
+          where: { id: recipientId },
+          data: { diamonds: { increment: amount } },
+        });
+      });
+    } catch {
       return { success: false, error: "Yetarli olmosigiz yo'q!" };
     }
-
-    await prisma.$transaction([
-      prisma.user.update({
-        where: { id: senderId },
-        data: { diamonds: { decrement: totalCost } },
-      }),
-      prisma.user.update({
-        where: { id: recipientId },
-        data: { diamonds: { increment: amount } },
-      }),
-    ]);
 
     await transactionRepo.create(senderId, "TRANSFER_OUT", "DIAMOND", amount, "transfer", fee, recipientId);
     await transactionRepo.create(recipientId, "TRANSFER_IN", "DIAMOND", amount, "transfer", 0, senderId);
@@ -96,22 +101,25 @@ export const economyService = {
     const { pricingService, PRICE_KEYS } = await import("./pricing.service");
     const fee = await pricingService.get(PRICE_KEYS.FEE_MONEY_TRANSFER);
     const totalCost = amount + fee;
-    const sender = await prisma.user.findUnique({ where: { id: senderId } });
 
-    if (!sender || sender.money < totalCost) {
+    try {
+      await prisma.$transaction(async (tx) => {
+        // Atomik shartli debit — balans yetarli bo'lmasa count===0 → rollback
+        const debit = await tx.user.updateMany({
+          where: { id: senderId, money: { gte: totalCost } },
+          data: { money: { decrement: totalCost } },
+        });
+        if (debit.count === 0) {
+          throw new Error("INSUFFICIENT");
+        }
+        await tx.user.update({
+          where: { id: recipientId },
+          data: { money: { increment: amount } },
+        });
+      });
+    } catch {
       return { success: false, error: "Yetarli pulingiz yo'q!" };
     }
-
-    await prisma.$transaction([
-      prisma.user.update({
-        where: { id: senderId },
-        data: { money: { decrement: totalCost } },
-      }),
-      prisma.user.update({
-        where: { id: recipientId },
-        data: { money: { increment: amount } },
-      }),
-    ]);
 
     await transactionRepo.create(senderId, "TRANSFER_OUT", "MONEY", amount, "transfer", fee, recipientId);
     await transactionRepo.create(recipientId, "TRANSFER_IN", "MONEY", amount, "transfer", 0, senderId);

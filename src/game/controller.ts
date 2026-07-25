@@ -9,7 +9,7 @@ import { startDayPhase } from "./phases/day";
 import { startVotingPhase } from "./phases/voting";
 import { joinGameKeyboard, kamikazeTargetKeyboard, confirmHangKeyboard } from "../keyboards/game";
 import { t } from "../services/text.service";
-import { ROLE_EMOJI, ROLE_NAME } from "../utils/constants";
+import { ROLE_EMOJI, ROLE_NAME, SOLO_ROLES } from "../utils/constants";
 import { buildRoster } from "./roster";
 import { mention } from "../utils/helpers";
 import { statsRepo } from "../database/repositories/stats.repository";
@@ -35,8 +35,9 @@ export class GameController {
 
   // ==================== REGISTRATION ====================
 
-  async handleStartGame(chatTelegramId: bigint, chatTitle?: string): Promise<GameEngine> {
+  async handleStartGame(chatTelegramId: bigint, chatTitle?: string, creatorTelegramId?: bigint): Promise<GameEngine> {
     const engine = await gameManager.createGame(chatTelegramId, chatTitle);
+    if (creatorTelegramId != null) engine.creatorTelegramId = creatorTelegramId;
     const msgId = await startRegistration(engine, this.notifier);
     const chatKey = chatTelegramId.toString();
 
@@ -248,7 +249,13 @@ export class GameController {
   async handleNightEnd(chatTelegramId: bigint): Promise<void> {
     const engine = gameManager.getGame(chatTelegramId);
     if (!engine || engine.status !== "NIGHT") return;
+    // Reentrancy guard — timer callback va oxirgi o'yinchi harakati bir vaqtda
+    // kelsa, kecha ikki marta hisoblanmasligi uchun (sinxron tekshiruv+o'rnatish).
+    if (engine.phaseResolving) return;
+    engine.phaseResolving = true;
+    engine.clearTimer();
 
+    try {
     // Harakat qilmaganlarga xabar
     for (const player of engine.getAlivePlayers()) {
       if (engine.isNightActiveRole(player.role) && !engine.hasNightAction(player.role, player.playerId)) {
@@ -310,6 +317,9 @@ export class GameController {
 
     // Kunduz bosqichiga o'tish
     await this.startDayPhase(chatTelegramId);
+    } finally {
+      engine.phaseResolving = false;
+    }
   }
 
   // ==================== DAY ====================
@@ -541,6 +551,16 @@ export class GameController {
     await this.afterVoting(chatTelegramId);
   }
 
+  // Restart KAMIKAZE_DELAY o'rtasida sodir bo'lsa — voteResult closure yo'qoladi.
+  // O'yin abadiy qotib qolmasligi uchun keyingi bosqichga xavfsiz o'tkazamiz (degraded recovery).
+  async resumeAfterVoting(chatTelegramId: bigint): Promise<void> {
+    const engine = gameManager.getGame(chatTelegramId);
+    if (!engine) return;
+    engine.resetConfirmVotes();
+    engine.pendingHangTarget = null;
+    await this.afterVoting(chatTelegramId);
+  }
+
   private async afterVoting(chatTelegramId: bigint): Promise<void> {
     const engine = gameManager.getGame(chatTelegramId);
     if (!engine) return;
@@ -561,13 +581,18 @@ export class GameController {
   async endGame(chatTelegramId: bigint, winner: Winner): Promise<void> {
     const engine = gameManager.getGame(chatTelegramId);
     if (!engine) return;
+    // Bir marta ishlash guard — konkurent chaqiruvlarda mukofot ikki barobar
+    // berilmasligi uchun (sinxron tekshiruv+o'rnatish).
+    if (engine.ending) return;
+    engine.ending = true;
+    engine.clearTimer();
 
     const players = [...engine.players.values()];
 
     // Solo g'olib rolini aniqlash
     let soloWinnerRole: string | undefined;
     if (winner === "SOLO") {
-      const soloPlayer = players.find((p) => p.isAlive && ["KILLER", "SNIPER", "ARCHER", "MINER"].includes(p.role));
+      const soloPlayer = players.find((p) => p.isAlive && SOLO_ROLES.includes(p.role));
       if (soloPlayer) {
         soloWinnerRole = `${ROLE_EMOJI[soloPlayer.role]} ${ROLE_NAME[soloPlayer.role]}`;
       }
@@ -683,7 +708,7 @@ export class GameController {
       case "MAFIA":
         return ["DON", "MAFIA", "LAWYER", "SPY", "LAB"].includes(team);
       case "SOLO":
-        return ["KILLER", "SNIPER", "ARCHER", "MINER"].includes(team);
+        return SOLO_ROLES.includes(team);
       default:
         return false;
     }

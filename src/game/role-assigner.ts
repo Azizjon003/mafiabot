@@ -31,15 +31,8 @@ export async function assignRoles(
   return roles;
 }
 
-/**
- * Get role distribution preview for admin panel
- */
-export async function getRoleDistributionPreview(
-  playerCount: number,
-  settings: ChatSettings
-): Promise<RoleDistributionResult> {
-  return getRoleDistributionPreview(playerCount, settings);
-}
+// getRoleDistributionPreview olib tashlandi — o'lik kod edi va o'zini cheksiz chaqirardi.
+// Haqiqiy implementatsiya: services/role-distribution.formula.ts
 
 /**
  * Validate that settings allow a valid game

@@ -17,6 +17,14 @@ services:
     volumes:
       # Faza rasm file_id'lari va admin sozlagan ma'lumotlar (photos.json)
       - ./assets:/app/assets
+    # Long-polling bot — HTTP port yo'q, shuning uchun oddiy process-liveness tekshiruvi:
+    # node bor va dist/index.js mavjudligini tekshiramiz. Generous interval/retries — flaky bo'lmasligi uchun.
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"process.exit(require('fs').existsSync('/app/dist/index.js')?0:1)\""]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
     networks:
       - mafianet
     logging:

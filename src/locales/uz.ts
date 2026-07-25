@@ -261,7 +261,7 @@ export const uz = {
     santaPrompt: "🎅🏻 <b>Kimga sovg'a berasiz?</b>",
     robberPrompt: "👺 <b>Kimning uyiga bostirib kirasiz?</b>\n\nUndan pul talab qilasiz — pul bermasa o'ldirasiz.",
     robberTargetPrompt: "⚠️ <b>Uyingizga Qaroqchi bostirib kirdi!</b>\n\nPul berasizmi yoki jon shirinmi?",
-    robberTargetPaid: "💰 <b>1000 pul to'ladingiz</b> — tirik qoldingiz.\nErtalab butun qishloq bilasan.",
+    robberTargetPaid: "💰 <b>100 pul to'ladingiz</b> — tirik qoldingiz.\nErtalab butun qishloq bilasan.",
     robberTargetRefused: "🏃 <b>Bosh tortdingiz.</b>\n\nNatijasi tong otganda ma'lum bo'ladi...",
     robberWaiting: "👺 <b>{name}</b>ning uyiga bostirib kirdingiz.\nJavobini kutmoqdasiz...",
     professorPrompt: "🎩 <b>Kimga 3 ta sirli quti taklif qilasiz?</b>\n\nNishoningiz o'z taqdirini o'zi hal qiladi.",

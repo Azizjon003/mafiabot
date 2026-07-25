@@ -94,20 +94,31 @@ async function main() {
     },
   });
 }
-// Graceful shutdown
-process.on("SIGINT", async () => {
-  logger.info("Bot to'xtatilmoqda...");
-  bot.stop();
-  await disconnectDatabase();
-  process.exit(0);
+// Global xatolik ushlagichlar — faza logikasi await qilinmagan setTimeout callback'larida
+// ishlaydi; reject bo'lsa butun process o'lib, HAMMA o'yin yiqilmasligi uchun log qilamiz.
+process.on("unhandledRejection", (reason) => {
+  logger.error(reason, "Unhandled promise rejection (yutildi — process davom etadi)");
+});
+process.on("uncaughtException", (err) => {
+  logger.error(err, "Uncaught exception (yutildi — process davom etadi)");
 });
 
-process.on("SIGTERM", async () => {
-  logger.info("Bot to'xtatilmoqda...");
-  bot.stop();
-  await disconnectDatabase();
+// Graceful shutdown
+let shuttingDown = false;
+async function gracefulShutdown(signal: string) {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  logger.info(`${signal} — bot to'xtatilmoqda...`);
+  try {
+    await bot.stop();
+  } catch (e) {
+    logger.error(e, "bot.stop() xatolik");
+  }
+  await disconnectDatabase().catch((e) => logger.error(e, "disconnectDatabase xatolik"));
   process.exit(0);
-});
+}
+process.on("SIGINT", () => gracefulShutdown("SIGINT"));
+process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
 
 // Bot restart'dan keyin aktiv o'yinlarni DB'dan tiklash
 async function restoreActiveGames(
@@ -154,21 +165,29 @@ async function restoreActiveGames(
         const chatTgId = engine.chatTelegramId;
 
         const callback = async () => {
-          switch (action) {
-            case "NIGHT_END":
-              await controller.handleNightEnd(chatTgId);
-              break;
-            case "DAY_END":
-              await controller.startVotingPhase(chatTgId);
-              break;
-            case "VOTING_END":
-              await controller.handleVotingEnd(chatTgId);
-              break;
-            case "CONFIRM_END":
-              await controller.handleConfirmEnd(chatTgId);
-              break;
-            default:
-              logger.warn({ action }, "Noma'lum pendingPhaseAction — timer qayta yoqilmadi");
+          try {
+            switch (action) {
+              case "NIGHT_END":
+                await controller.handleNightEnd(chatTgId);
+                break;
+              case "DAY_END":
+                await controller.startVotingPhase(chatTgId);
+                break;
+              case "VOTING_END":
+                await controller.handleVotingEnd(chatTgId);
+                break;
+              case "CONFIRM_END":
+                await controller.handleConfirmEnd(chatTgId);
+                break;
+              case "KAMIKAZE_DELAY":
+                // Kamikaze kutish o'rtasida restart bo'lgan — o'yin qotib qolmasin
+                await controller.resumeAfterVoting(chatTgId);
+                break;
+              default:
+                logger.warn({ action }, "Noma'lum pendingPhaseAction — timer qayta yoqilmadi");
+            }
+          } catch (e) {
+            logger.error(e, `Tiklangan timer callback xatolik (action=${action})`);
           }
         };
 

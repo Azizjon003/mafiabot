@@ -245,7 +245,7 @@ export const TEXT_DEFAULTS: Record<string, string> = {
   "night.santaPrompt": "🎅🏻 <b>Kimga sovg'a berasiz?</b>",
   "night.robberPrompt": "👺 <b>Kimning uyiga bostirib kirasiz?</b>\n\nUndan pul talab qilasiz — pul bermasa o'ldirasiz.",
   "night.robberTargetPrompt": "⚠️ <b>Uyingizga Qaroqchi bostirib kirdi!</b>\n\nPul berasizmi yoki jon shirinmi?",
-  "night.robberTargetPaid": "💰 <b>1000 pul to'ladingiz</b> — tirik qoldingiz.\nErtalab butun qishloq bilasan.",
+  "night.robberTargetPaid": "💰 <b>100 pul to'ladingiz</b> — tirik qoldingiz.\nErtalab butun qishloq bilasan.",
   "night.robberTargetRefused": "🏃 <b>Bosh tortdingiz.</b>\n\nNatijasi tong otganda ma'lum bo'ladi...",
   "night.robberWaiting": "👺 <b>{name}</b>ning uyiga bostirib kirdingiz.\nJavobini kutmoqdasiz...",
   "night.professorPrompt": "🎩 <b>Kimga 3 ta sirli quti taklif qilasiz?</b>\n\nNishoningiz o'z taqdirini o'zi hal qiladi.",

@@ -33,7 +33,18 @@ export const vipService = {
       return { success: false, error: `Yetarli ${currency === "diamond" ? "olmosigiz" : "pulingiz"} yo'q! (${cost}${sym} kerak)` };
     }
 
-    const expiresAt = new Date();
+    // Mavjud VIP muddatini uzaytirish (qayta ustiga yozmaslik).
+    // Agar kelajakdagi vipExpiresAt bo'lsa: yangi muddat = max(now, joriy) + 30 kun.
+    const now = new Date();
+    const current = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { vipExpiresAt: true },
+    });
+    const base =
+      current?.vipExpiresAt && current.vipExpiresAt > now
+        ? current.vipExpiresAt
+        : now;
+    const expiresAt = new Date(base);
     expiresAt.setDate(expiresAt.getDate() + VIP_DURATION_DAYS);
 
     await prisma.user.update({

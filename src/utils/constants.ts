@@ -116,6 +116,10 @@ export const MAFIA_ROLES: Role[] = ["DON", "MAFIA", "LAWYER", "SPY", "LAB"];
 //// Mafiya ovoz beradigan rollar (o'ldirish uchun)
 export const MAFIA_KILL_VOTERS: Role[] = ["DON", "MAFIA"];
 
+// Yakka (SOLO) g'olib bo'la oladigan rollar — win-checker va mukofot mantig'i BIR XIL
+// ro'yxatdan foydalanishi shart (aks holda g'olib deb e'lon qilinib, mukofot berilmay qoladi).
+export const SOLO_ROLES: Role[] = ["KILLER", "MINER", "SNIPER", "ARCHER", "TRAITOR", "ROBBER", "PROFESSOR"];
+
 // Geroy bilan kunduzi otish/himoyalanish faqat shu rollarga ruxsat
 export const HERO_ATTACK_ROLES: Role[] = ["SNIPER", "DON", "SHERIFF"];
 
@@ -137,30 +141,33 @@ export function getChargeLimit(role: string): number {
   return CHARGE_LIMITS[role] ?? 0;
 }
 
+// chargesLeft[role] = QOLDIQ zaryad soni (limit'dan boshlanib, har ishlatishda kamayadi).
+
 // Zaryad bor-yo'qligini tekshirish
 export function hasCharge(player: any, role: string): boolean {
   const limit = CHARGE_LIMITS[role];
   if (!limit || limit <= 0) return true; // Cheklanmagan
-  const used = player.chargesLeft?.[role] ?? 0;
-  return used < limit;
+  const remaining = player.chargesLeft?.[role] ?? limit;
+  return remaining > 0;
 }
 
-// Zaryad ishlatish
+// Zaryad ishlatish (bittaga kamaytiradi)
 export function useCharge(player: any, role: string): boolean {
   const limit = CHARGE_LIMITS[role];
   if (!limit || limit <= 0) return true; // Cheklanmagan
-  const used = (player.chargesLeft?.[role] ?? 0) + 1;
-  if (used > limit) return false;
   if (!player.chargesLeft) player.chargesLeft = {};
-  player.chargesLeft[role] = used;
+  const remaining = player.chargesLeft[role] ?? limit;
+  if (remaining <= 0) return false;
+  player.chargesLeft[role] = remaining - 1;
   return true;
 }
 
-// Zaryad qaytarish (yoki boshlang'ich qiymat o'rnatish)
+// Boshlang'ich qiymat o'rnatish — IDEMPOTENT: mavjud qoldiqni O'ZGARTIRMAYDI
+// (har tun chaqirilsa ham reset qilmaydi, faqat birinchi marta limit qo'yadi)
 export function initCharges(player: any): void {
   if (!player.chargesLeft) player.chargesLeft = {};
   for (const [role, limit] of Object.entries(CHARGE_LIMITS)) {
-    if (limit > 0) {
+    if (limit > 0 && player.chargesLeft[role] === undefined) {
       player.chargesLeft[role] = limit;
     }
   }
@@ -170,6 +177,5 @@ export function initCharges(player: any): void {
 export function getRemainingCharges(player: any, role: string): number {
   const limit = CHARGE_LIMITS[role];
   if (!limit || limit <= 0) return -1; // Cheklanmagan
-  const used = player.chargesLeft?.[role] ?? 0;
-  return Math.max(0, limit - used);
+  return player.chargesLeft?.[role] ?? limit;
 }
