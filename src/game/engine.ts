@@ -529,31 +529,42 @@ export class GameEngine {
       const actor = this.getPlayer(spyAction.actorId);
       const target = this.getPlayer(spyAction.targetId);
       if (actor && target && !actor.isBlocked) {
-        const targetTeam = ROLE_TEAM[target.role];
-        const isBadRole = targetTeam === Team.MAFIA || targetTeam === Team.SOLO;
-        const spyHiddenByDoc = target.hasDocumentActive && isBadRole;
-        if (spyHiddenByDoc) {
-          target.hasDocumentActive = false;
-          try {
-            // Nishonga xabar — hujjat sarflandi
-            // (async — engine imkon bersa)
-          } catch { /* ignore */ }
+        // Ayg'oqchi o'zini tekshira olmasin
+        if (spyAction.actorId === spyAction.targetId) {
+          result.events.push({
+            type: "SPY_CHECK_SELF",
+            actorId: spyAction.actorId,
+            targetId: spyAction.targetId,
+            message: `Ayg'oqchi o'zini tekshira olmadi`,
+            privateMessage: `🦇 O'zingizni tekshira olmaysiz!`,
+          });
+        } else {
+          const targetTeam = ROLE_TEAM[target.role];
+          const isBadRole = targetTeam === Team.MAFIA || targetTeam === Team.SOLO;
+          const spyHiddenByDoc = target.hasDocumentActive && isBadRole;
+          if (spyHiddenByDoc) {
+            target.hasDocumentActive = false;
+            try {
+              // Nishonga xabar — hujjat sarflandi
+              // (async — engine imkon bersa)
+            } catch { /* ignore */ }
+          }
+
+          const displayRole: Role = spyHiddenByDoc ? "CIVILIAN" : target.role;
+          const displayEmoji = ROLE_EMOJI[displayRole] || "";
+          const displayName = ROLE_NAME[displayRole] || displayRole;
+
+          result.events.push({
+            type: "SPY_CHECK",
+            actorId: spyAction.actorId,
+            targetId: spyAction.targetId,
+            message: `Ayg'oqchi tekshirdi`,
+            privateMessage: `🦇 <b>${target.firstName}</b> — ${displayName} ${displayEmoji}`,
+            targetPrivateMessage: spyHiddenByDoc
+              ? `📜 Sizning hujjatingiz ishlatildi! Ayg'oqchi sizni tinch axoli deb ko'rdi.`
+              : undefined,
+          });
         }
-
-        const displayRole: Role = spyHiddenByDoc ? "CIVILIAN" : target.role;
-        const displayEmoji = ROLE_EMOJI[displayRole] || "";
-        const displayName = ROLE_NAME[displayRole] || displayRole;
-
-        result.events.push({
-          type: "SPY_CHECK",
-          actorId: spyAction.actorId,
-          targetId: spyAction.targetId,
-          message: `Ayg'oqchi tekshirdi`,
-          privateMessage: `🦇 <b>${target.firstName}</b> — ${displayName} ${displayEmoji}`,
-          targetPrivateMessage: spyHiddenByDoc
-            ? `📜 Sizning hujjatingiz ishlatildi! Ayg'oqchi sizni tinch axoli deb ko'rdi.`
-            : undefined,
-        });
       }
     }
 
@@ -607,13 +618,25 @@ export class GameEngine {
       if (actor && target && !actor.isBlocked) {
         if (this.sheriffShootTarget === sheriffAction.targetId) {
           // OTISH — komissar nishonni o'ldiradi (kimligidan qat'i nazar)
-          killTargets.set(sheriffAction.targetId, "SHERIFF_KILL");
-          result.events.push({
-            type: "SHERIFF_SHOOT_HIT",
-            actorId: sheriffAction.actorId,
-            targetId: sheriffAction.targetId,
-            message: `Komissar otdi`,
-          });
+          // PRD: Birinchi tunda o'tish TAQIQLANADI
+          if (this.currentRound === 1) {
+            // Birinchi tunda o'tish mumkin emas — xabar beramiz
+            result.events.push({
+              type: "SHERIFF_SHOOT_BLOCKED",
+              actorId: sheriffAction.actorId,
+              targetId: sheriffAction.targetId,
+              message: `Komissar birinchi tunda o'ta olmadi`,
+              privateMessage: `🔫 Birinchi tunda o'tish taqiqlangan! Siz faqat tekshira olasiz.`,
+            });
+          } else {
+            killTargets.set(sheriffAction.targetId, "SHERIFF_KILL");
+            result.events.push({
+              type: "SHERIFF_SHOOT_HIT",
+              actorId: sheriffAction.actorId,
+              targetId: sheriffAction.targetId,
+              message: `Komissar otdi`,
+            });
+          }
         } else {
           // TEKSHIRISH — natija tongda (DM) yuboriladi
           const actuallyMafia = ROLE_TEAM[target.role] === Team.MAFIA;
@@ -695,25 +718,30 @@ export class GameEngine {
       const actor = this.getPlayer(doctorAction.actorId);
       const doctorTarget = this.getPlayer(doctorAction.targetId);
       if (actor && doctorTarget && !actor.isBlocked) {
-        healedTargets.add(doctorAction.targetId);
-        // O'zini davolash tekshiruvi
-        if (doctorAction.actorId === doctorAction.targetId) {
-          actor.doctorSelfHealUsed = true;
-        }
-        this.addVisitor(visitorsMap, doctorAction.targetId, doctorAction.actorId);
+        // O'zini davolash cheklovi: faqat 1 marta o'yin davomida
+        if (doctorAction.actorId === doctorAction.targetId && actor.doctorSelfHealUsed) {
+          // Allaqachon o'zini davolagan — bu tun davolay olmaydi
+        } else {
+          healedTargets.add(doctorAction.targetId);
+          // O'zini davolash tekshiruvi
+          if (doctorAction.actorId === doctorAction.targetId) {
+            actor.doctorSelfHealUsed = true;
+          }
+          this.addVisitor(visitorsMap, doctorAction.targetId, doctorAction.actorId);
 
-        // Shifokorga tasdiq + nishonga (agar o'zi emas) xabar
-        const targetMsg = doctorAction.actorId !== doctorAction.targetId
-          ? `👨🏼‍⚕️ <b>Shifokor sizni davolash uchun uyingizga keldi.</b>`
-          : undefined;
-        result.events.push({
-          type: "DOCTOR_HEAL_NOTIFY",
-          actorId: doctorAction.actorId,
-          targetId: doctorAction.targetId,
-          message: "",
-          privateMessage: `👨🏼‍⚕️ Siz <b>${doctorTarget.firstName}</b>ni davoladingiz.`,
-          targetPrivateMessage: targetMsg,
-        });
+          // Shifokorga tasdiq + nishonga (agar o'zi emas) xabar
+          const targetMsg = doctorAction.actorId !== doctorAction.targetId
+            ? `👨🏼‍⚕️ <b>Shifokor sizni davolash uchun uyingizga keldi.</b>`
+            : undefined;
+          result.events.push({
+            type: "DOCTOR_HEAL_NOTIFY",
+            actorId: doctorAction.actorId,
+            targetId: doctorAction.targetId,
+            message: "",
+            privateMessage: `👨🏼‍⚕️ Siz <b>${doctorTarget.firstName}</b>ni davoladingiz.`,
+            targetPrivateMessage: targetMsg,
+          });
+        }
       }
     }
 
@@ -745,88 +773,90 @@ export class GameEngine {
           });
         }
         this.addVisitor(visitorsMap, warlockAction.targetId, warlockAction.actorId);
-      }
-    }
+              }
+            }
 
-    // 11. Daydi kuzatuvi
-    const trampAction = this.nightActions.get("TRAMP");
-    if (trampAction) {
-      const actor = this.getPlayer(trampAction.actorId);
-      if (actor && !actor.isBlocked) {
-        const visitors = visitorsMap.get(trampAction.targetId) || [];
-        // Mafiya (-1) ham ko'rinadi, boshqa rollar nomi bilan
-        const seen = new Set<number>();
-        const visitorLines: string[] = [];
-        for (const vId of visitors) {
-          if (seen.has(vId)) continue;
-          seen.add(vId);
-          if (vId === -1) {
-            visitorLines.push(`🤵🏼 Mafiya`);
-          } else if (vId === trampAction.actorId) {
-            continue; // Daydi o'zi — ko'rsatmaymiz
-          } else {
-            const p = this.getPlayer(vId);
-            if (p) visitorLines.push(`${ROLE_EMOJI[p.role]} ${ROLE_NAME[p.role]} (${p.firstName})`);
-          }
-        }
+            // 11. Daydi kuzatuvi
+            const trampAction = this.nightActions.get("TRAMP");
+            if (trampAction) {
+              const actor = this.getPlayer(trampAction.actorId);
+              if (actor && !actor.isBlocked) {
+                const visitors = visitorsMap.get(trampAction.targetId) || [];
+                const seen = new Set<number>();
+                const visitorLines: string[] = [];
+                for (const vId of visitors) {
+                  if (seen.has(vId)) continue;
+                  seen.add(vId);
+                  if (vId === -1) {
+                    visitorLines.push(`🤵🏼 Mafiya`);
+                  } else if (vId === trampAction.actorId) {
+                    continue; // Daydi o'zi — ko'rsatmaymiz
+                  } else {
+                    const p = this.getPlayer(vId);
+                    if (p) visitorLines.push(`${ROLE_EMOJI[p.role]} ${ROLE_NAME[p.role]} (${p.firstName})`);
+                  }
+                }
 
-        result.events.push({
-          type: "TRAMP_VISIT",
-          actorId: trampAction.actorId,
-          targetId: trampAction.targetId,
-          message: `Daydi kuzatdi`,
-          privateMessage:
-            visitorLines.length > 0
-              ? `🧙🏼‍♂️ <b>Uyga kelganlar:</b>\n${visitorLines.join("\n")}`
-              : "🧙🏼‍♂️ Hech kim kelmadi — tinch tun edi.",
-          // Nishonga xabar — Daydi uyiga tashrif buyurdi
-          targetPrivateMessage: `🧙🏼‍♂️ <b>Daydi sizning uyingizga tashrif buyurdi.</b>`,
-        });
+                // Daydi o'zi ham visitor sifatida yoziladi (Minior uchun)
+                this.addVisitor(visitorsMap, trampAction.targetId, trampAction.actorId);
 
-        // Qotillik guvoh
-        if (killTargets.has(trampAction.targetId)) {
-          const victim = this.getPlayer(trampAction.targetId);
-          result.events.push({
-            type: "TRAMP_WITNESS",
-            actorId: trampAction.actorId,
-            targetId: trampAction.targetId,
-            message: `Daydi qotillikka guvoh bo'ldi`,
-            privateMessage: `🔴 ${victim?.firstName || "Noma'lum"} uyida qotillik sodir bo'ldi!`,
-          });
-        }
-      }
-    }
+                result.events.push({
+                  type: "TRAMP_VISIT",
+                  actorId: trampAction.actorId,
+                  targetId: trampAction.targetId,
+                  message: `Daydi kuzatdi`,
+                  privateMessage:
+                    visitorLines.length > 0
+                      ? `🧙🏼‍♂️ <b>Uyga kelganlar:</b>\n${visitorLines.join("\n")}`
+                      : "🧙🏼‍♂️ Hech kim kelmadi — tinch tun edi.",
+                  // Nishonga xabar — Daydi uyiga tashrif buyurdi
+                  targetPrivateMessage: `🧙🏼‍♂️ <b>Daydi sizning uyingizga tashrif buyurdi.</b>`,
+                });
 
-    // 12. Minior mina qo'yishi
-    const minerAction = this.nightActions.get("MINER");
-    if (minerAction) {
-      const actor = this.getPlayer(minerAction.actorId);
-      if (actor && !actor.isBlocked) {
-        const visitors = visitorsMap.get(minerAction.targetId) || [];
-        for (const visitorId of visitors) {
-          if (visitorId !== -1 && visitorId !== minerAction.actorId) {
-            killTargets.set(visitorId, "MINER_KILL");
-          }
-        }
-        // Agar mafiya ham kelgan bo'lsa (targetni o'ldirmoqchi)
-        if (killTargets.get(minerAction.targetId) === "MAFIA_KILL") {
-          // Mafiya a'zolari ham mina portlashidan o'lmaydi, faqat tashrif buyurganlar
-        }
-      }
-    }
+                // Qotillik guvoh
+                if (killTargets.has(trampAction.targetId)) {
+                  const victim = this.getPlayer(trampAction.targetId);
+                  result.events.push({
+                    type: "TRAMP_WITNESS",
+                    actorId: trampAction.actorId,
+                    targetId: trampAction.targetId,
+                    message: `Daydi qotillikka guvoh bo'ldi`,
+                    privateMessage: `🔴 ${victim?.firstName || "Noma'lum"} uyida qotillik sodir bo'ldi!`,
+                  });
+                }
+              }
+            }
 
-    // 13. Qotil o'ldirishi
-    const killerAction = this.nightActions.get("KILLER");
-    if (killerAction) {
-      const actor = this.getPlayer(killerAction.actorId);
-      if (actor && !actor.isBlocked) {
-        killTargets.set(killerAction.targetId, "KILLER_KILL");
-        this.addVisitor(visitorsMap, killerAction.targetId, killerAction.actorId);
-      }
-    }
+            // 12. Minior mina qo'yishi (Daydi dan keyin — Daydi kelganini ko'ra olishi uchun)
+            const minerAction = this.nightActions.get("MINER");
+            if (minerAction) {
+              const actor = this.getPlayer(minerAction.actorId);
+              if (actor && !actor.isBlocked) {
+                const visitors = visitorsMap.get(minerAction.targetId) || [];
+                for (const visitorId of visitors) {
+                  if (visitorId !== -1 && visitorId !== minerAction.actorId) {
+                    killTargets.set(visitorId, "MINER_KILL");
+                  }
+                }
+                // Agar mafiya ham kelgan bo'lsa (targetni o'ldirmoqchi)
+                if (killTargets.get(minerAction.targetId) === "MAFIA_KILL") {
+                  // Mafiya a'zolari ham mina portlashidan o'lmaydi, faqat tashrif buyurganlar
+                }
+              }
+            }
 
-    // 14. Snayperchi o'ldirishi (himoyani ham o'tadi)
-    const sniperAction = this.nightActions.get("SNIPER");
+            // 13. Qotil o'ldirishi
+            const killerAction = this.nightActions.get("KILLER");
+            if (killerAction) {
+              const actor = this.getPlayer(killerAction.actorId);
+              if (actor && !actor.isBlocked) {
+                killTargets.set(killerAction.targetId, "KILLER_KILL");
+                this.addVisitor(visitorsMap, killerAction.targetId, killerAction.actorId);
+              }
+            }
+
+            // 14. Snayperchi o'ldirishi (himoyani ham o'tadi)
+            const sniperAction = this.nightActions.get("SNIPER");
     if (sniperAction) {
       const actor = this.getPlayer(sniperAction.actorId);
       if (actor && !actor.isBlocked) {
@@ -863,15 +893,26 @@ export class GameEngine {
       const actor = this.getPlayer(santaAction.actorId);
       const santaTarget = this.getPlayer(santaAction.targetId);
       if (actor && santaTarget && !actor.isBlocked) {
-        result.events.push({
-          type: "SANTA_GIFT",
-          actorId: santaAction.actorId,
-          targetId: santaAction.targetId,
-          message: `Qorbobo sovg'a berdi`,
-          privateMessage: `🎅🏻 Siz ${santaTarget.firstName}ga sovg'a berdingiz!`,
-          targetPrivateMessage: `🎅🏻 Tunda sizga Qorbobo sovg'a qoldirdi!`,
-        });
-        this.addVisitor(visitorsMap, santaAction.targetId, santaAction.actorId);
+        // Qorbobo o'ziga sovg'a bera olmasin
+        if (santaAction.actorId === santaAction.targetId) {
+          result.events.push({
+            type: "SANTA_GIFT_SELF",
+            actorId: santaAction.actorId,
+            targetId: santaAction.targetId,
+            message: `Qorbobo o'ziga sovg'a bera olmadi`,
+            privateMessage: `🎅🏻 O'zingizga sovg'a bera olmaysiz!`,
+          });
+        } else {
+          result.events.push({
+            type: "SANTA_GIFT",
+            actorId: santaAction.actorId,
+            targetId: santaAction.targetId,
+            message: `Qorbobo sovg'a berdi`,
+            privateMessage: `🎅🏻 Siz ${santaTarget.firstName}ga sovg'a berdingiz!`,
+            targetPrivateMessage: `🎅🏻 Tunda sizga Qorbobo sovg'a qoldirdi!`,
+          });
+          this.addVisitor(visitorsMap, santaAction.targetId, santaAction.actorId);
+        }
       }
     }
 
