@@ -49,7 +49,7 @@ export const ROLE_TEMPLATE_DEFAULTS: RoleBracket[] = [
     id: "8-9", minP: 8, maxP: 9,
     fixed: [
       { role: "DON", count: 1 },
-      { role: "MAFIA", count: 2 },
+      { role: "MAFIA", count: 1 },
       { role: "SHERIFF", count: 1 },
       { role: "DOCTOR", count: 1 },
     ],
@@ -69,7 +69,7 @@ export const ROLE_TEMPLATE_DEFAULTS: RoleBracket[] = [
     id: "13-16", minP: 13, maxP: 16,
     fixed: [
       { role: "DON", count: 1 },
-      { role: "MAFIA", count: 3 },
+      { role: "MAFIA", count: 2 },
       { role: "SHERIFF", count: 1 },
       { role: "DOCTOR", count: 1 },
     ],
@@ -79,7 +79,7 @@ export const ROLE_TEMPLATE_DEFAULTS: RoleBracket[] = [
     id: "17-20", minP: 17, maxP: 20,
     fixed: [
       { role: "DON", count: 1 },
-      { role: "MAFIA", count: 4 },
+      { role: "MAFIA", count: 3 },
       { role: "SHERIFF", count: 1 },
       { role: "DOCTOR", count: 1 },
     ],
@@ -89,7 +89,7 @@ export const ROLE_TEMPLATE_DEFAULTS: RoleBracket[] = [
     id: "21-25", minP: 21, maxP: 25,
     fixed: [
       { role: "DON", count: 1 },
-      { role: "MAFIA", count: 5 },
+      { role: "MAFIA", count: 4 },
       { role: "SHERIFF", count: 1 },
       { role: "DOCTOR", count: 1 },
     ],
@@ -99,7 +99,7 @@ export const ROLE_TEMPLATE_DEFAULTS: RoleBracket[] = [
     id: "26-30", minP: 26, maxP: 30,
     fixed: [
       { role: "DON", count: 1 },
-      { role: "MAFIA", count: 6 },
+      { role: "MAFIA", count: 5 },
       { role: "SHERIFF", count: 1 },
       { role: "DOCTOR", count: 1 },
     ],
