@@ -119,9 +119,21 @@ export const economyService = {
     return { success: true, fee };
   },
 
-  // O'yin mukofoti
+  // O'yin mukofoti — FAQAT 5, 10, 15, 20... o'yin yutganda beriladi
   async giveGameReward(userId: number, winner: string, role: string) {
     const { pricingService, PRICE_KEYS } = await import("./pricing.service");
+    const { statsRepo } = await import("../database/repositories/stats.repository");
+
+    // Foydalanuvchini yutishlar sonini olish
+    const stats = await statsRepo.findByUserId(userId);
+    if (!stats) return { diamonds: 0, money: 0 };
+
+    const wins = stats.gamesWon;
+
+    // Faqat 5, 10, 15, 20... yutishlarda mukofot beriladi
+    if (wins % 5 !== 0) {
+      return { diamonds: 0, money: 0 };
+    }
 
     let moneyKey: string = PRICE_KEYS.REWARD_TOWN_MONEY;
     let diamondKey: string = PRICE_KEYS.REWARD_TOWN_DIAMOND;
@@ -136,8 +148,8 @@ export const economyService = {
     const money = await pricingService.get(moneyKey);
     const diamonds = await pricingService.get(diamondKey);
 
-    if (diamonds > 0) await this.addDiamonds(userId, diamonds, `game_win_${winner}`);
-    if (money > 0) await this.addMoney(userId, money, `game_win_${winner}`);
+    if (diamonds > 0) await this.addDiamonds(userId, diamonds, `game_win_${winner}_milestone_${stats.gamesWon}`);
+    if (money > 0) await this.addMoney(userId, money, `game_win_${winner}_milestone_${stats.gamesWon}`);
 
     return { diamonds, money };
   },

@@ -51,69 +51,69 @@ export function rolePriceKey(role: Role): string {
 
 // Default narxlar
 const DEFAULTS: Record<string, number> = {
-  // Do'kon (💎 olmosda)
-  [PRICE_KEYS.SHIELD]: 50,                    // 50💎
-  [PRICE_KEYS.DOCUMENT]: 30,                  // 30💎
-  [PRICE_KEYS.HERO_CREATE]: 100,              // 100💎
-  [PRICE_KEYS.VIP_MONTH]: 100,                // 100💎
-  [PRICE_KEYS.HERO_POINTS_1000]: 100,         // 100💎 → 1000 ball
-  [PRICE_KEYS.HERO_PROTECTION_REFRESH]: 100,  // 100💎
+  // Do'kon (💎 olmosda) — OLGANLIK UCHUN ARZONLASHTIRILDI
+  [PRICE_KEYS.SHIELD]: 15,                    // 15💎 (eski 50)
+  [PRICE_KEYS.DOCUMENT]: 10,                  // 10💎 (eski 30)
+  [PRICE_KEYS.HERO_CREATE]: 30,               // 30💎 (eski 100)
+  [PRICE_KEYS.VIP_MONTH]: 20,                 // 20💎/oy (eski 100)
+  [PRICE_KEYS.HERO_POINTS_1000]: 20,          // 20💎 → 1000 ball (eski 100)
+  [PRICE_KEYS.HERO_PROTECTION_REFRESH]: 15,   // 15💎 (eski 100)
 
   // Pul bilan (💰)
-  [PRICE_KEYS.HERO_CHARGE]: 400,              // 400💰 zaryadlash
-  [PRICE_KEYS.HERO_RENAME]: 2000,             // 2000💰 nom o'zgartirish
-  [PRICE_KEYS.CHEST_BASIC]: 10000,            // 10 000💰
-  [PRICE_KEYS.CHEST_SILVER]: 25000,           // 25 000💰
-  [PRICE_KEYS.CHEST_GOLD]: 50000,             // 50 000💰
+  [PRICE_KEYS.HERO_CHARGE]: 200,              // 200💰 zaryadlash (eski 400)
+  [PRICE_KEYS.HERO_RENAME]: 1000,             // 1000💰 nom o'zgartirish (eski 2000)
+  [PRICE_KEYS.CHEST_BASIC]: 5000,             // 5000💰 (eski 10000)
+  [PRICE_KEYS.CHEST_SILVER]: 12000,           // 12000💰 (eski 25000)
+  [PRICE_KEYS.CHEST_GOLD]: 25000,             // 25000💰 (eski 50000)
 
   // Transfer komissiyalari
   [PRICE_KEYS.FEE_DIAMOND_TRANSFER]: 1,       // 1💎
-  [PRICE_KEYS.FEE_MONEY_TRANSFER]: 100,       // 100💰
+  [PRICE_KEYS.FEE_MONEY_TRANSFER]: 50,        // 50💰 (eski 100)
 
   // O'yin mukofotlari
-  [PRICE_KEYS.REWARD_TOWN_MONEY]: 500,        // Shahar: 500💰
-  [PRICE_KEYS.REWARD_TOWN_DIAMOND]: 2,        // + 2💎
-  [PRICE_KEYS.REWARD_MAFIA_MONEY]: 700,       // Mafiya: 700💰
-  [PRICE_KEYS.REWARD_MAFIA_DIAMOND]: 3,       // + 3💎
-  [PRICE_KEYS.REWARD_SOLO_MONEY]: 1000,       // Yakka rol: 1000💰
-  [PRICE_KEYS.REWARD_SOLO_DIAMOND]: 5,        // + 5💎
+  [PRICE_KEYS.REWARD_TOWN_MONEY]: 300,        // Shahar: 300💰 (eski 500)
+  [PRICE_KEYS.REWARD_TOWN_DIAMOND]: 3,        // + 3💎 (eski 2)
+  [PRICE_KEYS.REWARD_MAFIA_MONEY]: 500,       // Mafiya: 500💰 (eski 700)
+  [PRICE_KEYS.REWARD_MAFIA_DIAMOND]: 5,       // + 5💎 (eski 3)
+  [PRICE_KEYS.REWARD_SOLO_MONEY]: 800,        // Yakka rol: 800💰 (eski 1000)
+  [PRICE_KEYS.REWARD_SOLO_DIAMOND]: 8,        // + 8💎 (eski 5)
   [PRICE_KEYS.REWARD_WINNER_BONUS]: 100,      // G'olib bonusi +100💰
-  [PRICE_KEYS.REWARD_LOSER_CONSOLATION]: 30,  // Yutqazganga 30💰
-  [PRICE_KEYS.REWARD_HERO_POINTS_TOWN]: 100,  // Geroy: shahar yutsa 100 ball
-  [PRICE_KEYS.REWARD_HERO_POINTS_MAFIA]: 150, // Mafiya yutsa 150 ball
-  [PRICE_KEYS.REWARD_HERO_POINTS_SOLO]: 200,  // Yakka yutsa 200 ball
+  [PRICE_KEYS.REWARD_LOSER_CONSOLATION]: 20,  // Yutqazganga 20💰 (eski 30)
+  [PRICE_KEYS.REWARD_HERO_POINTS_TOWN]: 150,  // Geroy: shahar yutsa 150 ball (eski 100)
+  [PRICE_KEYS.REWARD_HERO_POINTS_MAFIA]: 200, // Mafiya yutsa 200 ball (eski 150)
+  [PRICE_KEYS.REWARD_HERO_POINTS_SOLO]: 300,  // Yakka yutsa 300 ball (eski 200)
 
-  // Default o'yin vaqtlari (sekundda / soni) — o'yin kuchayib ketmasligi uchun
+  // Default o'yin vaqtlari (sekundda / soni)
   [PRICE_KEYS.DEFAULT_REGISTRATION_TIMEOUT]: 90,
   [PRICE_KEYS.DEFAULT_NIGHT_TIMEOUT]: 90,
   [PRICE_KEYS.DEFAULT_DAY_DISCUSSION_TIMEOUT]: 180,
   [PRICE_KEYS.DEFAULT_VOTING_TIMEOUT]: 90,
   [PRICE_KEYS.DEFAULT_MIN_PLAYERS]: 4,
-  [PRICE_KEYS.DEFAULT_MAX_PLAYERS]: 20,
+  [PRICE_KEYS.DEFAULT_MAX_PLAYERS]: 30,
 
-  // Aktiv rollar (💰 pulda)
-  price_role_CIVILIAN: 300,
-  price_role_DOCTOR: 350,
-  price_role_TRAMP: 350,
-  price_role_SHERIFF: 400,
-  price_role_KAMIKAZE: 400,
-  price_role_HOOKER: 400,
-  price_role_SERGEANT: 300,
-  price_role_WARLOCK: 400,
-  price_role_SANTA: 300,
-  price_role_SNOWBOY: 300,
-  price_role_DON: 400,
-  price_role_MAFIA: 400,
-  price_role_LAWYER: 350,
-  price_role_SPY: 400,
-  price_role_LAB: 400,
-  price_role_KILLER: 400,
-  price_role_MINER: 300,
+  // Aktiv rollar (💰 pulda) — REBALANS QILINDI
+  price_role_CIVILIAN: 150,
+  price_role_DOCTOR: 200,
+  price_role_TRAMP: 200,
+  price_role_SHERIFF: 250,
+  price_role_KAMIKAZE: 250,
+  price_role_HOOKER: 250,
+  price_role_SERGEANT: 180,
+  price_role_WARLOCK: 250,
+  price_role_SANTA: 180,
+  price_role_SNOWBOY: 180,
+  price_role_DON: 300,
+  price_role_MAFIA: 250,
+  price_role_LAWYER: 200,
+  price_role_SPY: 250,
+  price_role_LAB: 250,
+  price_role_KILLER: 350,
+  price_role_MINER: 200,
   price_role_SNIPER: 400,
-  price_role_ARCHER: 400,
-  price_role_TRAITOR: 400,
-  price_role_ROBBER: 400,
-  price_role_PROFESSOR: 400,
+  price_role_ARCHER: 350,
+  price_role_TRAITOR: 300,
+  price_role_ROBBER: 250,
+  price_role_PROFESSOR: 300,
 };
 
 // Valyuta turi — diamond yoki money

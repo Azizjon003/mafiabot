@@ -33,6 +33,8 @@ export interface PlayerState {
   professorChoice?: number; // Nishon tanlagan quti indeksi (0..2)
   // Faol tun harakatsiz tunlar soni — 2 ga yetsa avtomatik o'lim
   inactiveNights: number;
+  // Zaryadlar/chegaralar uchun (Snayper, Kamonchi, Koldun, Minior, Qorbola)
+  chargesLeft?: Record<string, number>; // { "SNIPER": 2, "ARCHER": 2, "WARLOCK": 1, "MINER": 2, "SNOWBOY": 1 }
 }
 
 export interface KilledPlayer {

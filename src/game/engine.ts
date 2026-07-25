@@ -2,7 +2,7 @@ import { GameStatus, Role, DeathCause, ActionType, Winner, ChatSettings } from "
 import { PlayerState, NightResult, NightEvent, VoteResult, MafiaVote, KilledPlayer, RobberResponse } from "../types";
 import { gameRepo } from "../database/repositories/game.repository";
 import { playerRepo } from "../database/repositories/player.repository";
-import { ROLE_TEAM, Team, MAFIA_ROLES, MAFIA_KILL_VOTERS, ROLE_EMOJI, ROLE_NAME } from "../utils/constants";
+import { ROLE_TEAM, Team, MAFIA_ROLES, MAFIA_KILL_VOTERS, ROLE_EMOJI, ROLE_NAME, hasCharge, useCharge, initCharges } from "../utils/constants";
 import { checkWinCondition } from "./win-checker";
 import { assignRoles } from "./role-assigner";
 import { getMostVoted, mention, shuffle } from "../utils/helpers";
@@ -324,6 +324,8 @@ export class GameEngine {
       player.isHealedByDoctor = false;
       player.professorBoxes = undefined;
       player.professorChoice = undefined;
+      // Initialize charges for new night
+      initCharges(player);
     }
 
     // Tunda harakat qiladigan tirik rollarni aniqlash
@@ -468,15 +470,26 @@ export class GameEngine {
       const actor = this.getPlayer(hookerAction.actorId);
       const target = this.getPlayer(hookerAction.targetId);
       if (actor && target && !actor.isBlocked) {
-        target.isBlocked = true;
-        this.addVisitor(visitorsMap, hookerAction.targetId, hookerAction.actorId);
-        result.events.push({
-          type: "HOOKER_BLOCK",
-          actorId: hookerAction.actorId,
-          targetId: hookerAction.targetId,
-          message: `Kezuvchi blokladi`,
-          privateMessage: `💃 Siz ${target.firstName}ni muvaffaqiyatli blokladingiz.`,
-        });
+        // Kezuvchi komissarni uxlatishi taqiqlanadi (PRD)
+        if (target.role === "SHERIFF") {
+          result.events.push({
+            type: "HOOKER_BLOCK_FAILED",
+            actorId: hookerAction.actorId,
+            targetId: hookerAction.targetId,
+            message: `Kezuvchi komissarni uxlata olmadi`,
+            privateMessage: `💃 Komissarni uxlatib bo'lmaydi! Tanlang: boshqa kishini tanlang.`,
+          });
+        } else {
+          target.isBlocked = true;
+          this.addVisitor(visitorsMap, hookerAction.targetId, hookerAction.actorId);
+          result.events.push({
+            type: "HOOKER_BLOCK",
+            actorId: hookerAction.actorId,
+            targetId: hookerAction.targetId,
+            message: `Kezuvchi blokladi`,
+            privateMessage: `💃 Siz bir kishini blokladingiz. Uning roli oshkor qilinmaydi.`,
+          });
+        }
       }
     }
 
@@ -745,36 +758,46 @@ export class GameEngine {
       }
     }
 
-    // 10. Koldun harakati
-    const warlockAction = this.nightActions.get("WARLOCK");
-    if (warlockAction) {
-      const actor = this.getPlayer(warlockAction.actorId);
-      const target = this.getPlayer(warlockAction.targetId);
-      if (actor && target && !actor.isBlocked) {
-        if (ROLE_TEAM[target.role] === Team.TOWN) {
-          // Tinch axoli — osilishdan saqlaydi (kunduzgi ovozdan himoya)
-          target.isProtectedByWarlock = true;
-          result.events.push({
-            type: "WARLOCK_SAVE",
-            actorId: warlockAction.actorId,
-            targetId: warlockAction.targetId,
-            message: `Koldun saqladi`,
-            privateMessage: "tinch axoli, osilishdan saqladingiz",
-          });
-        } else {
-          // Boshqa taraf — o'ldiradi
-          killTargets.set(warlockAction.targetId, "WARLOCK_KILL");
-          result.events.push({
-            type: "WARLOCK_KILL",
-            actorId: warlockAction.actorId,
-            targetId: warlockAction.targetId,
-            message: `Koldun o'ldirdi`,
-            privateMessage: "dushman, o'ldirdingiz",
-          });
-        }
-        this.addVisitor(visitorsMap, warlockAction.targetId, warlockAction.actorId);
+    // 10. Koldun harakati - ZARYAD CHEKLANGAN (1 marta o'ldirish)
+        const warlockAction = this.nightActions.get("WARLOCK");
+        if (warlockAction) {
+          const actor = this.getPlayer(warlockAction.actorId);
+          const target = this.getPlayer(warlockAction.targetId);
+          if (actor && target && !actor.isBlocked) {
+            if (ROLE_TEAM[target.role] === Team.TOWN) {
+              // Tinch axoli — osilishdan saqlaydi (kunduzgi ovozdan himoya)
+              target.isProtectedByWarlock = true;
+              result.events.push({
+                type: "WARLOCK_SAVE",
+                actorId: warlockAction.actorId,
+                targetId: warlockAction.targetId,
+                message: `Koldun saqladi`,
+                privateMessage: "tinch axoli, osilishdan saqladingiz",
+              });
+            } else {
+              // Boshqa taraf — o'ldiradi (1 marta zaryad)
+              if (!hasCharge(actor.chargesLeft, "WARLOCK")) {
+                result.events.push({
+                  type: "WARLOCK_NO_CHARGE",
+                  actorId: warlockAction.actorId,
+                  message: "Koldunning o'ldirish zaryadi tugagan",
+                  privateMessage: "⚡️ Sizning o'ldirish zaryadingiz tugagan! Bu tunda o'ldira olmaysiz.",
+                });
+              } else {
+                killTargets.set(warlockAction.targetId, "WARLOCK_KILL");
+                useCharge(actor.chargesLeft, "WARLOCK");
+                result.events.push({
+                  type: "WARLOCK_KILL",
+                  actorId: warlockAction.actorId,
+                  targetId: warlockAction.targetId,
+                  message: `Koldun o'ldirdi`,
+                  privateMessage: `dushman, o'ldirdingiz! Qoldiq: ${actor.chargesLeft?.WARLOCK ?? 0}`,
+                });
               }
             }
+            this.addVisitor(visitorsMap, warlockAction.targetId, warlockAction.actorId);
+          }
+        }
 
             // 11. Daydi kuzatuvi
             const trampAction = this.nightActions.get("TRAMP");
@@ -855,35 +878,86 @@ export class GameEngine {
               }
             }
 
-            // 14. Snayperchi o'ldirishi (himoyani ham o'tadi)
+            // 14. Snayperchi o'ldirishi (himoyani ham o'tadi) - ZARYAD CHEKLANGAN
             const sniperAction = this.nightActions.get("SNIPER");
-    if (sniperAction) {
-      const actor = this.getPlayer(sniperAction.actorId);
-      if (actor && !actor.isBlocked) {
-        // Snayperchi — himoyani ham o'tadi, shuning uchun healedTargets dan olib tashlaymiz
-        healedTargets.delete(sniperAction.targetId);
-        killTargets.set(sniperAction.targetId, "SNIPER_KILL");
-        // Daydi ko'rmaydi — visitor qo'shmaymiz
-      }
-    }
+            if (sniperAction) {
+              const actor = this.getPlayer(sniperAction.actorId);
+              if (actor && !actor.isBlocked) {
+                // Zaryad tekshiruvi
+                if (!hasCharge(actor.chargesLeft, "SNIPER")) {
+                  result.events.push({
+                    type: "SNIPER_NO_CHARGE",
+                    actorId: sniperAction.actorId,
+                    message: "Snayperchi zaryadlari tugagan",
+                    privateMessage: "🔫 Sizning o'qlaringiz tugagan! Bu tunda o'ta olmaysiz.",
+                  });
+                } else {
+                  // Snayperchi — himoyani ham o'tadi, shuning uchun healedTargets dan olib tashlaymiz
+                  healedTargets.delete(sniperAction.targetId);
+                  killTargets.set(sniperAction.targetId, "SNIPER_KILL");
+                  // Daydi ko'rmaydi — visitor qo'shmaymiz
+                  useCharge(actor.chargesLeft, "SNIPER");
+                  result.events.push({
+                    type: "SNIPER_SHOT",
+                    actorId: sniperAction.actorId,
+                    targetId: sniperAction.targetId,
+                    message: "Snayperchi o'q uzdi",
+                    privateMessage: `🔫 Siz o'q uzdingiz! Qoldiq zaryadlar: ${actor.chargesLeft?.SNIPER ?? 0}`,
+                  });
+                }
+              }
+            }
 
-    // 15. Kamonchi o'ldirishi (maxfiy — daydi sezmaydi)
-    const archerAction = this.nightActions.get("ARCHER");
-    if (archerAction) {
-      const actor = this.getPlayer(archerAction.actorId);
-      if (actor && !actor.isBlocked) {
-        killTargets.set(archerAction.targetId, "ARCHER_KILL");
-        // Daydi sezmaydi — visitor qo'shmaymiz
-      }
-    }
+    // 15. Kamonchi o'ldirishi (maxfiy — daydi sezmaydi) - ZARYAD CHEKLANGAN
+                const archerAction = this.nightActions.get("ARCHER");
+                if (archerAction) {
+                  const actor = this.getPlayer(archerAction.actorId);
+                  if (actor && !actor.isBlocked) {
+                    if (!hasCharge(actor.chargesLeft, "ARCHER")) {
+                      result.events.push({
+                        type: "ARCHER_NO_CHARGE",
+                        actorId: archerAction.actorId,
+                        message: "Kamonchi o'qlari tugagan",
+                        privateMessage: "🏹 Sizning o'qlaringiz tugagan! Bu tunda o'ta olmaysiz.",
+                      });
+                    } else {
+                      killTargets.set(archerAction.targetId, "ARCHER_KILL");
+                      useCharge(actor.chargesLeft, "ARCHER");
+                      result.events.push({
+                        type: "ARCHER_SHOT",
+                        actorId: archerAction.actorId,
+                        targetId: archerAction.targetId,
+                        message: "Kamonchi o'q uzdi",
+                        privateMessage: `🏹 Siz o'q uzdingiz! Qoldiq o'qlar: ${actor.chargesLeft?.ARCHER ?? 0}`,
+                      });
+                    }
+                  }
+                }
 
-    // 16. Qorbola qorbo'roni
+    // 16. Qorbola qorbo'roni - ZARYAD CHEKLANGAN (1 qorbo'ron)
     const snowboyAction = this.nightActions.get("SNOWBOY");
     if (snowboyAction) {
       const actor = this.getPlayer(snowboyAction.actorId);
       if (actor && !actor.isBlocked) {
-        killTargets.set(snowboyAction.targetId, "SNOWBOY_KILL");
-        this.addVisitor(visitorsMap, snowboyAction.targetId, snowboyAction.actorId);
+        if (!hasCharge(actor.chargesLeft, "SNOWBOY")) {
+          result.events.push({
+            type: "SNOWBOY_NO_CHARGE",
+            actorId: snowboyAction.actorId,
+            message: "Qorbolaning qorbo'ronlari tugagan",
+            privateMessage: "⛄️ Sizning qorbo'ronlaringiz tugagan! Bu tunda o'ta olmaysiz.",
+          });
+        } else {
+          killTargets.set(snowboyAction.targetId, "SNOWBOY_KILL");
+          useCharge(actor.chargesLeft, "SNOWBOY");
+          this.addVisitor(visitorsMap, snowboyAction.targetId, snowboyAction.actorId);
+          result.events.push({
+            type: "SNOWBOY_KILL",
+            actorId: snowboyAction.actorId,
+            targetId: snowboyAction.targetId,
+            message: "Qorbola qorbo'ron qildi",
+            privateMessage: `⛄️ Siz qorbo'ron qoldingiz! Qoldiq: ${actor.chargesLeft?.SNOWBOY ?? 0}`,
+          });
+        }
       }
     }
 
@@ -1338,7 +1412,8 @@ export class GameEngine {
   // ==================== WIN CHECK ====================
 
   checkWin(): Winner | null {
-    return checkWinCondition([...this.players.values()]);
+    const result = checkWinCondition([...this.players.values()], this.settings.maxRounds, this.currentRound);
+    return result.winner;
   }
 
   // ==================== CLEANUP ====================

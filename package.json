@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "@grammyjs/auto-retry": "^2.0.2",
+    "@grammyjs/transformer-throttler": "^1.2.1",
     "@prisma/client": "^5.22.0",
     "dotenv": "^16.4.5",
     "grammy": "^1.30.0",

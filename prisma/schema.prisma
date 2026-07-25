@@ -296,6 +296,9 @@ model ChatSettings {
   enableTraitor   Boolean @default(true)
   enableRobber    Boolean @default(false)
   enableProfessor Boolean @default(false)
+  
+  // Max rounds for the game
+  maxRounds Int @default(15)
 
   updatedAt DateTime @updatedAt
 }
@@ -309,6 +312,7 @@ model Game {
   status     GameStatus @default(WAITING)
   winner     Winner?
   roundCount Int        @default(0)
+  maxRounds  Int        @default(15)
   startedAt  DateTime?
   endedAt    DateTime?
   createdAt  DateTime   @default(now())

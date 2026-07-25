@@ -94,7 +94,6 @@ async function main() {
     },
   });
 }
-
 // Graceful shutdown
 process.on("SIGINT", async () => {
   logger.info("Bot to'xtatilmoqda...");

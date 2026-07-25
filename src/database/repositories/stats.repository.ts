@@ -63,6 +63,18 @@ export const statsRepo = {
     return prisma.userStats.findUnique({ where: { userId } }) as any;
   },
 
+  async findByUserId(userId: number) {
+    await ensureStats(userId);
+    return prisma.userStats.findUnique({ where: { userId } }) as any;
+  },
+
+  // Foydalanuvchi yutishlar sonini olish
+  async getWinCount(userId: number): Promise<number> {
+    await ensureStats(userId);
+    const stats = await prisma.userStats.findUnique({ where: { userId } });
+    return stats?.gamesWon || 0;
+  },
+
   // O'yin tugaganda — barcha stat yangilanishlarni bitta upsert bilan
   async recordGameAndRating(userId: number, role: Role, won: boolean, ratingChange: number) {
     await ensureStats(userId);
