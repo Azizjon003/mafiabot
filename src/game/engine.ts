@@ -1148,7 +1148,9 @@ export class GameEngine {
         logger.error(e, "O'yinchini o'ldirishda xatolik")
       );
 
-      // O'lgan o'yinchi o'z uyiga kelganlarni ko'rsin
+      // O'lgan o'yinchi o'z uyiga kelganlarni ko'rsin.
+      // DIQQAT: faqat ROL ko'rsatiladi — ism EMAS. Aks holda o'ldirilgan odam
+      // qotilning kimligini bilib qoladi (Daydi rolining kuchi ham qadrsizlanadi).
       const visitors = visitorsMap.get(targetId) || [];
       if (visitors.length > 0) {
         const seen = new Set<number>();
@@ -1161,7 +1163,7 @@ export class GameEngine {
           } else {
             const vp = this.getPlayer(vId);
             if (vp) {
-              visitorLines.push(`${ROLE_EMOJI[vp.role]} ${ROLE_NAME[vp.role]} (${vp.firstName})`);
+              visitorLines.push(`${ROLE_EMOJI[vp.role]} ${ROLE_NAME[vp.role]}`);
             }
           }
         }
