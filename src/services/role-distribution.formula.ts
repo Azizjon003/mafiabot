@@ -5,10 +5,45 @@ import { ChatSettings } from "@prisma/client";
 // FORMULA-BASED ROLE DISTRIBUTION (PRD v2)
 // ============================================
 
+// Rol -> ChatSettings kaliti. null = doim yoqilgan (sozlamada toggle yo'q).
+// DIQQAT: `enable${role}` shaklida yasab bo'lmaydi — Role enum'i UPPERCASE,
+// ChatSettings maydonlari esa camelCase (enableSheriff emas, enableWarlock kabi).
+const ROLE_SETTINGS_KEY: Partial<Record<Role, keyof ChatSettings | null>> = {
+  // Tinch axoli
+  SHERIFF: null, // Komissar — har doim bo'ladi
+  DOCTOR: null,  // Shifokor — toggle yo'q, har doim mumkin
+  HOOKER: "enableHooker",
+  TRAMP: "enableTramp",
+  SERGEANT: "enableSergeant",
+  WARLOCK: "enableWarlock",
+  SANTA: "enableSanta",
+  SNOWBOY: "enableSnowboy",
+  KAMIKAZE: "enableKamikaze",
+  // Mafiya
+  LAWYER: "enableLawyer",
+  SPY: "enableSpy",
+  LAB: "enableLab",
+  // Yakka
+  KILLER: "enableKiller",
+  SNIPER: "enableSniper",
+  ARCHER: "enableArcher",
+  MINER: "enableMiner",
+  TRAITOR: "enableTraitor",
+  ROBBER: "enableRobber",
+  PROFESSOR: "enableProfessor",
+};
+
+function isRoleEnabled(role: Role, settings: ChatSettings): boolean {
+  const key = ROLE_SETTINGS_KEY[role];
+  if (key === null) return true;      // toggle yo'q — doim yoqilgan
+  if (key === undefined) return false; // xaritada yo'q — pool'ga tushmaydi
+  return Boolean(settings[key]);
+}
+
 // Priority order for optional roles when pool slots available
 const TOWN_POWER_PRIORITY: Role[] = [
   "SHERIFF",    // 1. Always first
-  "DOCTOR",     // 2. 
+  "DOCTOR",     // 2.
   "HOOKER",     // 3.
   "TRAMP",      // 4.
   "SERGEANT",   // 5.
@@ -67,27 +102,33 @@ export function calculateRoleDistribution(
   settings: ChatSettings
 ): RoleDistributionResult {
   // 1. Calculate base counts per formula
+  // mafiaCount = BUTUN mafiya jamoasi (DON + MAFIA + advokat/ayg'oqchi/labarant)
   const mafiaCount = Math.max(1, Math.round(playerCount * 0.28));
   const soloCount = playerCount < 10 ? 0 : playerCount < 18 ? 1 : playerCount < 26 ? 2 : 3;
   const civilianFloor = Math.ceil(playerCount * 0.20);
-  const townPowerSlots = playerCount - mafiaCount - soloCount - civilianFloor;
+  // Komissar uchun kamida 1 slot kafolatlanadi
+  const townPowerSlots = Math.max(
+    1,
+    playerCount - mafiaCount - soloCount - civilianFloor
+  );
 
   // 2. Build available pools based on enabled settings
-  const enabledMafiaPower: Role[] = MAFIA_POWER_PRIORITY.filter(r => settings[`enable${r}` as keyof ChatSettings] as boolean);
-  const enabledTownPower: Role[] = TOWN_POWER_PRIORITY.filter(r => settings[`enable${r}` as keyof ChatSettings] as boolean);
-  const enabledSolo: Role[] = SOLO_PRIORITY.filter(r => settings[`enable${r}` as keyof ChatSettings] as boolean);
+  const enabledMafiaPower: Role[] = MAFIA_POWER_PRIORITY.filter(r => isRoleEnabled(r, settings));
+  const enabledTownPower: Role[] = TOWN_POWER_PRIORITY.filter(r => isRoleEnabled(r, settings));
+  const enabledSolo: Role[] = SOLO_PRIORITY.filter(r => isRoleEnabled(r, settings));
 
   // 3. Build roles array
   const roles: Role[] = [];
 
-  // 3a. MAFIA SIDE
-  roles.push("DON");                              // 1 Don always
-  for (let i = 0; i < mafiaCount - 1; i++) {      // Remaining mafia
+  // 3a. MAFIA SIDE — power rollar mafiya budjetidan olinadi (shahar budjetidan EMAS),
+  // kamida DON + 1 oddiy mafiya o'ldiruvchi bo'lib qoladi.
+  const mafiaPowerSlots = Math.min(enabledMafiaPower.length, Math.max(0, mafiaCount - 2));
+  const plainMafiaCount = mafiaCount - mafiaPowerSlots; // DON shu ichida
+
+  roles.push("DON");                                 // 1 Don always
+  for (let i = 0; i < plainMafiaCount - 1; i++) {     // Remaining mafia
     roles.push("MAFIA");
   }
-
-  // Mafia power roles (from enabled pool)
-  const mafiaPowerSlots = Math.min(enabledMafiaPower.length, townPowerSlots); // reuse townPowerSlots as "power role budget"
   for (let i = 0; i < mafiaPowerSlots; i++) {
     roles.push(enabledMafiaPower[i]);
   }
@@ -98,9 +139,9 @@ export function calculateRoleDistribution(
     roles.push(enabledSolo[i]);
   }
 
-  // 3c. TOWN POWER ROLES
-  const townPowerBudget = townPowerSlots - mafiaPowerSlots;
-  const townPowerSlotsUsed = Math.min(enabledTownPower.length, Math.max(0, townPowerBudget));
+  // 3c. TOWN POWER ROLES — to'liq budjet shaharga tegishli
+  const freeSlots = Math.max(0, playerCount - roles.length);
+  const townPowerSlotsUsed = Math.min(enabledTownPower.length, townPowerSlots, freeSlots);
   for (let i = 0; i < townPowerSlotsUsed; i++) {
     roles.push(enabledTownPower[i]);
   }
