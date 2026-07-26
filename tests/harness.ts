@@ -62,6 +62,11 @@ export interface ExpectedState {
   inventory?: Record<string, PlayerInventory>;
   // Rol tekshiruvi: { playerName: "MAFIA" }
   roles?: Record<string, Role>;
+  // Tun event'i tekshiruvi: { TRAMP_VISIT: ["Qaroqchi"] } —
+  // shu turdagi event'ning shaxsiy xabarlarida berilgan matnlar borligini tekshiradi
+  eventContains?: Record<string, string[]>;
+  // Bu turdagi event UMUMAN bo'lmasligi kerak
+  noEvents?: string[];
 }
 
 export interface PlayerInventory {
@@ -251,7 +256,13 @@ async function runVote(engine: GameEngine, id: (n: string) => number, input: Vot
 
 // ==================== ASSERT ====================
 
-function assertState(engine: GameEngine, expected: ExpectedState, label: string, errors: string[]) {
+function assertState(
+  engine: GameEngine,
+  expected: ExpectedState,
+  label: string,
+  errors: string[],
+  nightResult?: NightResult,
+) {
   const alive = engine.getAlivePlayers().map((p) => p.firstName).sort();
   const dead = [...engine.players.values()].filter((p) => !p.isAlive).map((p) => p.firstName).sort();
   if (expected.alive) {
@@ -293,6 +304,30 @@ function assertState(engine: GameEngine, expected: ExpectedState, label: string,
         errors.push(`[${label}] ${name}.role kutilgan: ${role}, bo'ldi: ${p.role}`);
     }
   }
+  if (expected.eventContains) {
+    for (const [type, needles] of Object.entries(expected.eventContains)) {
+      const matched = nightResult?.events.filter((e) => e.type === type) ?? [];
+      if (matched.length === 0) {
+        errors.push(`[${label}] "${type}" event topilmadi`);
+        continue;
+      }
+      const text = matched
+        .map((e) => `${e.privateMessage ?? ""}\n${e.targetPrivateMessage ?? ""}`)
+        .join("\n");
+      for (const needle of needles) {
+        if (!text.includes(needle)) {
+          errors.push(`[${label}] "${type}" xabarida "${needle}" yo'q. Xabar: ${text.replace(/\n/g, " | ")}`);
+        }
+      }
+    }
+  }
+  if (expected.noEvents) {
+    for (const type of expected.noEvents) {
+      if (nightResult?.events.some((e) => e.type === type)) {
+        errors.push(`[${label}] "${type}" event bo'lmasligi kerak edi`);
+      }
+    }
+  }
 }
 
 // ==================== SCENARIO RUNNER ====================
@@ -304,8 +339,8 @@ export async function runScenario(s: Scenario): Promise<{ ok: boolean; errors: s
   const maxRounds = Math.max(s.nights?.length ?? 0, s.votes?.length ?? 0);
   for (let r = 0; r < maxRounds; r++) {
     if (s.nights?.[r]) {
-      await runNight(engine, id, s.nights[r]);
-      if (s.afterNight?.[r]) assertState(engine, s.afterNight[r], `night ${r + 1}`, errors);
+      const nightResult = await runNight(engine, id, s.nights[r]);
+      if (s.afterNight?.[r]) assertState(engine, s.afterNight[r], `night ${r + 1}`, errors, nightResult);
     }
     if (s.votes?.[r]) {
       await runVote(engine, id, s.votes[r]);

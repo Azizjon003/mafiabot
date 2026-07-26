@@ -9,9 +9,9 @@ import { startDayPhase } from "./phases/day";
 import { startVotingPhase } from "./phases/voting";
 import { joinGameKeyboard, kamikazeTargetKeyboard, confirmHangKeyboard } from "../keyboards/game";
 import { t } from "../services/text.service";
-import { ROLE_EMOJI, ROLE_NAME, SOLO_ROLES } from "../utils/constants";
+import { PACING, ROLE_EMOJI, ROLE_NAME, SOLO_ROLES } from "../utils/constants";
 import { buildRoster } from "./roster";
-import { mention } from "../utils/helpers";
+import { mention, sleep } from "../utils/helpers";
 import { statsRepo } from "../database/repositories/stats.repository";
 import { economyService } from "../services/economy.service";
 import { heroService } from "../services/hero.service";
@@ -169,12 +169,14 @@ export class GameController {
     for (const player of engine.players.values()) {
       await this.notifier.sendRoleToPlayer(player);
     }
+    await sleep(PACING.ROLE_INTRO_MS);
 
     // Mafiya a'zolariga bir-birini ko'rsatish
     const mafiaMembers = engine.getMafiaMembers();
     if (mafiaMembers.length > 1) {
       await this.notifier.sendMafiaIntro(mafiaMembers);
     }
+    await sleep(PACING.ROLE_INTRO_MS);
 
     // Komissar + Serjant bir-birini bilishi uchun
     const sheriff = engine.getAlivePlayers().find((p) => p.role === "SHERIFF");
@@ -191,9 +193,11 @@ export class GameController {
       t("game.rolesDistributed"),
       roleKb
     );
+    await sleep(PACING.GAME_SETUP_MS);
 
     // Roster — tirik o'yinchilar va jamoa bo'yicha rollar
     await this.notifier.sendToGroup(chatTelegramId, buildRoster(engine));
+    await sleep(PACING.GAME_SETUP_MS);
 
     // Kecha boshlash
     await this.startNightPhase(chatTelegramId);
@@ -238,6 +242,15 @@ export class GameController {
 
     // Har bir rolga shaxsiy chatda tundagi promptlarni yuborish
     await sendNightPrompts(engine, this.notifier);
+
+    // Tun atmosfera hikoyalari — o'yinchilar tanlov qilayotganda guruhga oqim sifatida boradi
+    await sendNightStories(engine, this.notifier);
+
+    // Promptlar/hikoyalar yuborilayotganda hamma harakat qilib ulgurgan bo'lishi mumkin —
+    // unda tun allaqachon yakunlanib, kunduz boshlangan bo'ladi. Bunday holda tun taymerini
+    // QO'YMAYMIZ: setTimer avval clearTimer() qiladi va kunduzgi taymerni o'chirib yuborardi
+    // (natijada o'yin kunduzda qotib qolardi).
+    if (engine.status !== "NIGHT") return;
 
     // Night timer
     engine.setTimer(engine.settings.nightTimeout * 1000, async () => {
@@ -292,21 +305,36 @@ export class GameController {
       }
     }
 
-    // Shaxsiy natijalarni yuborish
+    // Shaxsiy natijalarni to'plash — bitta odamga bir nechta xabar bo'lsa, birga (burst) emas, ketma-ket yuborish uchun
+    const privateMessages = new Map<string, { telegramId: bigint; messages: string[] }>();
+    const queuePrivateMessage = (telegramId: bigint, message: string) => {
+      const key = telegramId.toString();
+      const entry = privateMessages.get(key);
+      if (entry) entry.messages.push(message);
+      else privateMessages.set(key, { telegramId, messages: [message] });
+    };
     for (const event of nightResult.events) {
       if (event.privateMessage) {
         const actor = engine.getPlayer(event.actorId);
-        if (actor) {
-          await this.notifier.sendToPlayer(actor.telegramId, event.privateMessage);
-        }
+        if (actor) queuePrivateMessage(actor.telegramId, event.privateMessage);
       }
       if (event.targetPrivateMessage && event.targetId) {
         const target = engine.getPlayer(event.targetId);
-        if (target) {
-          await this.notifier.sendToPlayer(target.telegramId, event.targetPrivateMessage);
-        }
+        if (target) queuePrivateMessage(target.telegramId, event.targetPrivateMessage);
       }
     }
+
+    // Turli odamlarga parallel, lekin bitta odamning xabarlari orasida pauza bilan (ketma-ket)
+    await Promise.all(
+      [...privateMessages.values()].map(({ telegramId, messages }) =>
+        (async () => {
+          for (let i = 0; i < messages.length; i++) {
+            await this.notifier.sendToPlayer(telegramId, messages[i]);
+            if (i < messages.length - 1) await sleep(PACING.PRIVATE_RESULT_MS);
+          }
+        })().catch(() => {})
+      )
+    );
 
     // G'olib tekshirish
     const winner = engine.checkWin();
@@ -315,7 +343,8 @@ export class GameController {
       return;
     }
 
-    // Kunduz bosqichiga o'tish
+    // Natijalar o'qilishi uchun nafas — keyin kunduz bosqichi
+    await this.notifier.pauseBeforeDay();
     await this.startDayPhase(chatTelegramId);
     } finally {
       engine.phaseResolving = false;
@@ -572,7 +601,8 @@ export class GameController {
       return;
     }
 
-    // Keyingi kecha
+    // Keyingi kecha — vote natijasi o'qilishi uchun nafas
+    await sleep(PACING.BEFORE_NIGHT_MS);
     await this.startNightPhase(chatTelegramId);
   }
 
@@ -622,6 +652,7 @@ export class GameController {
       durationMinutes
     );
     await engine.finish(winner);
+    await sleep(PACING.GAME_END_MS);
 
     // Statistika yangilash — ketma-ket (race condition oldini olish)
     for (const player of players) {

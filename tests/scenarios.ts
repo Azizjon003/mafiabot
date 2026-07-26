@@ -125,6 +125,70 @@ const manual: Scenario[] = [
     nights: [{ actions: { HOOKER: "Snow", SNOWBOY: "Civ1" } }],
     afterNight: [{ alive: ["Hooker", "Snow", "Civ1", "Civ2"] }],
   },
+  {
+    // REGRESSIYA: mafiya o'ldirishi bloklashni umuman tekshirmasdi
+    name: "Kezuvchi Donni bloklaydi — mafiya o'ldira olmaydi",
+    players: ["Hooker", "Don", "Civ1", "Civ2"],
+    roles: { Hooker: "HOOKER", Don: "DON", Civ1: "CIVILIAN", Civ2: "CIVILIAN" },
+    nights: [{ actions: { HOOKER: "Don" }, mafiaVotes: [{ voter: "Don", target: "Civ1" }] }],
+    afterNight: [{ alive: ["Hooker", "Don", "Civ1", "Civ2"] }],
+  },
+  {
+    name: "Kezuvchi bitta mafiyani bloklaydi — Don o'ldiraveradi",
+    players: ["Hooker", "Don", "Maf", "Civ1", "Civ2", "Civ3"],
+    roles: { Hooker: "HOOKER", Don: "DON", Maf: "MAFIA", Civ1: "CIVILIAN", Civ2: "CIVILIAN", Civ3: "CIVILIAN" },
+    nights: [{
+      actions: { HOOKER: "Maf" },
+      mafiaVotes: [{ voter: "Don", target: "Civ1" }, { voter: "Maf", target: "Civ1" }],
+    }],
+    afterNight: [{ alive: ["Hooker", "Don", "Maf", "Civ2", "Civ3"] }],
+  },
+  {
+    name: "Uxlatilgan o'yinchiga xabar boradi",
+    players: ["Hooker", "Don", "Civ1", "Civ2"],
+    roles: { Hooker: "HOOKER", Don: "DON", Civ1: "CIVILIAN", Civ2: "CIVILIAN" },
+    nights: [{ actions: { HOOKER: "Don" }, mafiaVotes: [{ voter: "Don", target: "Civ1" }] }],
+    afterNight: [{ eventContains: { HOOKER_BLOCK: ["uxlatishdi"] } }],
+  },
+
+  // ==================== DAYDI KUZATUVI ====================
+  // REGRESSIYA: Daydi 11-qadamda hisoblanardi, shuning uchun undan keyin
+  // yoziladigan tashrifchilarni (Qotil, Qorbola, Qorbobo, Qaroqchi, Professor) ko'rmasdi.
+  {
+    name: "Daydi Qaroqchi tashrifini ko'radi",
+    players: ["Tramp", "Robber", "Civ1", "Civ2"],
+    roles: { Tramp: "TRAMP", Robber: "ROBBER", Civ1: "CIVILIAN", Civ2: "CIVILIAN" },
+    nights: [{ actions: { TRAMP: "Civ1", ROBBER: "Civ1" } }],
+    afterNight: [{ eventContains: { TRAMP_VISIT: ["Qaroqchi"] } }],
+  },
+  {
+    name: "Daydi Qorbobo tashrifini ko'radi",
+    players: ["Tramp", "Santa", "Civ1", "Civ2"],
+    roles: { Tramp: "TRAMP", Santa: "SANTA", Civ1: "CIVILIAN", Civ2: "CIVILIAN" },
+    nights: [{ actions: { TRAMP: "Civ1", SANTA: "Civ1" } }],
+    afterNight: [{ eventContains: { TRAMP_VISIT: ["Qorbobo"] } }],
+  },
+  {
+    name: "Daydi Qotil tashrifini va qotillikni ko'radi",
+    players: ["Tramp", "Killer", "Civ1", "Civ2", "Civ3"],
+    roles: { Tramp: "TRAMP", Killer: "KILLER", Civ1: "CIVILIAN", Civ2: "CIVILIAN", Civ3: "CIVILIAN" },
+    nights: [{ actions: { TRAMP: "Civ1", KILLER: "Civ1" } }],
+    afterNight: [{ eventContains: { TRAMP_VISIT: ["Qotil"], TRAMP_WITNESS: ["Civ1"] } }],
+  },
+  {
+    name: "Daydi mafiya tashrifini ko'radi",
+    players: ["Tramp", "Don", "Civ1", "Civ2", "Civ3"],
+    roles: { Tramp: "TRAMP", Don: "DON", Civ1: "CIVILIAN", Civ2: "CIVILIAN", Civ3: "CIVILIAN" },
+    nights: [{ actions: { TRAMP: "Civ1" }, mafiaVotes: [{ voter: "Don", target: "Civ1" }] }],
+    afterNight: [{ eventContains: { TRAMP_VISIT: ["Mafiya"] } }],
+  },
+  {
+    name: "Bloklangan Daydi hech narsa ko'rmaydi",
+    players: ["Tramp", "Hooker", "Robber", "Civ1", "Civ2"],
+    roles: { Tramp: "TRAMP", Hooker: "HOOKER", Robber: "ROBBER", Civ1: "CIVILIAN", Civ2: "CIVILIAN" },
+    nights: [{ actions: { HOOKER: "Tramp", TRAMP: "Civ1", ROBBER: "Civ1" } }],
+    afterNight: [{ noEvents: ["TRAMP_VISIT"] }],
+  },
 
   // ==================== ADVOKAT ====================
   {

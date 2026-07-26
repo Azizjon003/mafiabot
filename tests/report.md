@@ -1,13 +1,13 @@
 # Test Hisoboti
-_Yaratildi: 2026-07-26T12:30:26.846Z_
+_Yaratildi: 2026-07-26T18:35:17.558Z_
 
 ## Umumiy natija
 
-- **Jami senariylar:** 174
-- **✅ O'tdi:** 158
-- **❌ Xato:** 16
-- **Muvaffaqiyat foizi:** 90.8%
-- **Jami vaqt:** 29ms
+- **Jami senariylar:** 182
+- **✅ O'tdi:** 165
+- **❌ Xato:** 17
+- **Muvaffaqiyat foizi:** 90.7%
+- **Jami vaqt:** 35ms
 
 ## Kategoriya bo'yicha
 
@@ -15,14 +15,16 @@ _Yaratildi: 2026-07-26T12:30:26.846Z_
 |---|---|---|---|
 | Hujjat | 0 | 7 | ❌ (7 xato) |
 | Komissar | 3 | 9 | ❌ (6 xato) |
-| Aktiv rol | 20 | 22 | ❌ (2 xato) |
+| Aktiv rol | 19 | 22 | ❌ (3 xato) |
 | Shield | 21 | 22 | ❌ (1 xato) |
 | Mafiya | 8 | 8 | ✅ |
 | Shifokor | 16 | 16 | ✅ |
 | Kamonchi | 8 | 8 | ✅ |
-| Boshqa | 9 | 9 | ✅ |
+| Boshqa | 10 | 10 | ✅ |
 | Qorbola | 5 | 5 | ✅ |
-| Kezuvchi | 16 | 16 | ✅ |
+| Kezuvchi | 18 | 18 | ✅ |
+| Qaroqchi | 9 | 9 | ✅ |
+| Daydi | 5 | 5 | ✅ |
 | Labarant | 2 | 2 | ✅ |
 | Koldun | 2 | 2 | ✅ |
 | Sotqin | 3 | 3 | ✅ |
@@ -32,8 +34,6 @@ _Yaratildi: 2026-07-26T12:30:26.846Z_
 | Kamikaze | 2 | 2 | ✅ |
 | Minior | 2 | 2 | ✅ |
 | Ayg'oqchi | 1 | 1 | ✅ |
-| Daydi | 1 | 1 | ✅ |
-| Qaroqchi | 8 | 8 | ✅ |
 | Snayper | 4 | 4 | ✅ |
 | Geroy | 2 | 2 | ✅ |
 
@@ -88,7 +88,7 @@ _Yaratildi: 2026-07-26T12:30:26.846Z_
 #### Shield va Hujjat bir vaqtda (ikki xil himoya)
 - [night 1] Don.document kutilgan: false, bo'ldi: true
 
-### Aktiv rol (2)
+### Aktiv rol (3)
 
 #### Aktiv DON — 5 o'yinchida (Don pool'da yo'q) — berilmaydi
 - [iter 1] C aktiv rolini olgan (olmasligi kerak edi): DON
@@ -101,6 +101,13 @@ _Yaratildi: 2026-07-26T12:30:26.846Z_
 - [iter 4] DON kutilgan: false, bo'ldi: true
 - [iter 5] C aktiv rolini olgan (olmasligi kerak edi): DON
 - [iter 5] DON kutilgan: false, bo'ldi: true
+
+#### Aktiv DOCTOR — 5 o'yinchida (Shifokor pool'da yo'q)
+- [iter 1] A aktiv rolini olgan (olmasligi kerak edi): DOCTOR
+- [iter 2] A aktiv rolini olgan (olmasligi kerak edi): DOCTOR
+- [iter 3] A aktiv rolini olgan (olmasligi kerak edi): DOCTOR
+- [iter 4] A aktiv rolini olgan (olmasligi kerak edi): DOCTOR
+- [iter 5] A aktiv rolini olgan (olmasligi kerak edi): DOCTOR
 
 #### Aktiv MAFIA — 7 o'yinchida (faqat DON, MAFIA pool'da yo'q)
 - [iter 1] D aktiv rolini olgan (olmasligi kerak edi): MAFIA

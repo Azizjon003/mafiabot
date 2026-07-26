@@ -123,6 +123,23 @@ export const SOLO_ROLES: Role[] = ["KILLER", "MINER", "SNIPER", "ARCHER", "TRAIT
 // Geroy bilan kunduzi otish/himoyalanish faqat shu rollarga ruxsat
 export const HERO_ATTACK_ROLES: Role[] = ["SNIPER", "DON", "SHERIFF"];
 
+// ========== XABAR SUR'ATI (PACING) ==========
+// Guruhga bir necha xabar ketma-ket ketganda o'yinchilar o'qishga ulgurmaydi.
+// Quyidagi pauzalar xabarlarni "birin-ketin" emas, bosqichma-bosqich chiqaradi.
+export const PACING = {
+  MORNING_INTRO_MS: 5000,   // "Tong otmoqda..." dan keyin — o'limlar e'lon qilinishidan oldin
+  DEATH_STORY_MS: 3500,     // har bir o'lim/saqlanish xabari orasida
+  BEFORE_DAY_MS: 4000,      // tun natijalari tugab, kun boshlanishidan oldin
+  DAY_STEP_MS: 3000,        // kunduzgi xabarlar orasida (tong matni → roster → muhokama)
+  GAME_SETUP_MS: 2000,      // o'yin boshida (rollar tarqatilgandagi xabarlar orasida)
+  BEFORE_NIGHT_MS: 4000,    // ovoz berish natijasidan keyin, tun boshlanishidan oldin
+  PRIVATE_RESULT_MS: 1200,  // BITTA o'yinchiga ketma-ket ketadigan shaxsiy natijalar orasida
+  NIGHT_STORY_MS: 1500,     // tundagi hikoya matnlari orasida
+  ROLE_INTRO_MS: 1500,      // rol xabari → jamoa tanishtiruvi orasida
+  MAFIA_SYNC_MS: 800,       // mafiya sheriklariga "kim kimni tanladi" xabarlari orasida
+  GAME_END_MS: 2500,        // yakuniy jadval → shaxsiy natijalar orasida
+};
+
 // ========== CHARGE LIMITS (ZARYAD CHEGARALARI) ==========
 // PRD v2: Har bir kuchli rol uchun zaryad chegarasi
 export const CHARGE_LIMITS: Record<string, number> = {

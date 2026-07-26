@@ -4,8 +4,9 @@ import { BotContext } from "../../types/context";
 import { GameController } from "../../game/controller";
 import { gameManager } from "../../game/manager";
 import { sheriffActionKeyboard, robberResponseKeyboard, professorBoxesKeyboard } from "../../keyboards/game";
-import { MAFIA_KILL_VOTERS, ROLE_TEAM, Team, ROLE_EMOJI, ROLE_NAME } from "../../utils/constants";
+import { MAFIA_KILL_VOTERS, ROLE_TEAM, Team, ROLE_EMOJI, ROLE_NAME, PACING } from "../../utils/constants";
 import { t } from "../../services/text.service";
+import { sleep } from "../../utils/helpers";
 
 // Night action callback pattern: night_{role}:{targetPlayerId|skip}
 const NIGHT_ROLE_MAP: Record<string, Role> = {
@@ -37,21 +38,6 @@ function findPlayerGame(telegramId: bigint) {
     }
   }
   return null;
-}
-
-// Guruhga hikoya matni — har tun alohida yuboriladi (round bilan kalitlangan)
-const sentStories = new Set<string>();
-
-async function sendStory(ctx: BotContext, engine: any, role: string): Promise<void> {
-  const key = `${engine.gameId}:${role}:${engine.currentRound}`;
-  if (sentStories.has(key)) return;
-  const story = t(`nightStory.${role}`);
-  if (!story || story === `nightStory.${role}`) return;
-  sentStories.add(key);
-  try {
-    await ctx.api.sendMessage(engine.chatTelegramId.toString(), story, { parse_mode: "HTML" });
-  } catch { /* ignore */ }
-  setTimeout(() => sentStories.delete(key), 600000);
 }
 
 export function createNightActionCallbacks(controller: GameController): Composer<BotContext> {
@@ -111,13 +97,6 @@ export function createNightActionCallbacks(controller: GameController): Composer
 
     // Darhol javob
     await ctx.answerCallbackQuery().catch(() => {});
-
-    // Guruhga hikoya — tekshirish/otish har xil matn
-    if (action === "shoot") {
-      await sendStory(ctx, found.engine, "SHERIFF_SHOOT");
-    } else {
-      await sendStory(ctx, found.engine, "SHERIFF");
-    }
 
     if (action === "check") {
       found.engine.submitNightAction(found.player.playerId, targetPlayerId, "SHERIFF");
@@ -209,9 +188,6 @@ export function createNightActionCallbacks(controller: GameController): Composer
       );
     } catch { /* ignore */ }
 
-    // Guruhga hikoya
-    await sendStory(ctx, found.engine, "ROBBER");
-
     if (found.engine.isNightComplete()) {
       await controller.handleNightEnd(found.engine.chatTelegramId);
     }
@@ -282,8 +258,6 @@ export function createNightActionCallbacks(controller: GameController): Composer
       `🎩 Siz <b>${target.firstName}</b>ga 3 ta sirli quti taklif qildingiz.\nU birini ochganda natija ma'lum bo'ladi.`,
       { parse_mode: "HTML" }
     ).catch(() => {});
-
-    await sendStory(ctx, found.engine, "PROFESSOR");
 
     if (found.engine.isNightComplete()) {
       await controller.handleNightEnd(found.engine.chatTelegramId);
@@ -409,21 +383,13 @@ export function createNightActionCallbacks(controller: GameController): Composer
             { parse_mode: "HTML" }
           );
         } catch { /* ignore */ }
-      }
-
-      // Guruhga hikoya — Don yoki birinchi mafiya
-      if (found.player.role === "DON") {
-        await sendStory(ctx, found.engine, "DON");
-      } else if (!found.engine.getAlivePlayers().some((p: any) => p.role === "DON")) {
-        await sendStory(ctx, found.engine, "MAFIA");
+        // Xabarlar orasida kichik pauza — bir vaqtda kelib qolmasligi uchun
+        await sleep(PACING.MAFIA_SYNC_MS);
       }
     } else {
       found.engine.submitNightAction(found.player.playerId, targetPlayerId, role);
       found.engine.markNightRoleDone(role);
       await ctx.editMessageText(`✅ Siz <b>${target.firstName}</b>ni tanladingiz.`, { parse_mode: "HTML" }).catch(() => {});
-
-      // Guruhga hikoya
-      await sendStory(ctx, found.engine, role);
     }
 
     if (found.engine.isNightComplete()) {

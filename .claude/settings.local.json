@@ -9,7 +9,21 @@
       "Bash(LOG_LEVEL=silent npm test)",
       "Bash(grep -rn 'prisma\\\\.$queryRaw\\\\|prisma\\\\.raw' /c/Users/Zenbook-PC/Desktop/work/mafiabot/src '--include=*.ts')",
       "Bash(find /c/Users/Zenbook-PC/Desktop/work/mafiabot/src -name \"*.ts\" -type f -exec grep -l \"unsubscribe\\\\|cancel.*sub\\\\|remove.*sub\" {} \\\\;)",
-      "Bash(npx tsx *)"
+      "Bash(npx tsx *)",
+      "Bash(./node_modules/.bin/tsc --noEmit)",
+      "Bash(./node_modules/.bin/tsx ./_repro_tmp.ts)",
+      "Bash(git reset *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git checkout *)",
+      "Bash(LOG_LEVEL=silent ./node_modules/.bin/tsx tests/run.ts)",
+      "PowerShell(npx tsc --noEmit -p tsconfig.json)",
+      "PowerShell(npm test *)",
+      "PowerShell(git stash *)",
+      "PowerShell(git checkout *)",
+      "PowerShell(npx tsc --noEmit -p tsconfig.json; if \\($?\\) { \"TYPECHECK OK\" }; git diff --stat)",
+      "Bash(git --no-pager diff -- src/game/engine.ts)",
+      "Bash(git --no-pager diff HEAD -- src/game/engine.ts)"
     ]
   }
 }

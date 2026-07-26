@@ -3,9 +3,9 @@ import { GameEngine } from "../engine";
 import { NotificationService } from "../../services/notification.service";
 import { nightActionKeyboard, professorBoxesKeyboard } from "../../keyboards/game";
 import { t } from "../../services/text.service";
-import { MAFIA_KILL_VOTERS, MAFIA_ROLES, ROLE_EMOJI, ROLE_NAME, ROLE_TEAM, Team } from "../../utils/constants";
+import { MAFIA_KILL_VOTERS, MAFIA_ROLES, PACING, ROLE_EMOJI, ROLE_NAME, ROLE_TEAM, Team } from "../../utils/constants";
 import { PlayerState } from "../../types";
-import { mention } from "../../utils/helpers";
+import { mention, sleep } from "../../utils/helpers";
 
 // Guruhga tundagi hikoya matnlarini yuborish
 export async function sendNightStories(
@@ -14,6 +14,7 @@ export async function sendNightStories(
 ): Promise<void> {
   const alive = engine.getAlivePlayers();
   const sentRoles = new Set<string>();
+  let isFirst = true;
 
   // Har bir faol rolning hikoya matni
   for (const player of alive) {
@@ -24,10 +25,15 @@ export async function sendNightStories(
     if (player.role === "MAFIA" && sentRoles.has("DON")) continue;
     if (player.role === "DON" && sentRoles.has("MAFIA")) continue;
 
+    // Tun tugagan bo'lsa (masalan hamma tezroq harakat qilgan), hikoyalarni davom ettirmaymiz
+    if (engine.status !== "NIGHT") return;
+
+    // Birinchi xabardan oldin emas, faqat xabarlar orasida pauza
+    if (!isFirst) await sleep(PACING.NIGHT_STORY_MS);
+    isFirst = false;
+
     sentRoles.add(player.role);
-    await notifier.sendToGroup(engine.chatTelegramId, story);
-    // Kichik pauza — xabarlar ketma-ket chiqmasligi uchun
-    await new Promise((r) => setTimeout(r, 800));
+    await notifier.sendToGroup(engine.chatTelegramId, story).catch(() => {});
   }
 }
 

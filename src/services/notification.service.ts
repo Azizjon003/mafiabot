@@ -2,7 +2,7 @@ import { Bot } from "grammy";
 import { InlineKeyboard } from "grammy";
 import { BotContext } from "../types/context";
 import { PlayerState, NightResult, VoteResult } from "../types";
-import { ROLE_EMOJI, ROLE_NAME, ROLE_TEAM, Team } from "../utils/constants";
+import { PACING, ROLE_EMOJI, ROLE_NAME, ROLE_TEAM, Team } from "../utils/constants";
 import { mention, sleep } from "../utils/helpers";
 import { t } from "./text.service";
 import { logger } from "../utils/logger";
@@ -148,13 +148,13 @@ export class NotificationService {
   async announceNightResults(chatId: bigint, result: NightResult, showRole: boolean): Promise<void> {
     // Tong otmoqda — kirish xabari
     await this.sendToGroup(chatId, t("game.morningRising"));
-    await sleep(5000);
+    await sleep(PACING.MORNING_INTRO_MS);
 
     // Shield ishlatilganlar — alohida xabar (anonim)
     const shieldEvents = result.events.filter((e) => e.type === "SHIELD_USED");
     for (const ev of shieldEvents) {
       await this.sendToGroup(chatId, ev.message);
-      await sleep(2500);
+      await sleep(PACING.DEATH_STORY_MS);
     }
 
     // O'limlar — har biri alohida xabar, orasida pauza
@@ -184,7 +184,7 @@ export class NotificationService {
         : t("game.playerDied", { name: nameMention, roleInline });
 
       await this.sendToGroup(chatId, text);
-      await sleep(2500);
+      await sleep(PACING.DEATH_STORY_MS);
     }
 
     // Shifokor saqlaganlar — shielddan tashqari
@@ -194,6 +194,12 @@ export class NotificationService {
     if (healedSaves.length > 0) {
       await this.sendToGroup(chatId, t("game.doctorSaved"));
     }
+  }
+
+  // Tun natijalari ketma-ketligi tugagach — kun boshlanishidan oldin nafas olish.
+  // Aks holda o'lim xabari ustidan darhol "Xayrli tong" + roster + muhokama tushadi.
+  async pauseBeforeDay(): Promise<void> {
+    await sleep(PACING.BEFORE_DAY_MS);
   }
 
   async announceVoteResults(chatId: bigint, result: VoteResult, showRole: boolean): Promise<void> {

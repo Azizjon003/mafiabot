@@ -502,6 +502,8 @@ export class GameEngine {
             targetId: hookerAction.targetId,
             message: `Kezuvchi blokladi`,
             privateMessage: `💃 Siz bir kishini blokladingiz. Uning roli oshkor qilinmaydi.`,
+            // Nishonga xabar — aks holda o'yinchi harakati nega ishlamaganini bilmaydi
+            targetPrivateMessage: `💃 <b>Bu tunda sizni uxlatishdi!</b>\nTundagi harakatingiz bekor qilindi.`,
           });
         }
       }
@@ -813,55 +815,15 @@ export class GameEngine {
           }
         }
 
-            // 11. Daydi kuzatuvi
+            // 11. Daydi tashrifi — bu yerda faqat "keldi" deb yoziladi.
+            // Kuzatuv HISOBOTI 19-b qadamda, barcha tashriflar yozilib bo'lgach tuziladi.
+            // (Aks holda Qotil, Qorbola, Qorbobo, Qaroqchi va Professor hisobotga tushmay qolardi.)
             const trampAction = this.nightActions.get("TRAMP");
-            if (trampAction) {
-              const actor = this.getPlayer(trampAction.actorId);
-              if (actor && !actor.isBlocked) {
-                const visitors = visitorsMap.get(trampAction.targetId) || [];
-                const seen = new Set<number>();
-                const visitorLines: string[] = [];
-                for (const vId of visitors) {
-                  if (seen.has(vId)) continue;
-                  seen.add(vId);
-                  if (vId === -1) {
-                    visitorLines.push(`🤵🏼 Mafiya`);
-                  } else if (vId === trampAction.actorId) {
-                    continue; // Daydi o'zi — ko'rsatmaymiz
-                  } else {
-                    const p = this.getPlayer(vId);
-                    if (p) visitorLines.push(`${ROLE_EMOJI[p.role]} ${ROLE_NAME[p.role]} (${p.firstName})`);
-                  }
-                }
-
-                // Daydi o'zi ham visitor sifatida yoziladi (Minior uchun)
-                this.addVisitor(visitorsMap, trampAction.targetId, trampAction.actorId);
-
-                result.events.push({
-                  type: "TRAMP_VISIT",
-                  actorId: trampAction.actorId,
-                  targetId: trampAction.targetId,
-                  message: `Daydi kuzatdi`,
-                  privateMessage:
-                    visitorLines.length > 0
-                      ? `🧙🏼‍♂️ <b>Uyga kelganlar:</b>\n${visitorLines.join("\n")}`
-                      : "🧙🏼‍♂️ Hech kim kelmadi — tinch tun edi.",
-                  // Nishonga xabar — Daydi uyiga tashrif buyurdi
-                  targetPrivateMessage: `🧙🏼‍♂️ <b>Daydi sizning uyingizga tashrif buyurdi.</b>`,
-                });
-
-                // Qotillik guvoh
-                if (killTargets.has(trampAction.targetId)) {
-                  const victim = this.getPlayer(trampAction.targetId);
-                  result.events.push({
-                    type: "TRAMP_WITNESS",
-                    actorId: trampAction.actorId,
-                    targetId: trampAction.targetId,
-                    message: `Daydi qotillikka guvoh bo'ldi`,
-                    privateMessage: `🔴 ${victim?.firstName || "Noma'lum"} uyida qotillik sodir bo'ldi!`,
-                  });
-                }
-              }
+            const trampActor = trampAction ? this.getPlayer(trampAction.actorId) : undefined;
+            const trampActive = !!(trampAction && trampActor && !trampActor.isBlocked);
+            if (trampAction && trampActive) {
+              // Daydi o'zi ham visitor sifatida yoziladi (Minior uni ko'rishi uchun)
+              this.addVisitor(visitorsMap, trampAction.targetId, trampAction.actorId);
             }
 
             // 12. Minior mina qo'yishi (Daydi dan keyin — Daydi kelganini ko'ra olishi uchun)
@@ -1085,6 +1047,52 @@ export class GameEngine {
       }
     }
 
+    // 19-b. Daydi kuzatuv hisoboti — barcha rollar tashrifi yozilib bo'lgach.
+    // Shu joyda tuzilgani uchun Daydi tundagi HAMMA tashrifchini ko'radi va
+    // har qanday turdagi qotillikka guvoh bo'la oladi.
+    if (trampAction && trampActive) {
+      const visitors = visitorsMap.get(trampAction.targetId) || [];
+      const seen = new Set<number>();
+      const visitorLines: string[] = [];
+      for (const vId of visitors) {
+        if (seen.has(vId)) continue;
+        seen.add(vId);
+        if (vId === -1) {
+          visitorLines.push(`🤵🏼 Mafiya`);
+        } else if (vId === trampAction.actorId) {
+          continue; // Daydi o'zi — ko'rsatmaymiz
+        } else {
+          const p = this.getPlayer(vId);
+          if (p) visitorLines.push(`${ROLE_EMOJI[p.role]} ${ROLE_NAME[p.role]} (${p.firstName})`);
+        }
+      }
+
+      result.events.push({
+        type: "TRAMP_VISIT",
+        actorId: trampAction.actorId,
+        targetId: trampAction.targetId,
+        message: `Daydi kuzatdi`,
+        privateMessage:
+          visitorLines.length > 0
+            ? `🧙🏼‍♂️ <b>Uyga kelganlar:</b>\n${visitorLines.join("\n")}`
+            : "🧙🏼‍♂️ Hech kim kelmadi — tinch tun edi.",
+        // Nishonga xabar — Daydi uyiga tashrif buyurdi
+        targetPrivateMessage: `🧙🏼‍♂️ <b>Daydi sizning uyingizga tashrif buyurdi.</b>`,
+      });
+
+      // Qotillik guvoh — endi barcha o'ldirish turlarini ko'radi
+      if (killTargets.has(trampAction.targetId)) {
+        const victim = this.getPlayer(trampAction.targetId);
+        result.events.push({
+          type: "TRAMP_WITNESS",
+          actorId: trampAction.actorId,
+          targetId: trampAction.targetId,
+          message: `Daydi qotillikka guvoh bo'ldi`,
+          privateMessage: `🔴 ${victim?.firstName || "Noma'lum"} uyida qotillik sodir bo'ldi!`,
+        });
+      }
+    }
+
     // ==================== HARAKATSIZLIK TEKSHIRUVI ====================
     // Faol tun rolidagi o'yinchilar harakat qilmasa — inactiveNights oshadi.
     // 2 ga yetgan bo'lsa — avtomatik o'lim (INACTIVE sababi bilan).
@@ -1242,10 +1250,16 @@ export class GameEngine {
   }
 
   private resolveMafiaKill(): number | null {
-    if (this.mafiaVotes.length === 0) return null;
+    // Kezuvchi uxlatgan (bloklangan) yoki o'lgan mafiozning ovozi hisobga olinmaydi.
+    // Hamma ovoz beruvchi uxlatilgan bo'lsa — bu tunda mafiya o'ldira olmaydi.
+    const activeVotes = this.mafiaVotes.filter((v) => {
+      const voter = this.getPlayer(v.voterId);
+      return !!voter && voter.isAlive && !voter.isBlocked;
+    });
+    if (activeVotes.length === 0) return null;
 
     const voteCount = new Map<number, number>();
-    for (const vote of this.mafiaVotes) {
+    for (const vote of activeVotes) {
       voteCount.set(vote.targetId, (voteCount.get(vote.targetId) || 0) + 1);
     }
 
@@ -1253,15 +1267,15 @@ export class GameEngine {
     const result = getMostVoted(voteCount);
     if (result) return result.target;
 
-    // Teng ovoz — Don hal qiladi
-    const don = this.getAlivePlayers().find((p) => p.role === "DON");
+    // Teng ovoz — Don hal qiladi (uxlatilgan Don hal qila olmaydi)
+    const don = this.getAlivePlayers().find((p) => p.role === "DON" && !p.isBlocked);
     if (don) {
-      const donVote = this.mafiaVotes.find((v) => v.voterId === don.playerId);
+      const donVote = activeVotes.find((v) => v.voterId === don.playerId);
       if (donVote) return donVote.targetId;
     }
 
     // Don yo'q — birinchi ovoz
-    return this.mafiaVotes[0]?.targetId ?? null;
+    return activeVotes[0]?.targetId ?? null;
   }
 
   private addVisitor(map: Map<number, number[]>, targetId: number, visitorId: number): void {
