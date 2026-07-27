@@ -23,7 +23,16 @@
       "PowerShell(git checkout *)",
       "PowerShell(npx tsc --noEmit -p tsconfig.json; if \\($?\\) { \"TYPECHECK OK\" }; git diff --stat)",
       "Bash(git --no-pager diff -- src/game/engine.ts)",
-      "Bash(git --no-pager diff HEAD -- src/game/engine.ts)"
+      "Bash(git --no-pager diff HEAD -- src/game/engine.ts)",
+      "PowerShell(npx tsx tmp-role-sim.ts 2>&1 | Select-Object -First 60)",
+      "PowerShell(npx tsx tmp-role-sim.ts 2>&1 | Select-Object -Last 22)",
+      "PowerShell($env:LOG_LEVEL=\"silent\"; npx tsx tmp-role-sim.ts 2>&1 | Select-String -Pattern \"AKTIV ROL|Komissar bo|kutilgan:|chetlanish|P1 |P12\" | Select-Object -Last 12)",
+      "Bash(git --no-pager diff HEAD --stat)",
+      "Bash(git --no-pager log --oneline -3)",
+      "Bash(git --no-pager show --stat --oneline e8d4df6)",
+      "Bash(claude doctor *)",
+      "Bash(NODE_PATH=\"C:/Users/Zenbook-PC/Desktop/work/mafiabot/node_modules\" npx tsx \"C:/Users/ZENBOO~1/AppData/Local/Temp/claude/C--Users-Zenbook-PC-Desktop-work-mafiabot/0e2bc014-4efd-4e8f-a42f-e9541babbe0e/scratchpad/dbcheck.ts\")",
+      "Bash(NODE_PATH=\"C:/Users/Zenbook-PC/Desktop/work/mafiabot/node_modules\" npx tsx \"C:/Users/ZENBOO~1/AppData/Local/Temp/claude/C--Users-Zenbook-PC-Desktop-work-mafiabot/0e2bc014-4efd-4e8f-a42f-e9541babbe0e/scratchpad/lastroles.ts\")"
     ]
   }
 }

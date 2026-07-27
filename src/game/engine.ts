@@ -4,7 +4,7 @@ import { gameRepo } from "../database/repositories/game.repository";
 import { playerRepo } from "../database/repositories/player.repository";
 import { ROLE_TEAM, Team, MAFIA_ROLES, MAFIA_KILL_VOTERS, ROLE_EMOJI, ROLE_NAME, hasCharge, useCharge, initCharges } from "../utils/constants";
 import { checkWinCondition } from "./win-checker";
-import { assignRoles } from "./role-assigner";
+import { assignRoles, matchRolesAvoidingRepeat } from "./role-assigner";
 import { getMostVoted, mention, shuffle } from "../utils/helpers";
 import { logger } from "../utils/logger";
 
@@ -291,12 +291,20 @@ export class GameEngine {
     }
 
     // ===== 2-BOSQICH: Qolgan o'yinchilarga qolgan rollar =====
-    for (const player of allPlayers) {
-      if (assignedPlayers.has(player.playerId)) continue;
-      if (availableRoles.length > 0) {
-        const newRole = availableRoles.shift()!;
-        player.role = newRole;
-        await playerRepo.assignRole(player.playerId, newRole);
+    // Ketma-ket 2 o'yinda bir xil rol tushmasligi uchun oldingi o'yin rollari hisobga olinadi.
+    // Aktiv rol sotib olganlar (1-bosqich) bu cheklovga tushmaydi — ular rolni ataylab tanlagan.
+    const rest = allPlayers.filter((p) => !assignedPlayers.has(p.playerId));
+    const lastRoles = await this.fetchLastRoles(rest);
+
+    for (const { player, role } of matchRolesAvoidingRepeat(rest, availableRoles, lastRoles)) {
+      player.role = role;
+      await playerRepo.assignRole(player.playerId, role);
+      if (lastRoles.get(player.userId) === role) {
+        // Pool'da boshqa variant qolmagan (mas. 4 kishilik o'yinda rollar deyarli qat'iy)
+        logger.warn(
+          { firstName: player.firstName, role },
+          "⚠️ Rol takrorlandi — pool'da muqobil rol yo'q edi"
+        );
       }
     }
 
@@ -306,6 +314,22 @@ export class GameEngine {
 
     // refundUserIds endi har doim bo'sh — pul qaytarilmaydi
     return { refundUserIds };
+  }
+
+  // O'yinchilarning oldingi o'yindagi rollari (userId -> Role).
+  // DB xatosi rol tarqatishni TO'XTATMASLIGI kerak — bunday holda takror himoyasisiz davom etamiz.
+  private async fetchLastRoles(players: PlayerState[]): Promise<Map<number, Role>> {
+    if (players.length === 0) return new Map();
+    try {
+      const map = await playerRepo.getLastRoles(
+        players.map((p) => p.userId),
+        this.gameId
+      );
+      return map instanceof Map ? map : new Map();
+    } catch (e) {
+      logger.error(e, "Oldingi rollarni o'qib bo'lmadi — takror himoyasi bu o'yinda ishlamaydi");
+      return new Map();
+    }
   }
 
   // ==================== NIGHT PHASE ====================

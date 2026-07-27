@@ -1,4 +1,4 @@
-import { DeathCause, Role } from "@prisma/client";
+import { DeathCause, Prisma, Role } from "@prisma/client";
 import { prisma } from "../prisma";
 
 export const playerRepo = {
@@ -65,6 +65,22 @@ export const playerRepo = {
       where: { gameId },
       include: { user: true },
     });
+  },
+
+  // Har bir userId uchun ENG SO'NGGI (joriy o'yindan boshqa) o'yindagi roli.
+  // Rol tarqatishda ishlatiladi — ketma-ket 2 o'yinda bir xil rol tushmasligi uchun.
+  // Faqat rol berilgan o'yinlar hisobga olinadi (bekor qilingan/boshlanmagan o'yinlarda role = NULL).
+  async getLastRoles(userIds: number[], excludeGameId: number): Promise<Map<number, Role>> {
+    if (userIds.length === 0) return new Map();
+    const rows = await prisma.$queryRaw<{ userId: number; role: Role }[]>`
+      SELECT DISTINCT ON (p."userId") p."userId" AS "userId", p."role"::text AS "role"
+      FROM "Player" p
+      WHERE p."userId" IN (${Prisma.join(userIds)})
+        AND p."role" IS NOT NULL
+        AND p."gameId" <> ${excludeGameId}
+      ORDER BY p."userId", p."gameId" DESC
+    `;
+    return new Map(rows.map((r) => [Number(r.userId), r.role]));
   },
 
   async findByGameAndUser(gameId: number, userId: number) {
