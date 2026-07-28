@@ -131,6 +131,38 @@ export function timingsKeyboard(vals: Record<string, number>): InlineKeyboard {
   return kb;
 }
 
+// Bot statistikasi ekrani
+export function botStatsKeyboard(): InlineKeyboard {
+  return new InlineKeyboard()
+    .text("🏘 Guruhlar ro'yxati", "ap:groups:games:0")
+    .row()
+    .text("🔄 Yangilash", "ap:botstats")
+    .text("🔙 Asosiy", "ap:main");
+}
+
+// Guruhlar ro'yxati — saralash + sahifalash
+export type GroupSort = "games" | "recent" | "new";
+
+export function groupsKeyboard(page: number, totalPages: number, sortBy: GroupSort): InlineKeyboard {
+  const kb = new InlineKeyboard();
+  const label = (s: GroupSort, text: string) => (s === sortBy ? `✅ ${text}` : text);
+  kb.text(label("games", "🎮 O'yinlar"), "ap:groups:games:0");
+  kb.text(label("recent", "🕒 So'nggi faol"), "ap:groups:recent:0");
+  kb.text(label("new", "🆕 Yangi"), "ap:groups:new:0");
+  kb.row();
+
+  if (totalPages > 1) {
+    if (page > 0) kb.text("⬅️", `ap:groups:${sortBy}:${page - 1}`);
+    kb.text(`${page + 1}/${totalPages}`, "ap:groups:nope");
+    if (page < totalPages - 1) kb.text("➡️", `ap:groups:${sortBy}:${page + 1}`);
+    kb.row();
+  }
+
+  kb.text("📊 Statistika", "ap:botstats");
+  kb.text("🔙 Asosiy", "ap:main");
+  return kb;
+}
+
 // Sozlamalar kategoriyasi
 export function configCategoriesKeyboard(): InlineKeyboard {
   return new InlineKeyboard()

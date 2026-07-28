@@ -17,7 +17,11 @@ import {
   giftCategoriesKeyboard,
   configCategoriesKeyboard,
   timingsKeyboard,
+  botStatsKeyboard,
+  groupsKeyboard,
+  GroupSort,
 } from "../../keyboards/admin-panel";
+import { botStatsRepo } from "../../database/repositories/botstats.repository";
 import {
   textCategoriesKeyboard,
   textListKeyboard,
@@ -827,28 +831,108 @@ ownerCommand.callbackQuery("ap:cfg:listprices", ownerOnly, async (ctx) => {
 
 // ==================== BOT STATISTIKASI ====================
 
-ownerCommand.callbackQuery("ap:botstats", ownerOnly, async (ctx) => {
-  const usersCount = await prisma.user.count();
-  const gamesTotal = await prisma.game.count();
-  const gamesActive = await prisma.game.count({
-    where: { status: { notIn: ["FINISHED", "CANCELLED"] } },
-  });
-  const heroesCount = await prisma.hero.count();
-  const vipCount = await prisma.user.count({ where: { isVip: true } });
+// "3 kun oldin" ko'rinishidagi qisqa vaqt
+function timeAgo(date: Date | null): string {
+  if (!date) return "hech qachon";
+  const mins = Math.floor((Date.now() - date.getTime()) / 60000);
+  if (mins < 1) return "hozir";
+  if (mins < 60) return `${mins} daq oldin`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours} soat oldin`;
+  const days = Math.floor(hours / 24);
+  if (days < 30) return `${days} kun oldin`;
+  return `${Math.floor(days / 30)} oy oldin`;
+}
 
-  const text =
+// Guruh faolligi belgisi — oxirgi o'yin qachon bo'lganiga qarab
+function activityDot(lastGameAt: Date | null): string {
+  if (!lastGameAt) return "⚪️";
+  const days = (Date.now() - lastGameAt.getTime()) / 86400000;
+  if (days <= 7) return "🟢";
+  if (days <= 30) return "🟡";
+  return "🔴";
+}
+
+async function botStatsText(): Promise<string> {
+  const s = await botStatsRepo.overview();
+  return (
     `📊 <b>Bot statistikasi</b>\n\n` +
-    `👥 Foydalanuvchilar: <b>${usersCount}</b>\n` +
-    `🎮 Jami o'yinlar: <b>${gamesTotal}</b>\n` +
-    `▶️ Aktiv o'yinlar: <b>${gamesActive}</b>\n` +
-    `🥷 Geroyga ega: <b>${heroesCount}</b>\n` +
-    `⭐️ VIP foydalanuvchilar: <b>${vipCount}</b>`;
+    `👥 <b>Foydalanuvchilar</b> — jami <b>${s.users.total}</b>\n` +
+    `   Aktiv: 24s <b>${s.users.activeDay}</b> · 7 kun <b>${s.users.activeWeek}</b> · 30 kun <b>${s.users.activeMonth}</b>\n` +
+    `   Yangi: 24s <b>${s.users.newDay}</b> · 7 kun <b>${s.users.newWeek}</b>\n` +
+    `   ⭐️ VIP: <b>${s.users.vip}</b> · 🥷 Geroy: <b>${s.users.withHero}</b> · 🚫 Ban: <b>${s.users.banned}</b>\n\n` +
+    `🏘 <b>Guruhlar</b> — jami <b>${s.chats.total}</b>\n` +
+    `   O'yin bo'lgan: <b>${s.chats.withGames}</b>\n` +
+    `   Aktiv: 24s <b>${s.chats.activeDay}</b> · 7 kun <b>${s.chats.activeWeek}</b> · 30 kun <b>${s.chats.activeMonth}</b>\n\n` +
+    `🎮 <b>O'yinlar</b> — jami <b>${s.games.total}</b>\n` +
+    `   Tugagan: <b>${s.games.finished}</b> · Hozir davom etmoqda: <b>${s.games.running}</b>\n` +
+    `   24s <b>${s.games.day}</b> · 7 kun <b>${s.games.week}</b>\n\n` +
+    `<i>Aktiv = shu davrda o'yinda qatnashgan (guruh uchun — o'yin bo'lgan).</i>`
+  );
+}
 
+ownerCommand.callbackQuery("ap:botstats", ownerOnly, async (ctx) => {
   await ctx.answerCallbackQuery().catch(() => {});
+  const text = await botStatsText();
   await ctx.editMessageText(text, {
     parse_mode: "HTML",
-    reply_markup: adminPanelKeyboard(),
+    reply_markup: botStatsKeyboard(),
   }).catch(() => {});
+});
+
+// /botstats — panelsiz, to'g'ridan-to'g'ri
+ownerCommand.command("botstats", ownerOnly, async (ctx) => {
+  const text = await botStatsText();
+  await ctx.reply(text, { parse_mode: "HTML", reply_markup: botStatsKeyboard() });
+});
+
+// ==================== GURUHLAR RO'YXATI ====================
+
+const GROUPS_PER_PAGE = 8;
+
+async function showGroupsPage(ctx: BotContext, sortBy: GroupSort, page: number): Promise<void> {
+  const { total, rows } = await botStatsRepo.groups(page, GROUPS_PER_PAGE, sortBy);
+  const totalPages = Math.max(1, Math.ceil(total / GROUPS_PER_PAGE));
+  const safePage = Math.max(0, Math.min(page, totalPages - 1));
+
+  const sortNames: Record<GroupSort, string> = {
+    games: "🎮 o'yinlar soni bo'yicha",
+    recent: "🕒 so'nggi faollik bo'yicha",
+    new: "🆕 qo'shilgan sana bo'yicha",
+  };
+
+  let text = `🏘 <b>Guruhlar</b> — jami <b>${total}</b>\n`;
+  text += `Saralash: ${sortNames[sortBy]}\n\n`;
+
+  if (rows.length === 0) {
+    text += "<i>Hozircha guruh yo'q.</i>";
+  } else {
+    rows.forEach((g, i) => {
+      const num = safePage * GROUPS_PER_PAGE + i + 1;
+      const title = g.title ? escapeHtml(g.title) : "(nomsiz guruh)";
+      text += `${num}. ${activityDot(g.lastGameAt)} <b>${title}</b>\n`;
+      text += `   <code>${g.telegramId}</code>\n`;
+      text += `   🎮 ${g.games} o'yin (30 kunda: ${g.gamesMonth}) · 👤 ${g.players} o'yinchi\n`;
+      text += `   🕒 oxirgi o'yin: ${timeAgo(g.lastGameAt)}\n`;
+    });
+    text += `\n<i>🟢 7 kun ichida · 🟡 30 kun ichida · 🔴 eskiroq · ⚪️ o'yin bo'lmagan</i>`;
+  }
+
+  await ctx.editMessageText(text, {
+    parse_mode: "HTML",
+    reply_markup: groupsKeyboard(safePage, totalPages, sortBy),
+  }).catch(() => {});
+}
+
+ownerCommand.callbackQuery(/^ap:groups:(games|recent|new):(\d+)$/, ownerOnly, async (ctx) => {
+  const sortBy = ctx.match[1] as GroupSort;
+  const page = parseInt(ctx.match[2]);
+  await ctx.answerCallbackQuery().catch(() => {});
+  await showGroupsPage(ctx, sortBy, page);
+});
+
+ownerCommand.callbackQuery("ap:groups:nope", ownerOnly, async (ctx) => {
+  await ctx.answerCallbackQuery().catch(() => {});
 });
 
 // ==================== FOYDALANUVCHILAR ====================
