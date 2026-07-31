@@ -110,8 +110,40 @@ export async function sendNightPrompts(
       case "BARMEN":
         await sendBarmenPrompt(engine, notifier, player, alive);
         break;
+      case "BODYGUARD":
+        await sendSimpleTargetPrompt(notifier, player, alive, "night_bodyguard", "night.bodyguardPrompt");
+        break;
+      case "HUNTER":
+        await sendSimpleTargetPrompt(notifier, player, alive, "night_hunter", "night.hunterPrompt");
+        break;
+      case "ORACLE":
+        await sendSimpleTargetPrompt(notifier, player, alive, "night_oracle", "night.oraclePrompt");
+        break;
+      case "FRAMER":
+        await sendFramerPrompt(engine, notifier, player, alive);
+        break;
     }
   }
+}
+
+// Umumiy: o'zidan boshqa hamma tirik o'yinchini nishon qilib beruvchi prompt
+async function sendSimpleTargetPrompt(
+  notifier: NotificationService,
+  player: PlayerState,
+  alive: PlayerState[],
+  prefix: string,
+  textKey: string,
+) {
+  const targets = alive.filter((p) => p.playerId !== player.playerId);
+  const kb = nightActionKeyboard(targets, prefix);
+  await notifier.sendToPlayer(player.telegramId, t(textKey), kb);
+}
+
+// Tuhmatchi — faqat mafiya bo'lmaganlarga tuhmat qiladi
+async function sendFramerPrompt(engine: GameEngine, notifier: NotificationService, player: PlayerState, alive: PlayerState[]) {
+  const targets = alive.filter((p) => p.playerId !== player.playerId && !MAFIA_ROLES.includes(p.role));
+  const kb = nightActionKeyboard(targets, `night_framer`);
+  await notifier.sendToPlayer(player.telegramId, t("night.framerPrompt"), kb);
 }
 
 async function sendHookerPrompt(engine: GameEngine, notifier: NotificationService, player: PlayerState, alive: PlayerState[]) {

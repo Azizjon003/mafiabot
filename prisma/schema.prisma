@@ -82,6 +82,10 @@ model UserStats {
   timesSnowboy  Int @default(0)
   timesCupid    Int @default(0)
   timesBarmen   Int @default(0)
+  timesBodyguard Int @default(0)
+  timesHunter    Int @default(0)
+  timesOracle    Int @default(0)
+  timesFramer    Int @default(0)
   // Mafiya
   timesDon    Int @default(0)
   timesMafia  Int @default(0)
@@ -288,6 +292,10 @@ model ChatSettings {
   enableSnowboy  Boolean @default(false)
   enableCupid    Boolean @default(true)
   enableBarmen   Boolean @default(true)
+  enableBodyguard Boolean @default(true)
+  enableHunter    Boolean @default(true)
+  enableOracle    Boolean @default(true)
+  enableFramer    Boolean @default(true)
   // Mafiya rollari
   enableLawyer Boolean @default(true)
   enableSpy    Boolean @default(true)
@@ -386,10 +394,14 @@ enum Role {
   SNOWBOY
   CUPID
   BARMEN
+  BODYGUARD
+  HUNTER
+  ORACLE
   // Mafiya
   DON
   MAFIA
   LAWYER
+  FRAMER
   SPY
   LAB
   // Yakka
@@ -419,6 +431,7 @@ enum DeathCause {
   LEFT_GAME
   INACTIVE
   LOVER_GRIEF
+  HUNTER_KILL
 }
 
 // ==================== GAME ROUND ====================

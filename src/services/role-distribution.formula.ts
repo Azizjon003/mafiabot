@@ -21,8 +21,12 @@ const ROLE_SETTINGS_KEY: Partial<Record<Role, keyof ChatSettings | null>> = {
   KAMIKAZE: "enableKamikaze",
   CUPID: "enableCupid",
   BARMEN: "enableBarmen",
+  BODYGUARD: "enableBodyguard",
+  HUNTER: "enableHunter",
+  ORACLE: "enableOracle",
   // Mafiya
   LAWYER: "enableLawyer",
+  FRAMER: "enableFramer",
   SPY: "enableSpy",
   LAB: "enableLab",
   // Yakka
@@ -43,24 +47,32 @@ function isRoleEnabled(role: Role, settings: ChatSettings): boolean {
 }
 
 // Priority order for optional roles when pool slots available
+// SHERIFF va DOCTOR har doim birinchi; QOLGANLARI har o'yinda RANDOM tartibda
+// tanlanadi — shunda barcha yoqilgan rollar turli o'yinlarda tushib turadi
+// (aks holda ro'yxat oxiridagi rollar faqat juda katta o'yinlarda chiqardi).
+const TOWN_POWER_ALWAYS_FIRST: Role[] = ["SHERIFF", "DOCTOR"];
 const TOWN_POWER_PRIORITY: Role[] = [
-  "SHERIFF",    // 1. Always first
-  "DOCTOR",     // 2.
-  "CUPID",      // 3. Sevishganlar — kichik o'yinlarda ham tushsin (7+ o'yinchi)
-  "HOOKER",     // 4.
-  "BARMEN",     // 5. Ichirish — 12+ o'yinchida tushadi
-  "TRAMP",      // 6.
-  "SERGEANT",   // 7.
-  "WARLOCK",    // 8.
-  "SANTA",      // 9.
-  "SNOWBOY",    // 10.
-  "KAMIKAZE",   // 11.
+  "SHERIFF",
+  "DOCTOR",
+  "CUPID",
+  "HOOKER",
+  "BARMEN",
+  "BODYGUARD",
+  "ORACLE",
+  "HUNTER",
+  "TRAMP",
+  "SERGEANT",
+  "WARLOCK",
+  "SANTA",
+  "SNOWBOY",
+  "KAMIKAZE",
 ];
 
 const MAFIA_POWER_PRIORITY: Role[] = [
   "LAWYER",     // 1.
-  "SPY",        // 2.
-  "LAB",        // 3.
+  "FRAMER",     // 2. Tuhmatchi
+  "SPY",        // 3.
+  "LAB",        // 4.
 ];
 
 const SOLO_PRIORITY: Role[] = [
@@ -118,7 +130,12 @@ export function calculateRoleDistribution(
 
   // 2. Build available pools based on enabled settings
   const enabledMafiaPower: Role[] = MAFIA_POWER_PRIORITY.filter(r => isRoleEnabled(r, settings));
-  const enabledTownPower: Role[] = TOWN_POWER_PRIORITY.filter(r => isRoleEnabled(r, settings));
+  // Shahar kuch-rollari: SHERIFF/DOCTOR doim boshida, qolganlari RANDOM tartibda
+  const enabledTownFixed: Role[] = TOWN_POWER_ALWAYS_FIRST.filter(r => isRoleEnabled(r, settings));
+  const enabledTownRest: Role[] = shuffle(
+    TOWN_POWER_PRIORITY.filter(r => !TOWN_POWER_ALWAYS_FIRST.includes(r) && isRoleEnabled(r, settings))
+  );
+  const enabledTownPower: Role[] = [...enabledTownFixed, ...enabledTownRest];
   const enabledSolo: Role[] = SOLO_PRIORITY.filter(r => isRoleEnabled(r, settings));
 
   // 3. Build roles array
@@ -241,6 +258,10 @@ export function findBracketForCount(playerCount: number, brackets: any[]): any {
     enableSnowboy: false,
     enableCupid: true,
     enableBarmen: true,
+    enableBodyguard: true,
+    enableHunter: true,
+    enableOracle: true,
+    enableFramer: true,
     enableLawyer: true,
     enableSpy: true,
     enableLab: true,

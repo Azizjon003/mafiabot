@@ -363,6 +363,8 @@ export class GameEngine {
       player.isHealedByDoctor = false;
       player.professorBoxes = undefined;
       player.professorChoice = undefined;
+      player.isFramed = false;
+      player.hunterAimPlayerId = undefined; // Ovchi har tun qayta mo'ljal oladi
       // Initialize charges for new night
       initCharges(player);
     }
@@ -389,6 +391,7 @@ export class GameEngine {
       "SHERIFF", "SERGEANT", "DOCTOR", "WARLOCK", "TRAMP",
       "KILLER", "SNIPER", "ARCHER", "MINER", "SNOWBOY", "SANTA",
       "ROBBER", "PROFESSOR", "CUPID", "BARMEN",
+      "BODYGUARD", "HUNTER", "ORACLE", "FRAMER",
     ];
     return nightRoles.includes(role);
   }
@@ -641,6 +644,42 @@ export class GameEngine {
       }
     }
 
+    // 1d. Ovchi — mo'ljal olish (o'lsa o'q avtomatik uziladi)
+    const hunterAction = this.nightActions.get("HUNTER");
+    if (hunterAction) {
+      const actor = this.getPlayer(hunterAction.actorId);
+      const target = this.getPlayer(hunterAction.targetId);
+      if (actor && target && !actor.isBlocked) {
+        actor.hunterAimPlayerId = hunterAction.targetId;
+        result.events.push({
+          type: "HUNTER_AIM",
+          actorId: hunterAction.actorId,
+          targetId: hunterAction.targetId,
+          message: `Ovchi mo'ljal oldi`,
+          privateMessage: `🔫 Siz <b>${escapeHtml(target.firstName)}</b>ni mo'ljalga oldingiz.\nAgar bugun o'lsangiz — miltiq o'z-o'zidan otiladi!`,
+        });
+        // Ovchi uydan mo'ljal oladi — tashrif YO'Q (Daydi ko'rmaydi)
+      }
+    }
+
+    // 1e. Tuhmatchi — tinch aholiga tuhmat: shu tunda Komissar/Folbin uni "yovuz" ko'radi
+    const framerAction = this.nightActions.get("FRAMER");
+    if (framerAction) {
+      const actor = this.getPlayer(framerAction.actorId);
+      const target = this.getPlayer(framerAction.targetId);
+      if (actor && target && !actor.isBlocked) {
+        target.isFramed = true;
+        result.events.push({
+          type: "FRAMER_FRAME",
+          actorId: framerAction.actorId,
+          targetId: framerAction.targetId,
+          message: `Tuhmatchi tuhmat qildi`,
+          privateMessage: `🎭 Siz <b>${escapeHtml(target.firstName)}</b>ga tuhmat qildingiz.\nBu tunda Komissar uni tekshirsa — "Mafiya" deb ko'radi!`,
+        });
+        this.addVisitor(visitorsMap, framerAction.targetId, framerAction.actorId);
+      }
+    }
+
     // 2. Sotqin tanlovi
     const traitorAction = this.nightActions.get("TRAITOR");
     if (traitorAction) {
@@ -726,6 +765,28 @@ export class GameEngine {
               : undefined,
           });
         }
+      }
+    }
+
+    // 4b. Folbin — aura tekshiruvi (aniq rol emas, faqat yaxshi/yovuz)
+    const oracleAction = this.nightActions.get("ORACLE");
+    if (oracleAction) {
+      const actor = this.getPlayer(oracleAction.actorId);
+      const target = this.getPlayer(oracleAction.targetId);
+      if (actor && target && !actor.isBlocked && oracleAction.actorId !== oracleAction.targetId) {
+        const targetTeam = ROLE_TEAM[target.role];
+        // Tuhmat qilingan bo'lsa — yovuz ko'rinadi; aks holda jamoa bo'yicha
+        const isEvil = target.isFramed || targetTeam !== Team.TOWN;
+        result.events.push({
+          type: "ORACLE_CHECK",
+          actorId: oracleAction.actorId,
+          targetId: oracleAction.targetId,
+          message: `Folbin aurani ko'rdi`,
+          privateMessage: isEvil
+            ? `🔮 <b>${escapeHtml(target.firstName)}</b>ning aurasi: 😈 <b>YOVUZ</b>`
+            : `🔮 <b>${escapeHtml(target.firstName)}</b>ning aurasi: 😇 <b>Yaxshi</b>`,
+        });
+        this.addVisitor(visitorsMap, oracleAction.targetId, oracleAction.actorId);
       }
     }
 
@@ -819,7 +880,9 @@ export class GameEngine {
             const disguised =
               this.pendingSheriffCheck.disguiseAsTown ||
               (actuallyMafia && target.isProtectedByLawyer);
-            const displayRole: Role = disguised ? "CIVILIAN" : target.role;
+            // Tuhmatchi tuhmat qilgan tinch odam — "Mafiya" bo'lib ko'rinadi
+            const framed = !disguised && !actuallyMafia && target.isFramed;
+            const displayRole: Role = disguised ? "CIVILIAN" : framed ? "MAFIA" : target.role;
             const displayEmoji = ROLE_EMOJI[displayRole] || "";
             const displayName = ROLE_NAME[displayRole] || displayRole;
 
@@ -1256,6 +1319,41 @@ export class GameEngine {
       }
     }
 
+    // ==================== TAN QO'RIQCHISI — O'ZINI O'RTAGA TASHLASH ====================
+    // Qo'riqlangan odamga hujum bo'lsa — qo'riqchi UNING O'RNIGA o'ladi.
+    // Istisnolar: Snayper o'qi (hech narsa to'sa olmaydi) va INACTIVE.
+    const bodyguardAction = this.nightActions.get("BODYGUARD");
+    if (bodyguardAction) {
+      const guard = this.getPlayer(bodyguardAction.actorId);
+      const protectedTarget = this.getPlayer(bodyguardAction.targetId);
+      if (guard && protectedTarget && guard.isAlive && !guard.isBlocked &&
+          guard.playerId !== protectedTarget.playerId) {
+        this.addVisitor(visitorsMap, bodyguardAction.targetId, bodyguardAction.actorId);
+        result.events.push({
+          type: "BODYGUARD_GUARD",
+          actorId: bodyguardAction.actorId,
+          targetId: bodyguardAction.targetId,
+          message: "",
+          privateMessage: `🛡 Siz <b>${escapeHtml(protectedTarget.firstName)}</b>ni qo'riqladingiz.`,
+        });
+
+        const cause = killTargets.get(bodyguardAction.targetId);
+        if (cause && cause !== "SNIPER_KILL" && (cause as string) !== "INACTIVE") {
+          // Hujumni o'ziga oladi
+          killTargets.delete(bodyguardAction.targetId);
+          killTargets.set(guard.playerId, cause);
+          result.saved.push(protectedTarget);
+          result.events.push({
+            type: "BODYGUARD_SACRIFICE",
+            actorId: bodyguardAction.actorId,
+            targetId: bodyguardAction.targetId,
+            message: `Tan qo'riqchisi jonini berdi`,
+            targetPrivateMessage: `🛡 <b>Bu tunda sizga hujum bo'ldi!</b>\nTan qo'riqchisi o'zini o'rtaga tashlab, siz uchun jonini berdi...`,
+          });
+        }
+      }
+    }
+
     // ==================== NATIJALARNI HISOBLASH ====================
 
     for (const [targetId, cause] of killTargets) {
@@ -1381,8 +1479,12 @@ export class GameEngine {
       }
     }
 
-    // Sevishganlar — jufti o'lgan bo'lsa qayg'udan o'ladi
-    for (const griefVictim of this.resolveLoverGrief()) {
+    // O'lim zanjirlari: Ovchi o'qi + sevishganlar qayg'usi
+    const chains = this.resolveDeathChains();
+    for (const hv of chains.hunterVictims) {
+      result.killed.push({ player: hv.victim, cause: "HUNTER_KILL" });
+    }
+    for (const griefVictim of chains.griefVictims) {
       result.killed.push({ player: griefVictim, cause: "LOVER_GRIEF" });
     }
 
@@ -1400,27 +1502,58 @@ export class GameEngine {
     return result;
   }
 
-  // Sevishganlar mexanikasi: jufti o'lgan tirik oshiq qayg'udan o'ladi.
-  // Har qanday o'lim yo'lidan keyin chaqiriladi (tun, osish, kamikaze, geroy hujumi).
-  resolveLoverGrief(): PlayerState[] {
-    const victims: PlayerState[] = [];
-    for (const p of this.players.values()) {
-      if (!p.isAlive || !p.loverPlayerId) continue;
-      const partner = this.getPlayer(p.loverPlayerId);
-      if (partner && !partner.isAlive) {
-        p.isAlive = false;
-        playerRepo.kill(p.playerId, this.currentRound, "LOVER_GRIEF").catch((e) =>
-          logger.error(e, "Lover grief kill xatolik")
-        );
-        victims.push(p);
+  // O'lim ZANJIRLARI: har qanday o'limdan keyin chaqiriladi (tun, osish, kamikaze,
+  // geroy hujumi). Ikki mexanika bir-birini trigger qilishi mumkin, shuning uchun
+  // barqarorlashguncha aylanadi:
+  //   1) O'lgan Ovchining o'qi — mo'ljaldagi odam o'ladi
+  //   2) Sevishganlar — jufti o'lgan oshiq qayg'udan o'ladi
+  resolveDeathChains(): {
+    griefVictims: PlayerState[];
+    hunterVictims: { hunter: PlayerState; victim: PlayerState }[];
+  } {
+    const griefVictims: PlayerState[] = [];
+    const hunterVictims: { hunter: PlayerState; victim: PlayerState }[] = [];
+    let changed = true;
+    let guard = 0;
+    while (changed && guard++ < 30) {
+      changed = false;
+
+      // 1) O'lgan Ovchining o'qi
+      for (const p of this.players.values()) {
+        if (p.isAlive || p.role !== "HUNTER") continue;
+        if (!p.hunterAimPlayerId || p.hunterShotFired) continue;
+        p.hunterShotFired = true;
+        const victim = this.getPlayer(p.hunterAimPlayerId);
+        if (victim && victim.isAlive) {
+          victim.isAlive = false;
+          playerRepo.kill(victim.playerId, this.currentRound, "HUNTER_KILL").catch((e) =>
+            logger.error(e, "Hunter shot kill xatolik")
+          );
+          hunterVictims.push({ hunter: p, victim });
+          changed = true;
+        }
+      }
+
+      // 2) Qayg'u o'limi (sevishganlar)
+      for (const p of this.players.values()) {
+        if (!p.isAlive || !p.loverPlayerId) continue;
+        const partner = this.getPlayer(p.loverPlayerId);
+        if (partner && !partner.isAlive) {
+          p.isAlive = false;
+          playerRepo.kill(p.playerId, this.currentRound, "LOVER_GRIEF").catch((e) =>
+            logger.error(e, "Lover grief kill xatolik")
+          );
+          griefVictims.push(p);
+          changed = true;
+        }
       }
     }
-    if (victims.length > 0) {
+    if (griefVictims.length > 0 || hunterVictims.length > 0) {
       this.promoteSergeantIfNeeded();
       this.promoteMafiaIfNeeded();
       this.persistSoon();
     }
-    return victims;
+    return { griefVictims, hunterVictims };
   }
 
   private resolveMafiaKill(): number | null {
@@ -1603,9 +1736,10 @@ export class GameEngine {
       }
     }
 
-    // Sevishganlar — osilganning jufti qayg'udan o'ladi
-    const loverVictims = this.resolveLoverGrief();
-    if (loverVictims.length > 0) result.loverVictims = loverVictims;
+    // O'lim zanjirlari: osilgan Ovchining o'qi + sevishganlar qayg'usi
+    const voteChains = this.resolveDeathChains();
+    if (voteChains.griefVictims.length > 0) result.loverVictims = voteChains.griefVictims;
+    if (voteChains.hunterVictims.length > 0) result.hunterVictims = voteChains.hunterVictims;
 
     // Komissar/Don o'lsa promotion
     this.promoteSergeantIfNeeded();

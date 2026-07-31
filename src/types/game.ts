@@ -33,6 +33,11 @@ export interface PlayerState {
   professorChoice?: number; // Nishon tanlagan quti indeksi (0..2)
   // Kupidon sevishtirgan juft — biri o'lsa ikkinchisi ham qayg'udan o'ladi
   loverPlayerId?: number;
+  // Ovchi mo'ljali — o'lsa mo'ljaldagi odam ham o'ladi (o'q avtomatik uziladi)
+  hunterAimPlayerId?: number;
+  hunterShotFired?: boolean;
+  // Tuhmatchi tuhmat qilgan — shu tunda Komissar/Folbin uni "yovuz" deb ko'radi
+  isFramed?: boolean;
   // Faol tun harakatsiz tunlar soni — 2 ga yetsa avtomatik o'lim
   inactiveNights: number;
   // Zaryadlar/chegaralar uchun (Snayper, Kamonchi, Koldun, Minior, Qorbola)
@@ -64,6 +69,7 @@ export interface VoteResult {
   votes: Map<number, number>; // targetPlayerId -> voteCount
   kamikazeTarget?: PlayerState; // Agar votedOut kamikaze bo'lsa
   loverVictims?: PlayerState[]; // Osilganning jufti qayg'udan o'lsa
+  hunterVictims?: { hunter: PlayerState; victim: PlayerState }[]; // O'lgan Ovchining o'qi
 }
 
 // Rollar taqsimoti konfiguratsiyasi

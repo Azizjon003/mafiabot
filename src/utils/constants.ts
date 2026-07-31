@@ -22,9 +22,13 @@ export const ROLE_TEAM: Record<Role, Team> = {
   SNOWBOY: Team.TOWN,
   CUPID: Team.TOWN,
   BARMEN: Team.TOWN,
+  BODYGUARD: Team.TOWN,
+  HUNTER: Team.TOWN,
+  ORACLE: Team.TOWN,
   DON: Team.MAFIA,
   MAFIA: Team.MAFIA,
   LAWYER: Team.MAFIA,
+  FRAMER: Team.MAFIA,
   SPY: Team.MAFIA,
   LAB: Team.MAFIA,
   KILLER: Team.SOLO,
@@ -50,9 +54,13 @@ export const ROLE_EMOJI: Record<Role, string> = {
   SNOWBOY: "⛄️",
   CUPID: "💘",
   BARMEN: "🍺",
+  BODYGUARD: "🛡",
+  HUNTER: "🔫",
+  ORACLE: "🔮",
   DON: "🤵🏻",
   MAFIA: "🤵🏼",
   LAWYER: "👨🏼‍💼",
+  FRAMER: "🎭",
   SPY: "🦇",
   LAB: "👨‍🔬",
   KILLER: "🔪",
@@ -78,9 +86,13 @@ export const ROLE_NAME: Record<Role, string> = {
   SNOWBOY: "Qorbola",
   CUPID: "Kupidon",
   BARMEN: "Barmen",
+  BODYGUARD: "Tan qo'riqchisi",
+  HUNTER: "Ovchi",
+  ORACLE: "Folbin",
   DON: "Don",
   MAFIA: "Mafiya",
   LAWYER: "Advokat",
+  FRAMER: "Tuhmatchi",
   SPY: "Ayg'oqchi",
   LAB: "Labarant",
   KILLER: "Qotil",
@@ -116,10 +128,14 @@ export const NIGHT_ACTIVE_ROLES: Role[] = [
   "PROFESSOR",
   "CUPID",
   "BARMEN",
+  "BODYGUARD",
+  "HUNTER",
+  "ORACLE",
+  "FRAMER",
 ];
 
 // Mafiya jamoasi rollari
-export const MAFIA_ROLES: Role[] = ["DON", "MAFIA", "LAWYER", "SPY", "LAB"];
+export const MAFIA_ROLES: Role[] = ["DON", "MAFIA", "LAWYER", "SPY", "LAB", "FRAMER"];
 
 //// Mafiya ovoz beradigan rollar (o'ldirish uchun)
 export const MAFIA_KILL_VOTERS: Role[] = ["DON", "MAFIA"];

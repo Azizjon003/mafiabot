@@ -534,10 +534,18 @@ profileCommand.callbackQuery(/^hero:atk:(\d+)$/, async (ctx) => {
     }
   } catch { /* ignore */ }
 
-  // 💔 Sevishganlar — o'ldirilganning jufti qayg'udan o'ladi
+  // 💔🔫 O'lim zanjirlari — o'ldirilganning jufti/Ovchi o'qi
   if (result.killed) {
-    const griefVictims = game.engine.resolveLoverGrief();
-    for (const v of griefVictims) {
+    const chains = game.engine.resolveDeathChains();
+    for (const hv of chains.hunterVictims) {
+      const roleInfo = game.engine.settings.showRoleOnDeath ? ` (${ROLE_NAME[hv.victim.role]})` : "";
+      await ctx.api.sendMessage(
+        game.engine.chatTelegramId.toString(),
+        `💥 <b>${escapeHtml(hv.hunter.firstName)}</b> (🔫 Ovchi) o'layotib tepkini bosdi!\n<b>${escapeHtml(hv.victim.firstName)}</b>${roleInfo} otib ketildi!`,
+        { parse_mode: "HTML" }
+      ).catch(() => {});
+    }
+    for (const v of chains.griefVictims) {
       const roleInfo = game.engine.settings.showRoleOnDeath ? ` (${ROLE_NAME[v.role]})` : "";
       await ctx.api.sendMessage(
         game.engine.chatTelegramId.toString(),

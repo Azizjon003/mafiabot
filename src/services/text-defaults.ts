@@ -88,6 +88,10 @@ export const TEXT_DEFAULTS: Record<string, string> = {
   "nightStory.PROFESSOR": "🎩 Professor sirli qutichalarini tayyorlab yo'lga chiqdi...",
   "nightStory.CUPID": "💘 Kupidon kamalagini olib, yuraklarni nishonga oldi...",
   "nightStory.BARMEN": "🍺 Barmen bugungi mijozi uchun eng kuchli ichimligini quydi...",
+  "nightStory.BODYGUARD": "🛡 Tan qo'riqchisi bronejiletini kiyib postga chiqdi...",
+  "nightStory.HUNTER": "🔫 Ovchi miltig'ini tozalab, mo'ljalga oldi...",
+  "nightStory.ORACLE": "🔮 Folbin shar oldiga o'tirib, auralarni o'qiy boshladi...",
+  "nightStory.FRAMER": "🎭 Tuhmatchi soxta dalillarni joylashtirish uchun yo'lga chiqdi...",
 
   // ===== DEATH STORY =====
   "deathStory.MAFIA_KILL":
@@ -120,6 +124,8 @@ export const TEXT_DEFAULTS: Record<string, string> = {
     "💤 <b>{name}</b>{roleInline} shahar ishlariga 2 kun mobaynida befarq bo'ldi va g'oyib bo'ldi...",
   "deathStory.LOVER_GRIEF":
     "💔 <b>{name}</b>{roleInline} o'z juftining o'limiga chiday olmay, qayg'udan hayotdan ko'z yumdi...",
+  "deathStory.HUNTER_KILL":
+    "💥 Tunda o'lgan Ovchining miltig'i o'z-o'zidan otildi — <b>{name}</b>{roleInline} o'q uchib ketdi!",
 
   // ===== ROLES =====
   "roles.CIVILIAN": "👨🏼 Tinch axoli",
@@ -146,6 +152,10 @@ export const TEXT_DEFAULTS: Record<string, string> = {
   "roles.PROFESSOR": "🎩 Professor",
   "roles.CUPID": "💘 Kupidon",
   "roles.BARMEN": "🍺 Barmen",
+  "roles.BODYGUARD": "🛡 Tan qo'riqchisi",
+  "roles.HUNTER": "🔫 Ovchi",
+  "roles.ORACLE": "🔮 Folbin",
+  "roles.FRAMER": "🎭 Tuhmatchi",
 
   // ===== ROLE ASSIGNED =====
   "roleAssigned.CIVILIAN":
@@ -240,6 +250,26 @@ export const TEXT_DEFAULTS: Record<string, string> = {
     "Har tun bir kishini ichirasiz:\n" +
     "50% — u tilini bo'shatib ROLINI aytib qo'yadi,\n" +
     "50% — mast bo'lib bu tun hech narsa qila olmaydi!",
+  "roleAssigned.BODYGUARD":
+    "🛡 Siz <b>Tan qo'riqchisi</b>siz!\n" +
+    "Har tun bir kishini qo'riqlaysiz.\n" +
+    "Unga hujum bo'lsa — SIZ uning o'rniga o'lasiz.\n" +
+    "Jasorat — sizning ishingiz! (Snayper o'qini to'sa olmaysiz)",
+  "roleAssigned.HUNTER":
+    "🔫 Siz <b>Ovchi</b>siz!\n" +
+    "Har tun miltiqni kimgadir mo'ljallab uxlaysiz.\n" +
+    "Agar o'lsangiz (tunda ham, osilganda ham) —\n" +
+    "o'q AVTOMATIK uziladi va mo'ljaldagi odam siz bilan ketadi!",
+  "roleAssigned.ORACLE":
+    "🔮 Siz <b>Folbin</b>siz!\n" +
+    "Har tun bir kishining AURASINI ko'rasiz:\n" +
+    "😇 Yaxshi (tinch aholi) yoki 😈 Yovuz (mafiya/yakka).\n" +
+    "Aniq rolni bilmaysiz, lekin aurani hech kim yashira olmaydi!",
+  "roleAssigned.FRAMER":
+    "🎭 Siz <b>Tuhmatchi</b>siz! (Mafiya jamoasi)\n" +
+    "Har tun bir tinch aholiga TUHMAT qilasiz:\n" +
+    "o'sha tunda Komissar yoki Folbin uni tekshirsa —\n" +
+    "\"Mafiya/Yovuz\" deb ko'radi! Shahar o'z odamini osadi.",
 
   // ===== NIGHT (prompts + results) =====
   "night.hookerPrompt": "💃 <b>Kimni bloklaysiz?</b>\n\n⚠️ Komissarni uxlatish taqiqlanadi!",
@@ -267,6 +297,10 @@ export const TEXT_DEFAULTS: Record<string, string> = {
   "night.professorPrompt": "🎩 <b>Kimga 3 ta sirli quti taklif qilasiz?</b>\n\nNishoningiz o'z taqdirini o'zi hal qiladi.",
   "night.cupidPrompt": "💘 <b>Birinchi oshiqni tanlang!</b>\n\nSiz ikki kishini sevishtirasiz — biri o'lsa, ikkinchisi ham qayg'udan o'ladi. Bu tanlov butun o'yin taqdirini hal qilishi mumkin!",
   "night.barmenPrompt": "🍺 <b>Kimni ichirasiz?</b>\n\n50/50: yo u tilini bo'shatib rolini aytib qo'yadi, yo mast bo'lib bu tun hech narsa qila olmaydi.",
+  "night.bodyguardPrompt": "🛡 <b>Kimni qo'riqlaysiz?</b>\n\nUnga hujum bo'lsa — siz uning o'rniga o'lasiz. (Snayper o'qini to'sa olmaysiz)",
+  "night.hunterPrompt": "🔫 <b>Kimni mo'ljalga olasiz?</b>\n\nAgar bugun o'lsangiz (tunda yoki osilganda) — o'q avtomatik uziladi va u siz bilan ketadi!",
+  "night.oraclePrompt": "🔮 <b>Kimning aurasini o'qiysiz?</b>\n\nNatija: 😇 Yaxshi yoki 😈 Yovuz.",
+  "night.framerPrompt": "🎭 <b>Kimga tuhmat qilasiz?</b>\n\nBu tunda Komissar/Folbin uni tekshirsa — \"yovuz\" deb ko'radi!",
   "night.professorBoxesPrompt": "🎩 <b>Professor sizga 3 ta sirli quti taklif qildi!</b>\n\nBirini tanlang — taqdiringiz shunda hal bo'ladi:\n⚰️ O'lim\n🥡 Bo'sh\n🥷 Geroy",
   "night.professorResult_death": "⚰️ <b>Qutidan O'LIM chiqdi!</b>\n\nSiz tongda topilmaysiz...",
   "night.professorResult_empty": "🥡 <b>Quti bo'sh chiqdi!</b>\n\nOmadingiz bor ekan.",
@@ -661,6 +695,10 @@ export const TEXT_LABELS: Record<string, string> = {
   "roleAssigned.PROFESSOR": "Rol tavsifi — Professor",
   "roleAssigned.CUPID": "Rol tavsifi — Kupidon",
   "roleAssigned.BARMEN": "Rol tavsifi — Barmen",
+  "roleAssigned.BODYGUARD": "Rol tavsifi — Tan qo'riqchisi",
+  "roleAssigned.HUNTER": "Rol tavsifi — Ovchi",
+  "roleAssigned.ORACLE": "Rol tavsifi — Folbin",
+  "roleAssigned.FRAMER": "Rol tavsifi — Tuhmatchi",
   "roleAssigned.shieldActive": "Shield faol — qo'shimcha",
   "roleAssigned.heroActive": "Geroy faol — qo'shimcha",
 
@@ -690,6 +728,10 @@ export const TEXT_LABELS: Record<string, string> = {
   "night.professorPrompt": "Professor — kimga qutilar?",
   "night.cupidPrompt": "Kupidon — oshiqlarni tanlash",
   "night.barmenPrompt": "Barmen — kimni ichirish?",
+  "night.bodyguardPrompt": "Tan qo'riqchisi — kimni qo'riqlash?",
+  "night.hunterPrompt": "Ovchi — kimni mo'ljalga olish?",
+  "night.oraclePrompt": "Folbin — kimning aurasi?",
+  "night.framerPrompt": "Tuhmatchi — kimga tuhmat?",
   "night.professorBoxesPrompt": "Professor nishoniga — 3 ta quti",
   "night.professorResult_death": "Professor quti — O'lim",
   "night.professorResult_empty": "Professor quti — Bo'sh",

@@ -21,10 +21,7 @@ export function checkWinCondition(
   }
 
   const mafiaAlive = alive.filter((p) => MAFIA_ROLES.includes(p.role));
-  const townAlive = alive.filter((p) => p.role === "CIVILIAN" || p.role === "DOCTOR" ||
-    p.role === "TRAMP" || p.role === "SHERIFF" || p.role === "KAMIKAZE" ||
-    p.role === "HOOKER" || p.role === "SERGEANT" || p.role === "WARLOCK" ||
-    p.role === "SANTA" || p.role === "SNOWBOY" || p.role === "CUPID" || p.role === "BARMEN");
+  const townAlive = alive.filter((p) => ROLE_TEAM[p.role] === Team.TOWN);
   const soloAlive = alive.filter((p) => SOLO_ROLES.includes(p.role));
 
   // MAFIA WINS: mafiaAlive >= all other alive players combined

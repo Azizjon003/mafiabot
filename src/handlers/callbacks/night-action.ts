@@ -30,6 +30,10 @@ const NIGHT_ROLE_MAP: Record<string, Role> = {
   night_professor: "PROFESSOR",
   night_cupid: "CUPID",
   night_barmen: "BARMEN",
+  night_bodyguard: "BODYGUARD",
+  night_hunter: "HUNTER",
+  night_oracle: "ORACLE",
+  night_framer: "FRAMER",
 };
 
 function findPlayerGame(telegramId: bigint) {

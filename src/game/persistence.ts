@@ -66,6 +66,9 @@ export interface SerializedPlayer {
   inactiveNights: number;
   chargesLeft?: Record<string, number>; // butun o'yin bo'yicha zaryad qoldig'i (Sniper/Archer/...)
   loverPlayerId?: number; // Kupidon juftligi
+  hunterAimPlayerId?: number; // Ovchi mo'ljali
+  hunterShotFired?: boolean;
+  isFramed?: boolean; // Tuhmatchi belgisi (shu tunga)
 }
 
 function serializePlayer(p: PlayerState): SerializedPlayer {
@@ -99,6 +102,9 @@ function serializePlayer(p: PlayerState): SerializedPlayer {
     inactiveNights: p.inactiveNights ?? 0,
     chargesLeft: p.chargesLeft,
     loverPlayerId: p.loverPlayerId,
+    hunterAimPlayerId: p.hunterAimPlayerId,
+    hunterShotFired: p.hunterShotFired,
+    isFramed: p.isFramed,
   };
 }
 
@@ -133,6 +139,9 @@ function deserializePlayer(s: SerializedPlayer): PlayerState {
     inactiveNights: s.inactiveNights ?? 0,
     chargesLeft: s.chargesLeft,
     loverPlayerId: s.loverPlayerId,
+    hunterAimPlayerId: s.hunterAimPlayerId,
+    hunterShotFired: s.hunterShotFired,
+    isFramed: s.isFramed,
   };
 }
 
