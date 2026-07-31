@@ -63,6 +63,12 @@ nightSilenceHandler.on("message", async (ctx, next) => {
     return;
   }
 
+  // O'lgan o'yinchilar guruhga yozolmaydi (ular uchun bot PMda o'liklar chati bor)
+  if (player && !player.isAlive) {
+    try { await ctx.deleteMessage(); } catch (e) { logger.debug(e, "Dead player delete failed"); }
+    return;
+  }
+
   if (player !== undefined || isAdmin) return next();
 
   // O'yinchi emas + admin emas:
