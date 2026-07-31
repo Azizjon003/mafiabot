@@ -7,7 +7,7 @@ import { startRegistration, getRegistrationText } from "./phases/registration";
 import { sendNightPrompts, sendNightStories } from "./phases/night";
 import { startDayPhase } from "./phases/day";
 import { startVotingPhase } from "./phases/voting";
-import { joinGameKeyboard, kamikazeTargetKeyboard, confirmHangKeyboard } from "../keyboards/game";
+import { joinGameKeyboard, kamikazeTargetKeyboard, confirmHangKeyboard, votingPlayerListKeyboard } from "../keyboards/game";
 import { t } from "../services/text.service";
 import { PACING, ROLE_EMOJI, ROLE_NAME, SANTA_GIFT_AMOUNT, SOLO_ROLES } from "../utils/constants";
 import { buildRoster } from "./roster";
@@ -418,6 +418,24 @@ export class GameController {
     }
   }
 
+  // 💔 Qayg'u o'limlari (sevishganlar) — guruhga e'lon + oxirgi so'z oynasi
+  private async announceLoverDeaths(
+    chatTelegramId: bigint,
+    engine: GameEngine,
+    victims: PlayerState[]
+  ): Promise<void> {
+    for (const v of victims) {
+      const roleInfo = engine.settings.showRoleOnDeath
+        ? ` (${ROLE_EMOJI[v.role]} ${ROLE_NAME[v.role]})`
+        : "";
+      await this.notifier.sendToGroup(
+        chatTelegramId,
+        `💔 <b>${escapeHtml(v.firstName)}</b>${roleInfo} o'z juftining o'limiga chiday olmay, qayg'udan hayotdan ko'z yumdi...`
+      );
+      await this.openLastWordsForDead(chatTelegramId, [v]);
+    }
+  }
+
   private async sendHeroDayPrompts(engine: GameEngine): Promise<void> {
     const { HERO_ATTACK_ROLES } = await import("../utils/constants");
     const { InlineKeyboard } = await import("grammy");
@@ -448,6 +466,23 @@ export class GameController {
     if (msgId) {
       this.votingMessageId.set(chatTelegramId.toString(), msgId);
     }
+
+    // Ballotlarni AVTOMATIK har bir tirik o'yinchiga PM qilib yuborish —
+    // guruhdagi tugmani bosishga hojat yo'q (qatnashuvni oshiradi).
+    // Botni bloklaganlarga ketmasa — guruhdagi URL tugma zaxira yo'l bo'lib qoladi.
+    const aliveVoters = engine.getAlivePlayers();
+    await Promise.all(
+      aliveVoters.map((voter) => {
+        // Kezuvchi uxlatganlar ovoz bera olmaydi — ballot yubormaymiz
+        if (voter.isBlocked) return Promise.resolve();
+        const targets = aliveVoters.filter((p) => p.playerId !== voter.playerId);
+        const kb = votingPlayerListKeyboard(engine.gameId, targets);
+        return this.notifier
+          .sendToPlayer(voter.telegramId, t("start.voteWhoPrompt"), kb)
+          .then(() => undefined)
+          .catch(() => undefined);
+      })
+    );
 
     // Voting timer
     engine.setTimer(engine.settings.votingTimeout * 1000, async () => {
@@ -557,6 +592,8 @@ export class GameController {
           // processVotes paytida nishon hali tanlanmagan edi — shu yerda o'ldiriladi.
           const kamikazeVictim = engine.applyKamikazeTarget();
           if (kamikazeVictim) voteResult.kamikazeTarget = kamikazeVictim;
+          // Kamikaze qurbonining jufti bo'lsa — u ham qayg'udan o'ladi
+          const kamikazeGrief = engine.resolveLoverGrief();
           await this.notifier.announceVoteResults(chatTelegramId, voteResult, engine.settings.showRoleOnDeath);
           // Oxirgi so'z — Kamikaze uchun
           if (voteResult.votedOut) {
@@ -565,6 +602,10 @@ export class GameController {
           if (voteResult.kamikazeTarget) {
             await this.openLastWordsForDead(chatTelegramId, [voteResult.kamikazeTarget]);
           }
+          await this.announceLoverDeaths(chatTelegramId, engine, [
+            ...(voteResult.loverVictims ?? []),
+            ...kamikazeGrief,
+          ]);
           engine.resetConfirmVotes();
           await this.afterVoting(chatTelegramId);
         }, "KAMIKAZE_DELAY");
@@ -577,6 +618,8 @@ export class GameController {
       if (voteResult.votedOut) {
         await this.openLastWordsForDead(chatTelegramId, [voteResult.votedOut]);
       }
+      // Osilganning jufti qayg'udan o'lgan bo'lsa — e'lon
+      await this.announceLoverDeaths(chatTelegramId, engine, voteResult.loverVictims ?? []);
     } else if (candidate.isProtectedByWarlock) {
       await this.notifier.sendToGroup(
         chatTelegramId,
@@ -749,7 +792,7 @@ export class GameController {
     const team = player.role;
     switch (winner) {
       case "TOWN":
-        return ["CIVILIAN", "DOCTOR", "TRAMP", "SHERIFF", "KAMIKAZE", "HOOKER", "SERGEANT", "WARLOCK", "SANTA", "SNOWBOY"].includes(team);
+        return ["CIVILIAN", "DOCTOR", "TRAMP", "SHERIFF", "KAMIKAZE", "HOOKER", "SERGEANT", "WARLOCK", "SANTA", "SNOWBOY", "CUPID", "BARMEN"].includes(team);
       case "MAFIA":
         return ["DON", "MAFIA", "LAWYER", "SPY", "LAB"].includes(team);
       case "SOLO":

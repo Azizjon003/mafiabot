@@ -104,6 +104,12 @@ export async function sendNightPrompts(
       case "PROFESSOR":
         await sendProfessorPrompt(engine, notifier, player, alive);
         break;
+      case "CUPID":
+        await sendCupidPrompt(engine, notifier, player, alive);
+        break;
+      case "BARMEN":
+        await sendBarmenPrompt(engine, notifier, player, alive);
+        break;
     }
   }
 }
@@ -234,6 +240,21 @@ async function sendProfessorPrompt(engine: GameEngine, notifier: NotificationSer
   const targets = alive.filter((p) => p.playerId !== player.playerId);
   const kb = nightActionKeyboard(targets, `night_professor`);
   await notifier.sendToPlayer(player.telegramId, t("night.professorPrompt"), kb);
+}
+
+// Kupidon — faqat juftlik hali tanlanmagan bo'lsa (odatda 1-tun)
+async function sendCupidPrompt(engine: GameEngine, notifier: NotificationService, player: PlayerState, alive: PlayerState[]) {
+  if (engine.cupidPick) return;
+  // Kupidon o'zini ham tanlashi mumkin — romantika 💘
+  const kb = nightActionKeyboard(alive, `night_cupid`);
+  await notifier.sendToPlayer(player.telegramId, t("night.cupidPrompt"), kb);
+}
+
+// Barmen — bir kishini ichiradi (50% rol ochiladi / 50% mast bo'ladi)
+async function sendBarmenPrompt(engine: GameEngine, notifier: NotificationService, player: PlayerState, alive: PlayerState[]) {
+  const targets = alive.filter((p) => p.playerId !== player.playerId);
+  const kb = nightActionKeyboard(targets, `night_barmen`);
+  await notifier.sendToPlayer(player.telegramId, t("night.barmenPrompt"), kb);
 }
 
 // Nishonga 3 ta yopiq quti yuborish

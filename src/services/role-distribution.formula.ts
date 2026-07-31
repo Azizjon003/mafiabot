@@ -19,6 +19,8 @@ const ROLE_SETTINGS_KEY: Partial<Record<Role, keyof ChatSettings | null>> = {
   SANTA: "enableSanta",
   SNOWBOY: "enableSnowboy",
   KAMIKAZE: "enableKamikaze",
+  CUPID: "enableCupid",
+  BARMEN: "enableBarmen",
   // Mafiya
   LAWYER: "enableLawyer",
   SPY: "enableSpy",
@@ -44,13 +46,15 @@ function isRoleEnabled(role: Role, settings: ChatSettings): boolean {
 const TOWN_POWER_PRIORITY: Role[] = [
   "SHERIFF",    // 1. Always first
   "DOCTOR",     // 2.
-  "HOOKER",     // 3.
-  "TRAMP",      // 4.
-  "SERGEANT",   // 5.
-  "WARLOCK",    // 6.
-  "SANTA",      // 7.
-  "SNOWBOY",    // 8.
-  "KAMIKAZE",   // 9.
+  "CUPID",      // 3. Sevishganlar — kichik o'yinlarda ham tushsin (7+ o'yinchi)
+  "HOOKER",     // 4.
+  "BARMEN",     // 5. Ichirish — 12+ o'yinchida tushadi
+  "TRAMP",      // 6.
+  "SERGEANT",   // 7.
+  "WARLOCK",    // 8.
+  "SANTA",      // 9.
+  "SNOWBOY",    // 10.
+  "KAMIKAZE",   // 11.
 ];
 
 const MAFIA_POWER_PRIORITY: Role[] = [
@@ -235,6 +239,8 @@ export function findBracketForCount(playerCount: number, brackets: any[]): any {
     enableWarlock: true,
     enableSanta: false,
     enableSnowboy: false,
+    enableCupid: true,
+    enableBarmen: true,
     enableLawyer: true,
     enableSpy: true,
     enableLab: true,

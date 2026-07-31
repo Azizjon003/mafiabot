@@ -80,6 +80,8 @@ model UserStats {
   timesWarlock  Int @default(0)
   timesSanta    Int @default(0)
   timesSnowboy  Int @default(0)
+  timesCupid    Int @default(0)
+  timesBarmen   Int @default(0)
   // Mafiya
   timesDon    Int @default(0)
   timesMafia  Int @default(0)
@@ -284,6 +286,8 @@ model ChatSettings {
   enableWarlock  Boolean @default(true)
   enableSanta    Boolean @default(false)
   enableSnowboy  Boolean @default(false)
+  enableCupid    Boolean @default(true)
+  enableBarmen   Boolean @default(true)
   // Mafiya rollari
   enableLawyer Boolean @default(true)
   enableSpy    Boolean @default(true)
@@ -380,6 +384,8 @@ enum Role {
   WARLOCK
   SANTA
   SNOWBOY
+  CUPID
+  BARMEN
   // Mafiya
   DON
   MAFIA
@@ -412,6 +418,7 @@ enum DeathCause {
   VOTED_OUT
   LEFT_GAME
   INACTIVE
+  LOVER_GRIEF
 }
 
 // ==================== GAME ROUND ====================

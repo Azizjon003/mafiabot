@@ -110,6 +110,8 @@ const DEFAULTS: Record<string, number> = {
   price_role_ROBBER: 180,
   price_role_KAMIKAZE: 200,
   price_role_WARLOCK: 200,
+  price_role_CUPID: 200,
+  price_role_BARMEN: 180,
   price_role_DON: 220,
   price_role_TRAITOR: 220,
   price_role_PROFESSOR: 220,

@@ -20,6 +20,8 @@ export const ROLE_TEAM: Record<Role, Team> = {
   WARLOCK: Team.TOWN,
   SANTA: Team.TOWN,
   SNOWBOY: Team.TOWN,
+  CUPID: Team.TOWN,
+  BARMEN: Team.TOWN,
   DON: Team.MAFIA,
   MAFIA: Team.MAFIA,
   LAWYER: Team.MAFIA,
@@ -46,6 +48,8 @@ export const ROLE_EMOJI: Record<Role, string> = {
   WARLOCK: "⚡️",
   SANTA: "🎅🏻",
   SNOWBOY: "⛄️",
+  CUPID: "💘",
+  BARMEN: "🍺",
   DON: "🤵🏻",
   MAFIA: "🤵🏼",
   LAWYER: "👨🏼‍💼",
@@ -72,6 +76,8 @@ export const ROLE_NAME: Record<Role, string> = {
   WARLOCK: "Koldun",
   SANTA: "Qorbobo",
   SNOWBOY: "Qorbola",
+  CUPID: "Kupidon",
+  BARMEN: "Barmen",
   DON: "Don",
   MAFIA: "Mafiya",
   LAWYER: "Advokat",
@@ -108,6 +114,8 @@ export const NIGHT_ACTIVE_ROLES: Role[] = [
   "SANTA",
   "ROBBER",
   "PROFESSOR",
+  "CUPID",
+  "BARMEN",
 ];
 
 // Mafiya jamoasi rollari

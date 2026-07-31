@@ -31,6 +31,8 @@ export interface PlayerState {
   // Professor qutilari — nishonga yuborilgan 3 ta aralashtirilgan natija
   professorBoxes?: ("DEATH" | "EMPTY" | "HERO")[];
   professorChoice?: number; // Nishon tanlagan quti indeksi (0..2)
+  // Kupidon sevishtirgan juft — biri o'lsa ikkinchisi ham qayg'udan o'ladi
+  loverPlayerId?: number;
   // Faol tun harakatsiz tunlar soni — 2 ga yetsa avtomatik o'lim
   inactiveNights: number;
   // Zaryadlar/chegaralar uchun (Snayper, Kamonchi, Koldun, Minior, Qorbola)
@@ -61,6 +63,7 @@ export interface VoteResult {
   votedOut: PlayerState | null;
   votes: Map<number, number>; // targetPlayerId -> voteCount
   kamikazeTarget?: PlayerState; // Agar votedOut kamikaze bo'lsa
+  loverVictims?: PlayerState[]; // Osilganning jufti qayg'udan o'lsa
 }
 
 // Rollar taqsimoti konfiguratsiyasi

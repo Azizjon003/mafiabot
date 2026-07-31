@@ -1,4 +1,4 @@
-import { Composer } from "grammy";
+import { Composer, InlineKeyboard } from "grammy";
 import { Role } from "@prisma/client";
 import { BotContext } from "../../types/context";
 import { GameController } from "../../game/controller";
@@ -28,6 +28,8 @@ const NIGHT_ROLE_MAP: Record<string, Role> = {
   night_santa: "SANTA",
   night_robber: "ROBBER",
   night_professor: "PROFESSOR",
+  night_cupid: "CUPID",
+  night_barmen: "BARMEN",
 };
 
 function findPlayerGame(telegramId: bigint) {
@@ -303,6 +305,84 @@ export function createNightActionCallbacks(controller: GameController): Composer
     await ctx.editMessageText(text, { parse_mode: "HTML" }).catch(() => {});
   });
 
+  // ==================== KUPIDON ====================
+
+  // 1-bosqich: birinchi oshiqni tanlash
+  composer.callbackQuery(/^night_cupid:(\d+)$/, async (ctx) => {
+    if (!ctx.from) return;
+    const firstId = parseInt(ctx.match[1]);
+    const found = findPlayerGame(BigInt(ctx.from.id));
+    if (!found || found.engine.status !== "NIGHT") {
+      await ctx.answerCallbackQuery({ text: "Hozir tun emas!" }).catch(() => {});
+      return;
+    }
+    if (found.player.role !== "CUPID") {
+      await ctx.answerCallbackQuery({ text: "Bu tugma siz uchun emas!" }).catch(() => {});
+      return;
+    }
+    if (found.engine.cupidPick) {
+      await ctx.answerCallbackQuery({ text: "💘 Juftlik allaqachon tanlangan!" }).catch(() => {});
+      return;
+    }
+    const first = found.engine.getPlayer(firstId);
+    if (!first || !first.isAlive) {
+      await ctx.answerCallbackQuery({ text: "Noto'g'ri nishon!" }).catch(() => {});
+      return;
+    }
+
+    await ctx.answerCallbackQuery().catch(() => {});
+    // Ikkinchi oshiq uchun tugmalar (birinchisidan tashqari)
+    const targets = found.engine.getAlivePlayers().filter((p) => p.playerId !== firstId);
+    const kb = new InlineKeyboard();
+    for (const p of targets) {
+      kb.text(`💘 ${p.firstName}`, `cupid2:${firstId}:${p.playerId}`).row();
+    }
+    await ctx.editMessageText(
+      `💘 Birinchi oshiq: <b>${escapeHtml(first.firstName)}</b>\n\nEndi ikkinchi oshiqni tanlang:`,
+      { parse_mode: "HTML", reply_markup: kb }
+    ).catch(() => {});
+  });
+
+  // 2-bosqich: ikkinchi oshiq — juftlik bog'lanadi
+  composer.callbackQuery(/^cupid2:(\d+):(\d+)$/, async (ctx) => {
+    if (!ctx.from) return;
+    const firstId = parseInt(ctx.match[1]);
+    const secondId = parseInt(ctx.match[2]);
+    const found = findPlayerGame(BigInt(ctx.from.id));
+    if (!found || found.engine.status !== "NIGHT") {
+      await ctx.answerCallbackQuery({ text: "Hozir tun emas!" }).catch(() => {});
+      return;
+    }
+    if (found.player.role !== "CUPID") {
+      await ctx.answerCallbackQuery({ text: "Bu tugma siz uchun emas!" }).catch(() => {});
+      return;
+    }
+    if (found.engine.cupidPick) {
+      await ctx.answerCallbackQuery({ text: "💘 Juftlik allaqachon tanlangan!" }).catch(() => {});
+      return;
+    }
+    const first = found.engine.getPlayer(firstId);
+    const second = found.engine.getPlayer(secondId);
+    if (!first || !second || !first.isAlive || !second.isAlive || firstId === secondId) {
+      await ctx.answerCallbackQuery({ text: "Noto'g'ri nishon!" }).catch(() => {});
+      return;
+    }
+
+    await ctx.answerCallbackQuery({ text: "💘 Juftlik tanlandi!" }).catch(() => {});
+    found.engine.setCupidPick(firstId, secondId);
+    found.engine.submitNightAction(found.player.playerId, firstId, "CUPID");
+    found.engine.markNightRoleDone("CUPID");
+
+    await ctx.editMessageText(
+      `💘 Siz <b>${escapeHtml(first.firstName)}</b> va <b>${escapeHtml(second.firstName)}</b>ni sevishtirdingiz!\nTong yaqin — ular tunda bir-birini bilib oladi.`,
+      { parse_mode: "HTML" }
+    ).catch(() => {});
+
+    if (found.engine.isNightComplete()) {
+      await controller.handleNightEnd(found.engine.chatTelegramId);
+    }
+  });
+
   // ==================== BOSHQA ROLLAR ====================
 
   composer.callbackQuery(/^(night_\w+):(.+)$/, async (ctx) => {
@@ -314,6 +394,8 @@ export function createNightActionCallbacks(controller: GameController): Composer
     if (actionPrefix === "night_sheriff") return;
     // Professor nishon tanlash ham yuqorida handle qilingan
     if (actionPrefix === "night_professor" && /^\d+$/.test(targetValue)) return;
+    // Kupidon nishon tanlash ham yuqorida handle qilingan (skip bundan mustasno)
+    if (actionPrefix === "night_cupid" && /^\d+$/.test(targetValue)) return;
 
     const role = NIGHT_ROLE_MAP[actionPrefix];
     if (!role) {

@@ -86,6 +86,8 @@ export const TEXT_DEFAULTS: Record<string, string> = {
   "nightStory.TRAITOR": "🦎 Sotqin kimnidir poylab, jamoasini o'zgartirmoqchi...",
   "nightStory.ROBBER": "👺 Qaroqchi niqob kiyib ko'chaga chiqdi...",
   "nightStory.PROFESSOR": "🎩 Professor sirli qutichalarini tayyorlab yo'lga chiqdi...",
+  "nightStory.CUPID": "💘 Kupidon kamalagini olib, yuraklarni nishonga oldi...",
+  "nightStory.BARMEN": "🍺 Barmen bugungi mijozi uchun eng kuchli ichimligini quydi...",
 
   // ===== DEATH STORY =====
   "deathStory.MAFIA_KILL":
@@ -116,6 +118,8 @@ export const TEXT_DEFAULTS: Record<string, string> = {
     "⚖️ Aholi qaroriga ko'ra <b>{name}</b>{roleInline} maydonda osildi.",
   "deathStory.INACTIVE":
     "💤 <b>{name}</b>{roleInline} shahar ishlariga 2 kun mobaynida befarq bo'ldi va g'oyib bo'ldi...",
+  "deathStory.LOVER_GRIEF":
+    "💔 <b>{name}</b>{roleInline} o'z juftining o'limiga chiday olmay, qayg'udan hayotdan ko'z yumdi...",
 
   // ===== ROLES =====
   "roles.CIVILIAN": "👨🏼 Tinch axoli",
@@ -140,6 +144,8 @@ export const TEXT_DEFAULTS: Record<string, string> = {
   "roles.TRAITOR": "🦎 Sotqin",
   "roles.ROBBER": "👺 Qaroqchi",
   "roles.PROFESSOR": "🎩 Professor",
+  "roles.CUPID": "💘 Kupidon",
+  "roles.BARMEN": "🍺 Barmen",
 
   // ===== ROLE ASSIGNED =====
   "roleAssigned.CIVILIAN":
@@ -224,6 +230,16 @@ export const TEXT_DEFAULTS: Record<string, string> = {
     "🎩 Siz <b>Professor</b>siz!\n" +
     "Tunda tanlagan ishtirokchiga 3 ta sirli quti taklif qilasiz:\n" +
     "⚰️ O'lim, 🥡 Bo'sh quti, 🥷 Geroy — u o'z taqdirini o'zi hal qiladi!",
+  "roleAssigned.CUPID":
+    "💘 Siz <b>Kupidon</b>siz!\n" +
+    "Birinchi tunda IKKI kishini sevishtirasiz.\n" +
+    "Ulardan biri o'lsa — ikkinchisi ham qayg'udan o'ladi!\n" +
+    "Tanlovingiz butun o'yin taqdirini o'zgartirishi mumkin.",
+  "roleAssigned.BARMEN":
+    "🍺 Siz <b>Barmen</b>siz!\n" +
+    "Har tun bir kishini ichirasiz:\n" +
+    "50% — u tilini bo'shatib ROLINI aytib qo'yadi,\n" +
+    "50% — mast bo'lib bu tun hech narsa qila olmaydi!",
 
   // ===== NIGHT (prompts + results) =====
   "night.hookerPrompt": "💃 <b>Kimni bloklaysiz?</b>\n\n⚠️ Komissarni uxlatish taqiqlanadi!",
@@ -249,6 +265,8 @@ export const TEXT_DEFAULTS: Record<string, string> = {
   "night.robberTargetRefused": "🏃 <b>Bosh tortdingiz.</b>\n\nNatijasi tong otganda ma'lum bo'ladi...",
   "night.robberWaiting": "👺 <b>{name}</b>ning uyiga bostirib kirdingiz.\nJavobini kutmoqdasiz...",
   "night.professorPrompt": "🎩 <b>Kimga 3 ta sirli quti taklif qilasiz?</b>\n\nNishoningiz o'z taqdirini o'zi hal qiladi.",
+  "night.cupidPrompt": "💘 <b>Birinchi oshiqni tanlang!</b>\n\nSiz ikki kishini sevishtirasiz — biri o'lsa, ikkinchisi ham qayg'udan o'ladi. Bu tanlov butun o'yin taqdirini hal qilishi mumkin!",
+  "night.barmenPrompt": "🍺 <b>Kimni ichirasiz?</b>\n\n50/50: yo u tilini bo'shatib rolini aytib qo'yadi, yo mast bo'lib bu tun hech narsa qila olmaydi.",
   "night.professorBoxesPrompt": "🎩 <b>Professor sizga 3 ta sirli quti taklif qildi!</b>\n\nBirini tanlang — taqdiringiz shunda hal bo'ladi:\n⚰️ O'lim\n🥡 Bo'sh\n🥷 Geroy",
   "night.professorResult_death": "⚰️ <b>Qutidan O'LIM chiqdi!</b>\n\nSiz tongda topilmaysiz...",
   "night.professorResult_empty": "🥡 <b>Quti bo'sh chiqdi!</b>\n\nOmadingiz bor ekan.",
@@ -641,6 +659,8 @@ export const TEXT_LABELS: Record<string, string> = {
   "roleAssigned.TRAITOR": "Rol tavsifi — Sotqin",
   "roleAssigned.ROBBER": "Rol tavsifi — Qaroqchi",
   "roleAssigned.PROFESSOR": "Rol tavsifi — Professor",
+  "roleAssigned.CUPID": "Rol tavsifi — Kupidon",
+  "roleAssigned.BARMEN": "Rol tavsifi — Barmen",
   "roleAssigned.shieldActive": "Shield faol — qo'shimcha",
   "roleAssigned.heroActive": "Geroy faol — qo'shimcha",
 
@@ -668,6 +688,8 @@ export const TEXT_LABELS: Record<string, string> = {
   "night.robberTargetRefused": "Qaroqchi nishoniga — bosh tortdim",
   "night.robberWaiting": "Qaroqchi — javob kutish",
   "night.professorPrompt": "Professor — kimga qutilar?",
+  "night.cupidPrompt": "Kupidon — oshiqlarni tanlash",
+  "night.barmenPrompt": "Barmen — kimni ichirish?",
   "night.professorBoxesPrompt": "Professor nishoniga — 3 ta quti",
   "night.professorResult_death": "Professor quti — O'lim",
   "night.professorResult_empty": "Professor quti — Bo'sh",

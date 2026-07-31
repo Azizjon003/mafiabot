@@ -534,6 +534,19 @@ profileCommand.callbackQuery(/^hero:atk:(\d+)$/, async (ctx) => {
     }
   } catch { /* ignore */ }
 
+  // 💔 Sevishganlar — o'ldirilganning jufti qayg'udan o'ladi
+  if (result.killed) {
+    const griefVictims = game.engine.resolveLoverGrief();
+    for (const v of griefVictims) {
+      const roleInfo = game.engine.settings.showRoleOnDeath ? ` (${ROLE_NAME[v.role]})` : "";
+      await ctx.api.sendMessage(
+        game.engine.chatTelegramId.toString(),
+        `💔 <b>${escapeHtml(v.firstName)}</b>${roleInfo} o'z juftining o'limiga chiday olmay, qayg'udan hayotdan ko'z yumdi...`,
+        { parse_mode: "HTML" }
+      ).catch(() => {});
+    }
+  }
+
   // G'olib tekshirish
   if (result.killed) {
     const winner = game.engine.checkWin();

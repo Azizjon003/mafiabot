@@ -20,6 +20,7 @@ export interface SerializedEngine {
   pendingNightRoles: string[];
   sheriffShootTarget: number | null;
   robberTargetResponse: RobberResponse | null;
+  cupidPick?: { first: number; second: number } | null; // Kupidon juftligi
   // Ovoz berish state
   votes: Array<[number, number]>;
   kamikazeTarget: number | null;
@@ -64,6 +65,7 @@ export interface SerializedPlayer {
   professorChoice?: number;
   inactiveNights: number;
   chargesLeft?: Record<string, number>; // butun o'yin bo'yicha zaryad qoldig'i (Sniper/Archer/...)
+  loverPlayerId?: number; // Kupidon juftligi
 }
 
 function serializePlayer(p: PlayerState): SerializedPlayer {
@@ -96,6 +98,7 @@ function serializePlayer(p: PlayerState): SerializedPlayer {
     professorChoice: p.professorChoice,
     inactiveNights: p.inactiveNights ?? 0,
     chargesLeft: p.chargesLeft,
+    loverPlayerId: p.loverPlayerId,
   };
 }
 
@@ -129,6 +132,7 @@ function deserializePlayer(s: SerializedPlayer): PlayerState {
     professorChoice: s.professorChoice,
     inactiveNights: s.inactiveNights ?? 0,
     chargesLeft: s.chargesLeft,
+    loverPlayerId: s.loverPlayerId,
   };
 }
 
@@ -148,6 +152,7 @@ export function serializeEngine(engine: GameEngine): SerializedEngine {
     pendingNightRoles: internal.pendingNightRoles.map((r) => r as string),
     sheriffShootTarget: internal.sheriffShootTarget,
     robberTargetResponse: engine.robberTargetResponse,
+    cupidPick: engine.cupidPick,
     votes: internal.votes,
     kamikazeTarget: internal.kamikazeTarget,
     confirmVotes: internal.confirmVotes,
@@ -179,6 +184,7 @@ export function applySerializedToEngine(engine: GameEngine, s: SerializedEngine)
     nightSkips: s.nightSkips ?? [],
   });
   engine.robberTargetResponse = s.robberTargetResponse;
+  engine.cupidPick = s.cupidPick ?? null;
   engine.pendingHangTarget = s.pendingHangTarget;
   engine.gameStartedAt = s.gameStartedAt ? new Date(s.gameStartedAt) : null;
   engine.registrationMessageId = s.registrationMessageId;

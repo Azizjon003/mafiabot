@@ -13,6 +13,8 @@ const roleFieldMap: Record<Role, string> = {
   WARLOCK: "timesWarlock",
   SANTA: "timesSanta",
   SNOWBOY: "timesSnowboy",
+  CUPID: "timesCupid",
+  BARMEN: "timesBarmen",
   DON: "timesDon",
   MAFIA: "timesMafia",
   LAWYER: "timesLawyer",

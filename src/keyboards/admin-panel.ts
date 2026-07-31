@@ -60,7 +60,8 @@ const ALL_ROLES: Role[] = [
   "LAB", "WARLOCK", "ARCHER", "KAMIKAZE",
   "ROBBER", "PROFESSOR", "MAFIA", "KILLER",
   "SERGEANT", "HOOKER", "TRAMP", "LAWYER",
-  "DOCTOR", "SPY", "TRAITOR", "SANTA", "SNOWBOY", "CIVILIAN",
+  "DOCTOR", "SPY", "TRAITOR", "SANTA", "SNOWBOY",
+  "CUPID", "BARMEN", "CIVILIAN",
 ];
 
 export function rolePricesKeyboard(prices: Record<string, number>): InlineKeyboard {

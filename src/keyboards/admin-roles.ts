@@ -6,7 +6,7 @@ import { ROLE_EMOJI, ROLE_NAME } from "../utils/constants";
 const ALL_ROLES: Role[] = [
   "DON", "MAFIA", "LAWYER", "SPY", "LAB",
   "SHERIFF", "DOCTOR", "TRAMP", "HOOKER", "SERGEANT",
-  "WARLOCK", "KAMIKAZE", "SANTA", "SNOWBOY",
+  "WARLOCK", "KAMIKAZE", "SANTA", "SNOWBOY", "CUPID", "BARMEN",
   "KILLER", "MINER", "SNIPER", "ARCHER",
   "TRAITOR", "ROBBER", "PROFESSOR", "CIVILIAN",
 ];

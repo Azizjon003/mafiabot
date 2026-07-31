@@ -41,6 +41,9 @@ export class GameEngine {
   // Qaroqchi 2-bosqich — nishon javobi
   robberTargetResponse: RobberResponse | null = null;
 
+  // Kupidon tanlagan juftlik (faqat 1-tunda tanlanadi)
+  cupidPick: { first: number; second: number } | null = null;
+
   // O'yin boshlangan vaqt (statistika uchun)
   gameStartedAt: Date | null = null;
 
@@ -367,7 +370,7 @@ export class GameEngine {
     // Tunda harakat qiladigan tirik rollarni aniqlash
     const alive = this.getAlivePlayers();
     for (const player of alive) {
-      if (this.isNightActiveRole(player.role)) {
+      if (this.isNightActiveForPlayer(player)) {
         this.pendingNightRoles.add(player.role);
       }
     }
@@ -385,9 +388,25 @@ export class GameEngine {
       "HOOKER", "TRAITOR", "LAWYER", "SPY", "DON", "MAFIA", "LAB",
       "SHERIFF", "SERGEANT", "DOCTOR", "WARLOCK", "TRAMP",
       "KILLER", "SNIPER", "ARCHER", "MINER", "SNOWBOY", "SANTA",
-      "ROBBER", "PROFESSOR",
+      "ROBBER", "PROFESSOR", "CUPID", "BARMEN",
     ];
     return nightRoles.includes(role);
+  }
+
+  // Rol umumiy tungi rol bo'lsa ham, AYNAN SHU o'yinchi shu tunda harakat qila
+  // oladimi — Kupidon faqat juftlik hali tanlanmagan bo'lsa harakat qiladi
+  // (odatda 1-tun; uxlatilgan/mast qilingan bo'lsa keyingi tunda qayta urinadi).
+  isNightActiveForPlayer(player: PlayerState): boolean {
+    if (player.role === "CUPID") {
+      return !this.cupidPick;
+    }
+    return this.isNightActiveRole(player.role);
+  }
+
+  // Kupidon juftligini saqlash (1-tun, callback'dan)
+  setCupidPick(firstPlayerId: number, secondPlayerId: number): void {
+    this.cupidPick = { first: firstPlayerId, second: secondPlayerId };
+    this.persistSoon();
   }
 
   submitNightAction(actorPlayerId: number, targetPlayerId: number, role: Role): boolean {
@@ -548,6 +567,77 @@ export class GameEngine {
             targetPrivateMessage: `💃 <b>Bu tunda sizni uxlatishdi!</b>\nTundagi harakatingiz bekor qilindi va ertaga kunduzi ham hech narsa qila olmaysiz — ovoz berish, hujum va guruhda yozish taqiqlanadi.`,
           });
         }
+      }
+    }
+
+    // 1b. Barmen — ichirish: 50% nishon rolini bilib oladi, 50% nishonni mast qiladi
+    // (mastlik = tungi harakati bekor; Kezuvchidan farqli — ertasi kunga ta'sir qilmaydi)
+    let barmenDrunkTargetId: number | null = null;
+    const barmenAction = this.nightActions.get("BARMEN");
+    if (barmenAction) {
+      const actor = this.getPlayer(barmenAction.actorId);
+      const target = this.getPlayer(barmenAction.targetId);
+      if (actor && target && !actor.isBlocked) {
+        if (Math.random() < 0.5) {
+          // Rol ochiladi
+          result.events.push({
+            type: "BARMEN_REVEAL",
+            actorId: barmenAction.actorId,
+            targetId: barmenAction.targetId,
+            message: `Barmen rolni bildi`,
+            privateMessage: `🍺 Ichish chog'ida <b>${escapeHtml(target.firstName)}</b> tilini bo'shatib yubordi — u ${ROLE_EMOJI[target.role]} <b>${ROLE_NAME[target.role]}</b> ekan!`,
+            targetPrivateMessage: `🍺 Bu tunda Barmen bilan qittak-qittak qildingiz. Ertalab boshingiz og'riyapti...`,
+          });
+        } else {
+          // Mast qilish — tungi harakati bekor (faqat shu tunga)
+          if (!target.isBlocked) barmenDrunkTargetId = target.playerId;
+          target.isBlocked = true;
+          result.events.push({
+            type: "BARMEN_DRUNK",
+            actorId: barmenAction.actorId,
+            targetId: barmenAction.targetId,
+            message: `Barmen mast qildi`,
+            privateMessage: `🍺 <b>${escapeHtml(target.firstName)}</b>ni rosa ichirdingiz — u mast bo'lib uxlab qoldi, bu tun hech narsa qila olmaydi.`,
+            targetPrivateMessage: `🍺 <b>Barmen sizni ichirib mast qildi!</b>\nTundagi harakatingiz bekor bo'ldi.`,
+          });
+        }
+        this.addVisitor(visitorsMap, barmenAction.targetId, barmenAction.actorId);
+      }
+    }
+
+    // 1c. Kupidon — sevishganlarni bog'lash (faqat 1-tunda tanlangan bo'ladi)
+    const cupidAction = this.nightActions.get("CUPID");
+    if (cupidAction && this.cupidPick) {
+      const actor = this.getPlayer(cupidAction.actorId);
+      const loverA = this.getPlayer(this.cupidPick.first);
+      const loverB = this.getPlayer(this.cupidPick.second);
+      if (actor && loverA && loverB && !actor.isBlocked && loverA.playerId !== loverB.playerId) {
+        loverA.loverPlayerId = loverB.playerId;
+        loverB.loverPlayerId = loverA.playerId;
+        result.events.push({
+          type: "CUPID_MATCH",
+          actorId: cupidAction.actorId,
+          message: `Kupidon sevishtirdi`,
+          privateMessage: `💘 Siz <b>${escapeHtml(loverA.firstName)}</b> va <b>${escapeHtml(loverB.firstName)}</b>ni sevishtirdingiz!`,
+        });
+        result.events.push({
+          type: "CUPID_LOVER",
+          actorId: cupidAction.actorId,
+          targetId: loverA.playerId,
+          message: "",
+          targetPrivateMessage: `💘 <b>Siz sevib qoldingiz!</b>\nJuftingiz: <b>${escapeHtml(loverB.firstName)}</b>\nAgar u o'lsa — siz ham qayg'udan o'lasiz. Uni asrang!`,
+        });
+        result.events.push({
+          type: "CUPID_LOVER",
+          actorId: cupidAction.actorId,
+          targetId: loverB.playerId,
+          message: "",
+          targetPrivateMessage: `💘 <b>Siz sevib qoldingiz!</b>\nJuftingiz: <b>${escapeHtml(loverA.firstName)}</b>\nAgar u o'lsa — siz ham qayg'udan o'lasiz. Uni asrang!`,
+        });
+      } else if (actor && actor.isBlocked) {
+        // Kupidon uxlatilgan — juftlik bog'lanmadi, imkoniyat keyingi tunga o'tadi
+        this.cupidPick = null;
+        this.nightActions.delete("CUPID");
       }
     }
 
@@ -1148,7 +1238,7 @@ export class GameEngine {
     const INACTIVITY_EXEMPT: Role[] = ["CIVILIAN", "KAMIKAZE", "SERGEANT"];
     for (const player of this.getAlivePlayers()) {
       if (INACTIVITY_EXEMPT.includes(player.role)) continue;
-      if (!this.isNightActiveRole(player.role)) continue;
+      if (!this.isNightActiveForPlayer(player)) continue;
       // Bloklangan bo'lsa — harakatsizlikka sanalmaydi
       if (player.isBlocked) continue;
 
@@ -1291,12 +1381,46 @@ export class GameEngine {
       }
     }
 
+    // Sevishganlar — jufti o'lgan bo'lsa qayg'udan o'ladi
+    for (const griefVictim of this.resolveLoverGrief()) {
+      result.killed.push({ player: griefVictim, cause: "LOVER_GRIEF" });
+    }
+
+    // Barmen mastligi faqat TUNGA tegishli — Kezuvchidan farqli, ertasi kunga o'tmaydi
+    if (barmenDrunkTargetId !== null) {
+      const drunk = this.getPlayer(barmenDrunkTargetId);
+      if (drunk) drunk.isBlocked = false;
+    }
+
     // Komissar o'lsa — Serjant Komissar bo'ladi
     this.promoteSergeantIfNeeded();
     // Don o'lsa — Mafiya Don bo'ladi
     this.promoteMafiaIfNeeded();
 
     return result;
+  }
+
+  // Sevishganlar mexanikasi: jufti o'lgan tirik oshiq qayg'udan o'ladi.
+  // Har qanday o'lim yo'lidan keyin chaqiriladi (tun, osish, kamikaze, geroy hujumi).
+  resolveLoverGrief(): PlayerState[] {
+    const victims: PlayerState[] = [];
+    for (const p of this.players.values()) {
+      if (!p.isAlive || !p.loverPlayerId) continue;
+      const partner = this.getPlayer(p.loverPlayerId);
+      if (partner && !partner.isAlive) {
+        p.isAlive = false;
+        playerRepo.kill(p.playerId, this.currentRound, "LOVER_GRIEF").catch((e) =>
+          logger.error(e, "Lover grief kill xatolik")
+        );
+        victims.push(p);
+      }
+    }
+    if (victims.length > 0) {
+      this.promoteSergeantIfNeeded();
+      this.promoteMafiaIfNeeded();
+      this.persistSoon();
+    }
+    return victims;
   }
 
   private resolveMafiaKill(): number | null {
@@ -1478,6 +1602,10 @@ export class GameEngine {
         }
       }
     }
+
+    // Sevishganlar — osilganning jufti qayg'udan o'ladi
+    const loverVictims = this.resolveLoverGrief();
+    if (loverVictims.length > 0) result.loverVictims = loverVictims;
 
     // Komissar/Don o'lsa promotion
     this.promoteSergeantIfNeeded();
