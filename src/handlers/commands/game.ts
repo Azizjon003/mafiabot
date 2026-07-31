@@ -32,6 +32,10 @@ export function createGameCommands(controller: GameController): Composer<BotCont
   // Agar o'yin allaqachon WAITING fazasida bo'lsa — registratsiya xabari
   // pastga qayta yuboriladi (bump).
   composer.command("startgame", groupOnly, async (ctx) => {
+    // Buyruq xabarini (/startgame yoki /startgame@bot) o'chirish — guruh toza turishi uchun.
+    // Bot "Delete messages" huquqiga ega bo'lmasa — jim davom etadi.
+    ctx.deleteMessage().catch(() => {});
+
     const chatId = BigInt(ctx.chat.id);
     const engine = gameManager.getGame(chatId);
     if (engine) {
