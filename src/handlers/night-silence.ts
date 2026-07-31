@@ -54,8 +54,16 @@ nightSilenceHandler.on("message", async (ctx, next) => {
   }
 
   // DAY/VOTING/CONFIRMING: o'yinchi bo'lsa yoki admin bo'lsa — qoldiramiz
-  const isPlayer = engine.getPlayerByTelegramId(BigInt(ctx.from!.id)) !== undefined;
-  if (isPlayer || isAdmin) return next();
+  const fromId = ctx.from?.id;
+  const player = fromId !== undefined ? engine.getPlayerByTelegramId(BigInt(fromId)) : undefined;
+
+  // Kezuvchi uxlatgan o'yinchi kunduzi guruhda yozolmaydi ham
+  if (player && player.isAlive && player.isBlocked) {
+    try { await ctx.deleteMessage(); } catch (e) { logger.debug(e, "Blocked player delete failed"); }
+    return;
+  }
+
+  if (player !== undefined || isAdmin) return next();
 
   // O'yinchi emas + admin emas:
   // - Rasm / video / media → qoldiramiz (hamma yubora oladi)

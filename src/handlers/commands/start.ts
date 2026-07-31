@@ -102,6 +102,12 @@ startCommand.command("start", async (ctx) => {
       return;
     }
 
+    // Kezuvchi uxlatgan o'yinchi kunduzi ovoz bera olmaydi
+    if (voter.isBlocked) {
+      await ctx.reply(t("errors.playerBlocked"), { parse_mode: "HTML" });
+      return;
+    }
+
     // Allaqachon ovoz berganmi
     if (engine.hasVoted(voter.playerId)) {
       await ctx.reply(t("game.alreadyVoted"), { parse_mode: "HTML" });

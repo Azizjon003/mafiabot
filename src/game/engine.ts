@@ -527,7 +527,7 @@ export class GameEngine {
             message: `Kezuvchi blokladi`,
             privateMessage: `💃 Siz bir kishini blokladingiz. Uning roli oshkor qilinmaydi.`,
             // Nishonga xabar — aks holda o'yinchi harakati nega ishlamaganini bilmaydi
-            targetPrivateMessage: `💃 <b>Bu tunda sizni uxlatishdi!</b>\nTundagi harakatingiz bekor qilindi.`,
+            targetPrivateMessage: `💃 <b>Bu tunda sizni uxlatishdi!</b>\nTundagi harakatingiz bekor qilindi va ertaga kunduzi ham hech narsa qila olmaysiz — ovoz berish, hujum va guruhda yozish taqiqlanadi.`,
           });
         }
       }
@@ -1327,6 +1327,8 @@ export class GameEngine {
   submitVote(voterPlayerId: number, targetPlayerId: number): boolean {
     const voter = this.getPlayer(voterPlayerId);
     if (!voter || !voter.isAlive) return false;
+    // Kezuvchi uxlatgan o'yinchi shu kunduzi ovoz bera olmaydi
+    if (voter.isBlocked) return false;
 
     this.votes.set(voterPlayerId, targetPlayerId);
     this.persistSoon();
@@ -1364,6 +1366,9 @@ export class GameEngine {
 
   // Osishni tasdiqlash
   submitConfirmVote(voterPlayerId: number, approve: boolean): void {
+    const voter = this.getPlayer(voterPlayerId);
+    // Kezuvchi uxlatgan o'yinchi tasdiqlashda ham qatnasha olmaydi
+    if (!voter || !voter.isAlive || voter.isBlocked) return;
     this.confirmVotes.set(voterPlayerId, approve);
     this.persistSoon();
   }

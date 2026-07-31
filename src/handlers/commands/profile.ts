@@ -352,6 +352,12 @@ profileCommand.callbackQuery("hero:defend", async (ctx) => {
     return;
   }
 
+  // Kezuvchi uxlatgan o'yinchi kunduzi himoyalana olmaydi
+  if (game.player.isBlocked) {
+    await ctx.answerCallbackQuery({ text: t("errors.playerBlocked"), show_alert: true }).catch(() => {});
+    return;
+  }
+
   const { HERO_ATTACK_ROLES } = await import("../../utils/constants");
   if (!HERO_ATTACK_ROLES.includes(game.player.role)) {
     await ctx.answerCallbackQuery({ text: "Sizning rolingiz Geroy bilan ishlamaydi!", show_alert: true }).catch(() => {});
@@ -390,6 +396,11 @@ profileCommand.callbackQuery("hero:attack", async (ctx) => {
     await ctx.answerCallbackQuery({ text: "Siz o'lik ekansiz!", show_alert: true }).catch(() => {});
     return;
   }
+  // Kezuvchi uxlatgan o'yinchi kunduzi hujum qila olmaydi
+  if (game.player.isBlocked) {
+    await ctx.answerCallbackQuery({ text: t("errors.playerBlocked"), show_alert: true }).catch(() => {});
+    return;
+  }
   const { HERO_ATTACK_ROLES } = await import("../../utils/constants");
   if (!HERO_ATTACK_ROLES.includes(game.player.role)) {
     await ctx.answerCallbackQuery({ text: "Sizning rolingiz Geroy bilan ishlamaydi!", show_alert: true }).catch(() => {});
@@ -426,6 +437,12 @@ profileCommand.callbackQuery(/^hero:atk:(\d+)$/, async (ctx) => {
   const game = findUserGame(ctx.dbUser.telegramId);
   if (!game || game.engine.status !== "DAY") {
     await ctx.answerCallbackQuery({ text: "Hujum faqat kunduzda!", show_alert: true }).catch(() => {});
+    return;
+  }
+
+  // Kezuvchi uxlatgan o'yinchi kunduzi hujum qila olmaydi
+  if (game.player.isBlocked) {
+    await ctx.answerCallbackQuery({ text: t("errors.playerBlocked"), show_alert: true }).catch(() => {});
     return;
   }
 

@@ -39,6 +39,13 @@ export function createVoteCallbacks(controller: GameController): Composer<BotCon
       return;
     }
 
+    // Kezuvchi uxlatgan o'yinchi kunduzi ovoz bera olmaydi
+    if (voter.isBlocked) {
+      await ctx.answerCallbackQuery({ text: t("errors.playerBlocked"), show_alert: true }).catch(() => {});
+      await ctx.editMessageText(t("errors.playerBlocked"), { parse_mode: "HTML" }).catch(() => {});
+      return;
+    }
+
     // Allaqachon ovoz berganmi
     if (engine.hasVoted(voter.playerId)) {
       await ctx.answerCallbackQuery({ text: "⚠️ Siz allaqachon ovoz bergansiz!" }).catch(() => {});
@@ -101,6 +108,12 @@ export function createVoteCallbacks(controller: GameController): Composer<BotCon
     const voter = engine.getPlayerByTelegramId(BigInt(ctx.from.id));
     if (!voter || !voter.isAlive) {
       await ctx.answerCallbackQuery({ text: "Siz ovoz bera olmaysiz!" }).catch(() => {});
+      return;
+    }
+
+    // Kezuvchi uxlatgan o'yinchi tasdiqlashda ham qatnasha olmaydi
+    if (voter.isBlocked) {
+      await ctx.answerCallbackQuery({ text: t("errors.playerBlocked"), show_alert: true }).catch(() => {});
       return;
     }
 
