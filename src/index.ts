@@ -35,6 +35,12 @@ async function main() {
   // Do'kon default itemlari
   await shopService.seedDefaultItems();
 
+  // Bir martalik: eski katta mukofot sozlamalarini tozalash (25💰/0💎/0 siyosati)
+  const { resetRewardOverridesOnce } = await import("./services/pricing.service");
+  await resetRewardOverridesOnce().catch((e) =>
+    logger.error(e, "Mukofot sozlamalarini tozalashda xatolik")
+  );
+
   // Matnlarni DB'dan yuklash (admin tahrirlagan custom matnlar)
   const { textService } = await import("./services/text.service");
   await textService.preloadAll();

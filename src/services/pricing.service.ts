@@ -70,16 +70,17 @@ const DEFAULTS: Record<string, number> = {
   [PRICE_KEYS.FEE_DIAMOND_TRANSFER]: 1,       // 1💎
   [PRICE_KEYS.FEE_MONEY_TRANSFER]: 50,        // 50💰
 
-  // O'yin mukofotlari — HAR YUTUQDA faqat PUL beriladi. Olmos yutuqdan berilmaydi
+  // O'yin mukofotlari — G'OLIBGA FAQAT 25💰. Olmos yutuqdan BERILMAYDI,
+  // yutqazganga HECH NARSA berilmaydi.
   // (olmos faqat sandiq: pul→olmos, va o'zaro o'tkazma orqali keladi)
   [PRICE_KEYS.REWARD_TOWN_MONEY]: 25,         // Shahar yutsa: 25💰
   [PRICE_KEYS.REWARD_TOWN_DIAMOND]: 0,
-  [PRICE_KEYS.REWARD_MAFIA_MONEY]: 30,        // Mafiya yutsa: 30💰
+  [PRICE_KEYS.REWARD_MAFIA_MONEY]: 25,        // Mafiya yutsa: 25💰
   [PRICE_KEYS.REWARD_MAFIA_DIAMOND]: 0,
-  [PRICE_KEYS.REWARD_SOLO_MONEY]: 40,         // Yakka rol yutsa: 40💰
+  [PRICE_KEYS.REWARD_SOLO_MONEY]: 25,         // Yakka rol yutsa: 25💰
   [PRICE_KEYS.REWARD_SOLO_DIAMOND]: 0,
-  [PRICE_KEYS.REWARD_WINNER_BONUS]: 0,        // Bonus faktsiya mukofotiga qo'shildi (0 = o'chirilgan)
-  [PRICE_KEYS.REWARD_LOSER_CONSOLATION]: 10,  // Yutqazganga 10💰 (yutuqdan kam bo'lishi shart)
+  [PRICE_KEYS.REWARD_WINNER_BONUS]: 0,        // Bonus o'chirilgan
+  [PRICE_KEYS.REWARD_LOSER_CONSOLATION]: 0,   // Yutqazganga hech narsa berilmaydi
   [PRICE_KEYS.REWARD_HERO_POINTS_TOWN]: 150,  // Geroy: shahar yutsa 150 ball
   [PRICE_KEYS.REWARD_HERO_POINTS_MAFIA]: 200, // Mafiya yutsa 200 ball
   [PRICE_KEYS.REWARD_HERO_POINTS_SOLO]: 300,  // Yakka yutsa 300 ball
@@ -150,6 +151,38 @@ async function loadFromDb(key: string): Promise<number> {
     if (!isNaN(n)) return n;
   }
   return DEFAULTS[key] ?? 0;
+}
+
+// Bir martalik: DB'dagi eski (juda katta) mukofot override'larini tozalash.
+// Eski qiymatlar (500-700💰 + olmos, keyin 80+80💰) koddagi defaultlarni bosib ketardi.
+// Endi mukofot siyosati: g'olibga 25💰, olmos yo'q, yutqazganga hech narsa.
+// Flag Config'da saqlanadi — faqat BIR marta ishlaydi, keyin admin /setprice bilan
+// xohlaganicha o'zgartira oladi (qayta boot'da qayta o'chirilmaydi).
+const REWARD_RESET_FLAG = "migration_rewards_reset_v1";
+const REWARD_KEYS_TO_RESET = [
+  PRICE_KEYS.REWARD_TOWN_MONEY,
+  PRICE_KEYS.REWARD_TOWN_DIAMOND,
+  PRICE_KEYS.REWARD_MAFIA_MONEY,
+  PRICE_KEYS.REWARD_MAFIA_DIAMOND,
+  PRICE_KEYS.REWARD_SOLO_MONEY,
+  PRICE_KEYS.REWARD_SOLO_DIAMOND,
+  PRICE_KEYS.REWARD_WINNER_BONUS,
+  PRICE_KEYS.REWARD_LOSER_CONSOLATION,
+];
+
+export async function resetRewardOverridesOnce(): Promise<void> {
+  const done = await prisma.config.findUnique({ where: { key: REWARD_RESET_FLAG } });
+  if (done) return;
+  const res = await prisma.config.deleteMany({
+    where: { key: { in: [...REWARD_KEYS_TO_RESET] } },
+  });
+  await prisma.config.create({ data: { key: REWARD_RESET_FLAG, value: "done" } });
+  cache.clear();
+  const { logger } = await import("../utils/logger");
+  logger.info(
+    { deleted: res.count },
+    "Mukofot override'lari tozalandi — endi: g'olibga 25💰, olmos 0, yutqazganga 0"
+  );
 }
 
 export const pricingService = {
