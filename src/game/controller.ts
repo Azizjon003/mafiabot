@@ -9,9 +9,9 @@ import { startDayPhase } from "./phases/day";
 import { startVotingPhase } from "./phases/voting";
 import { joinGameKeyboard, kamikazeTargetKeyboard, confirmHangKeyboard } from "../keyboards/game";
 import { t } from "../services/text.service";
-import { PACING, ROLE_EMOJI, ROLE_NAME, SOLO_ROLES } from "../utils/constants";
+import { PACING, ROLE_EMOJI, ROLE_NAME, SANTA_GIFT_AMOUNT, SOLO_ROLES } from "../utils/constants";
 import { buildRoster } from "./roster";
-import { mention, sleep } from "../utils/helpers";
+import { escapeHtml, mention, sleep } from "../utils/helpers";
 import { statsRepo } from "../database/repositories/stats.repository";
 import { economyService } from "../services/economy.service";
 import { heroService } from "../services/hero.service";
@@ -269,9 +269,13 @@ export class GameController {
     engine.clearTimer();
 
     try {
-    // Harakat qilmaganlarga xabar
+    // Harakat qilmaganlarga xabar (ataylab skip bosganlar bundan mustasno)
     for (const player of engine.getAlivePlayers()) {
-      if (engine.isNightActiveRole(player.role) && !engine.hasNightAction(player.role, player.playerId)) {
+      if (
+        engine.isNightActiveRole(player.role) &&
+        !engine.hasNightAction(player.role, player.playerId) &&
+        !engine.hasSkippedNight(player.playerId)
+      ) {
         this.notifier.sendToPlayer(player.telegramId, t("game.actionTimeout")).catch(() => {});
       }
     }
@@ -291,7 +295,7 @@ export class GameController {
     // O'lganlar uchun oxirgi so'z oynasi (10 sek)
     await this.openLastWordsForDead(chatTelegramId, nightResult.killed.map((k) => k.player));
 
-    // ROBBER_ROB — haqiqiy pul o'tkazish
+    // ROBBER_ROB — haqiqiy pul o'tkazish; SANTA_GIFT — nishonga haqiqiy sovg'a puli
     for (const event of nightResult.events) {
       if (event.type === "ROBBER_ROB" && event.targetId) {
         const actor = engine.getPlayer(event.actorId);
@@ -301,6 +305,12 @@ export class GameController {
           const ROB_AMOUNT = 100;
           const stole = await economyService.spendMoney(target.userId, ROB_AMOUNT, "robbed").catch(() => false);
           if (stole) await economyService.addMoney(actor.userId, ROB_AMOUNT, "robber_rob").catch(() => {});
+        }
+      }
+      if (event.type === "SANTA_GIFT" && event.targetId) {
+        const target = engine.getPlayer(event.targetId);
+        if (target) {
+          await economyService.addMoney(target.userId, SANTA_GIFT_AMOUNT, "santa_gift").catch(() => {});
         }
       }
     }
@@ -486,7 +496,7 @@ export class GameController {
     if (candidate.isProtectedByWarlock) {
       await this.notifier.sendToGroup(
         chatTelegramId,
-        t("game.warlockProtectedFromHang", { name: candidate.firstName })
+        t("game.warlockProtectedFromHang", { name: escapeHtml(candidate.firstName) })
       );
       await this.afterVoting(chatTelegramId);
       return;
@@ -499,7 +509,7 @@ export class GameController {
 
     const confirmMsgId = await this.notifier.sendToGroup(
       chatTelegramId,
-      t("game.hangConfirmPrompt", { name: candidate.firstName }),
+      t("game.hangConfirmPrompt", { name: escapeHtml(candidate.firstName) }),
       confirmHangKeyboard(engine.gameId, maxTargetId)
     );
 
@@ -543,6 +553,10 @@ export class GameController {
         );
 
         engine.setTimer(15000, async () => {
+          // Kamikaze tanlagan nishonni endi qo'llaymiz (tanlamagan bo'lsa null qaytadi).
+          // processVotes paytida nishon hali tanlanmagan edi — shu yerda o'ldiriladi.
+          const kamikazeVictim = engine.applyKamikazeTarget();
+          if (kamikazeVictim) voteResult.kamikazeTarget = kamikazeVictim;
           await this.notifier.announceVoteResults(chatTelegramId, voteResult, engine.settings.showRoleOnDeath);
           // Oxirgi so'z — Kamikaze uchun
           if (voteResult.votedOut) {
@@ -566,13 +580,13 @@ export class GameController {
     } else if (candidate.isProtectedByWarlock) {
       await this.notifier.sendToGroup(
         chatTelegramId,
-        t("game.warlockProtectedFromHang", { name: candidate.firstName })
+        t("game.warlockProtectedFromHang", { name: escapeHtml(candidate.firstName) })
       );
     } else {
       // 👎 ko'p yoki teng — OSILMAYDI
       await this.notifier.sendToGroup(
         chatTelegramId,
-        t("game.hangCancelled", { name: candidate.firstName })
+        t("game.hangCancelled", { name: escapeHtml(candidate.firstName) })
       );
     }
 
@@ -820,7 +834,8 @@ export class GameController {
       select: { telegramId: true },
     });
 
-    const groupName = chatTitle || "Guruh";
+    const { escapeHtml: esc } = await import("../utils/helpers");
+    const groupName = esc(chatTitle || "Guruh");
     const text =
       `🎭 <b>Yangi o'yin boshlanmoqda!</b>\n\n` +
       `📍 Guruh: <b>${groupName}</b>\n\n` +

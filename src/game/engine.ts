@@ -2,10 +2,10 @@ import { GameStatus, Role, DeathCause, ActionType, Winner, ChatSettings } from "
 import { PlayerState, NightResult, NightEvent, VoteResult, MafiaVote, KilledPlayer, RobberResponse } from "../types";
 import { gameRepo } from "../database/repositories/game.repository";
 import { playerRepo } from "../database/repositories/player.repository";
-import { ROLE_TEAM, Team, MAFIA_ROLES, MAFIA_KILL_VOTERS, ROLE_EMOJI, ROLE_NAME, hasCharge, useCharge, initCharges } from "../utils/constants";
+import { ROLE_TEAM, Team, MAFIA_ROLES, MAFIA_KILL_VOTERS, ROLE_EMOJI, ROLE_NAME, SANTA_GIFT_AMOUNT, hasCharge, useCharge, initCharges } from "../utils/constants";
 import { checkWinCondition } from "./win-checker";
 import { assignRoles, matchRolesAvoidingRepeat } from "./role-assigner";
-import { getMostVoted, mention, shuffle } from "../utils/helpers";
+import { escapeHtml, getMostVoted, mention, shuffle } from "../utils/helpers";
 import { logger } from "../utils/logger";
 
 export class GameEngine {
@@ -21,6 +21,8 @@ export class GameEngine {
   private nightActions: Map<Role, { actorId: number; targetId: number }> = new Map();
   private mafiaVotes: MafiaVote[] = [];
   private pendingNightRoles: Set<Role> = new Set();
+  // Shu tunda ataylab "O'tkazish" bosganlar — harakatsizlikka SANALMAYDI
+  private nightSkips: Set<number> = new Set();
 
   // Komissar otish
   private sheriffShootTarget: number | null = null;
@@ -345,6 +347,7 @@ export class GameEngine {
     this.sheriffShootTarget = null;
     this.robberTargetResponse = null;
     this.pendingSheriffCheck = null;
+    this.nightSkips.clear();
 
     await gameRepo.updateStatus(this.gameId, "NIGHT");
     await gameRepo.incrementRound(this.gameId);
@@ -431,13 +434,28 @@ export class GameEngine {
     this.persistSoon();
   }
 
+  // O'yinchi ataylab "O'tkazish" bosdi — bu HARAKAT hisoblanadi (harakatsizlik emas)
+  markNightSkip(playerId: number): void {
+    this.nightSkips.add(playerId);
+    this.persistSoon();
+  }
+
+  hasSkippedNight(playerId: number): boolean {
+    return this.nightSkips.has(playerId);
+  }
+
   markNightRoleDone(role: Role): void {
     if (MAFIA_KILL_VOTERS.includes(role)) {
-      // Barcha mafiya ovoz berganda
-      const totalMafiaAlive = this.getAlivePlayers().filter((p) =>
+      // Barcha mafiya ovoz berganda YOKI skip bosganda
+      const aliveVoters = this.getAlivePlayers().filter((p) =>
         MAFIA_KILL_VOTERS.includes(p.role)
+      );
+      const doneCount = aliveVoters.filter(
+        (p) =>
+          this.mafiaVotes.some((v) => v.voterId === p.playerId) ||
+          this.nightSkips.has(p.playerId)
       ).length;
-      if (this.mafiaVotes.length >= totalMafiaAlive) {
+      if (doneCount >= aliveVoters.length) {
         this.pendingNightRoles.delete("MAFIA");
       }
     } else {
@@ -612,7 +630,7 @@ export class GameEngine {
             actorId: spyAction.actorId,
             targetId: spyAction.targetId,
             message: `Ayg'oqchi tekshirdi`,
-            privateMessage: `🦇 <b>${target.firstName}</b> — ${displayName} ${displayEmoji}`,
+            privateMessage: `🦇 <b>${escapeHtml(target.firstName)}</b> — ${displayName} ${displayEmoji}`,
             targetPrivateMessage: spyHiddenByDoc
               ? `📜 Sizning hujjatingiz ishlatildi! Ayg'oqchi sizni tinch axoli deb ko'rdi.`
               : undefined,
@@ -705,8 +723,13 @@ export class GameEngine {
 
           // Komissarning o'ziga natija — tongda DM
           if (this.pendingSheriffCheck) {
-            // Yashirinishi (Hujjat yoki Advokat) bo'lsa — tinch axoli deb ko'rsatamiz
-            const displayRole: Role = this.pendingSheriffCheck.disguiseAsTown ? "CIVILIAN" : target.role;
+            // Yashirinish: Hujjat (submit paytida aniqlangan) YOKI Advokat himoyasi.
+            // Advokat himoyasi AYNAN SHU YERDA tekshiriladi — isProtectedByLawyer
+            // 3-qadamda (bu qadamdan oldin) o'rnatilib bo'lgan.
+            const disguised =
+              this.pendingSheriffCheck.disguiseAsTown ||
+              (actuallyMafia && target.isProtectedByLawyer);
+            const displayRole: Role = disguised ? "CIVILIAN" : target.role;
             const displayEmoji = ROLE_EMOJI[displayRole] || "";
             const displayName = ROLE_NAME[displayRole] || displayRole;
 
@@ -716,7 +739,7 @@ export class GameEngine {
               targetId: sheriffAction.targetId,
               message: "",
               privateMessage:
-                `🔎 <b>${target.firstName}</b> — ${displayName} ${displayEmoji}`,
+                `🔎 <b>${escapeHtml(target.firstName)}</b> — ${displayName} ${displayEmoji}`,
             });
           }
 
@@ -727,7 +750,7 @@ export class GameEngine {
               actorId: lawyerAction.actorId,
               targetId: sheriffAction.targetId,
               message: `Advokat himoyasi ishladi`,
-              privateMessage: `👨🏼‍💼 Sizning himoyangiz ishladi! Komissar ${target.firstName}ni tinch axoli deb ko'rdi.`,
+              privateMessage: `👨🏼‍💼 Sizning himoyangiz ishladi! Komissar ${escapeHtml(target.firstName)}ni tinch axoli deb ko'rdi.`,
             });
           }
         }
@@ -748,9 +771,9 @@ export class GameEngine {
         } else if (sheriffAction) {
           const sheriffTarget = this.getPlayer(sheriffAction.targetId);
           if (this.sheriffShootTarget) {
-            info = `👮🏻‍♂ Komissar bu tunda <b>${sheriffTarget?.firstName}</b>ga 🔫 o'q uzdi.`;
+            info = `👮🏻‍♂ Komissar bu tunda <b>${escapeHtml(sheriffTarget?.firstName ?? "")}</b>ga 🔫 o'q uzdi.`;
           } else {
-            info = `👮🏻‍♂ Komissar bu tunda <b>${sheriffTarget?.firstName}</b>ni 🔍 tekshirdi.`;
+            info = `👮🏻‍♂ Komissar bu tunda <b>${escapeHtml(sheriffTarget?.firstName ?? "")}</b>ni 🔍 tekshirdi.`;
           }
         } else {
           info = "👮🏻‍♂ Komissar bu tunda hech narsa qilmadi.";
@@ -791,7 +814,7 @@ export class GameEngine {
             actorId: doctorAction.actorId,
             targetId: doctorAction.targetId,
             message: "",
-            privateMessage: `👨🏼‍⚕️ Siz <b>${doctorTarget.firstName}</b>ni davoladingiz.`,
+            privateMessage: `👨🏼‍⚕️ Siz <b>${escapeHtml(doctorTarget.firstName)}</b>ni davoladingiz.`,
             targetPrivateMessage: targetMsg,
           });
         }
@@ -982,8 +1005,8 @@ export class GameEngine {
             actorId: santaAction.actorId,
             targetId: santaAction.targetId,
             message: `Qorbobo sovg'a berdi`,
-            privateMessage: `🎅🏻 Siz ${santaTarget.firstName}ga sovg'a berdingiz!`,
-            targetPrivateMessage: `🎅🏻 Tunda sizga Qorbobo sovg'a qoldirdi!`,
+            privateMessage: `🎅🏻 Siz ${escapeHtml(santaTarget.firstName)}ga sovg'a berdingiz! (+${SANTA_GIFT_AMOUNT}💰)`,
+            targetPrivateMessage: `🎅🏻 Tunda sizga Qorbobo sovg'a qoldirdi! (+${SANTA_GIFT_AMOUNT}💰)`,
           });
           this.addVisitor(visitorsMap, santaAction.targetId, santaAction.actorId);
         }
@@ -1003,7 +1026,7 @@ export class GameEngine {
             actorId: robberAction.actorId,
             targetId: robberAction.targetId,
             message: `Qaroqchi pul undirdi`,
-            privateMessage: `👺 ${target.firstName}dan 100 pul undirdingiz`,
+            privateMessage: `👺 ${escapeHtml(target.firstName)}dan 100 pul undirdingiz`,
             targetPrivateMessage: `👺 Tunda siznikiga qaroqchi keldi va 100 pul olib ketdi!`,
           });
         } else {
@@ -1013,7 +1036,7 @@ export class GameEngine {
             actorId: robberAction.actorId,
             targetId: robberAction.targetId,
             message: `Qaroqchi o'ldirdi`,
-            privateMessage: `👺 ${target.firstName} bosh tortdi — o'ldirdingiz`,
+            privateMessage: `👺 ${escapeHtml(target.firstName)} bosh tortdi — o'ldirdingiz`,
           });
         }
         this.addVisitor(visitorsMap, robberAction.targetId, robberAction.actorId);
@@ -1044,7 +1067,7 @@ export class GameEngine {
             actorId: professorAction.actorId,
             targetId: professorAction.targetId,
             message: `Professor qutisidan o'lim chiqdi`,
-            privateMessage: `🎩 ${target.firstName} qutidan o'lim chiqardi!`,
+            privateMessage: `🎩 ${escapeHtml(target.firstName)} qutidan o'lim chiqardi!`,
             targetPrivateMessage: `🎩 Professor qutisini ochdingiz... ⚰️ O'lim chiqdi!`,
           });
         } else if (outcome === "EMPTY") {
@@ -1053,7 +1076,7 @@ export class GameEngine {
             actorId: professorAction.actorId,
             targetId: professorAction.targetId,
             message: `Professor qutisi bo'sh chiqdi`,
-            privateMessage: `🎩 ${target.firstName} bo'sh qutini tanladi.`,
+            privateMessage: `🎩 ${escapeHtml(target.firstName)} bo'sh qutini tanladi.`,
             targetPrivateMessage: `🎩 Professor qutisini ochdingiz... 🥡 Bo'sh chiqdi!`,
           });
         } else if (outcome === "HERO") {
@@ -1063,7 +1086,7 @@ export class GameEngine {
             actorId: professorAction.actorId,
             targetId: professorAction.targetId,
             message: `Professor qutisidan geroy chiqdi!`,
-            privateMessage: `🎩 ${target.firstName}ga geroy kuchi berildi!`,
+            privateMessage: `🎩 ${escapeHtml(target.firstName)}ga geroy kuchi berildi!`,
             targetPrivateMessage: `🎩 Professor qutisini ochdingiz... 🥷 Geroy kuchi oldingiz!`,
           });
         }
@@ -1087,7 +1110,7 @@ export class GameEngine {
           continue; // Daydi o'zi — ko'rsatmaymiz
         } else {
           const p = this.getPlayer(vId);
-          if (p) visitorLines.push(`${ROLE_EMOJI[p.role]} ${ROLE_NAME[p.role]} (${p.firstName})`);
+          if (p) visitorLines.push(`${ROLE_EMOJI[p.role]} ${ROLE_NAME[p.role]} (${escapeHtml(p.firstName)})`);
         }
       }
 
@@ -1112,7 +1135,7 @@ export class GameEngine {
           actorId: trampAction.actorId,
           targetId: trampAction.targetId,
           message: `Daydi qotillikka guvoh bo'ldi`,
-          privateMessage: `🔴 ${victim?.firstName || "Noma'lum"} uyida qotillik sodir bo'ldi!`,
+          privateMessage: `🔴 ${escapeHtml(victim?.firstName || "Noma'lum")} uyida qotillik sodir bo'ldi!`,
         });
       }
     }
@@ -1129,7 +1152,10 @@ export class GameEngine {
       // Bloklangan bo'lsa — harakatsizlikka sanalmaydi
       if (player.isBlocked) continue;
 
-      const acted = this.hasNightAction(player.role, player.playerId);
+      // Ataylab "O'tkazish" bosish ham harakat hisoblanadi
+      const acted =
+        this.hasNightAction(player.role, player.playerId) ||
+        this.nightSkips.has(player.playerId);
       if (acted) {
         player.inactiveNights = 0;
       } else {
@@ -1222,7 +1248,7 @@ export class GameEngine {
             actorId: doctorAction.actorId,
             targetId: doctorAction.targetId,
             message: `Shifokor saqlab qoldi`,
-            privateMessage: `💊 Siz ${dTarget.firstName}ni o'limdan saqlab qoldingiz!`,
+            privateMessage: `💊 Siz ${escapeHtml(dTarget.firstName)}ni o'limdan saqlab qoldingiz!`,
             targetPrivateMessage: `💊 Siznikiga tunda shifokor keldi va sizni saqlab qoldi!`,
           });
         }
@@ -1252,7 +1278,7 @@ export class GameEngine {
           actorId: action.actorId,
           targetId: action.targetId,
           message: `${ROLE_NAME[role]} muvaffaqiyatli`,
-          privateMessage: `✅ ${sTarget.firstName} o'ldirildi!`,
+          privateMessage: `✅ ${escapeHtml(sTarget.firstName)} o'ldirildi!`,
         });
       } else if (wasSaved) {
         result.events.push({
@@ -1260,7 +1286,7 @@ export class GameEngine {
           actorId: action.actorId,
           targetId: action.targetId,
           message: `${ROLE_NAME[role]} muvaffaqiyatsiz`,
-          privateMessage: `❌ ${sTarget.firstName} saqlab qolindi!`,
+          privateMessage: `❌ ${escapeHtml(sTarget.firstName)} saqlab qolindi!`,
         });
       }
     }
@@ -1392,6 +1418,26 @@ export class GameEngine {
   setKamikazeTarget(targetPlayerId: number): void {
     this.kamikazeTarget = targetPlayerId;
     this.persistSoon();
+  }
+
+  // Kamikaze tanlagan nishonni QO'LLASH — tanlov oynasi (15s) tugagach chaqiriladi.
+  // processVotes paytida nishon hali tanlanmagan bo'ladi (null), shuning uchun
+  // o'ldirish aynan shu alohida metodda amalga oshiriladi.
+  applyKamikazeTarget(): PlayerState | null {
+    if (!this.kamikazeTarget) return null;
+    const victim = this.getPlayer(this.kamikazeTarget);
+    this.kamikazeTarget = null;
+    if (!victim || !victim.isAlive) return null;
+
+    victim.isAlive = false;
+    playerRepo.kill(victim.playerId, this.currentRound, "KAMIKAZE_KILL").catch((e) =>
+      logger.error(e, "Kamikaze o'ldirishda xatolik")
+    );
+    // Qurbon Komissar/Don bo'lsa — promotion
+    this.promoteSergeantIfNeeded();
+    this.promoteMafiaIfNeeded();
+    this.persistSoon();
+    return victim;
   }
 
   processVotes(): VoteResult {
@@ -1533,6 +1579,7 @@ export class GameEngine {
       votes: [...this.votes.entries()],
       kamikazeTarget: this.kamikazeTarget,
       confirmVotes: [...this.confirmVotes.entries()],
+      nightSkips: [...this.nightSkips],
     };
   }
 
@@ -1544,6 +1591,7 @@ export class GameEngine {
     votes: [number, number][];
     kamikazeTarget: number | null;
     confirmVotes: [number, boolean][];
+    nightSkips?: number[];
   }): void {
     this.nightActions = new Map(state.nightActions);
     this.mafiaVotes = state.mafiaVotes;
@@ -1552,5 +1600,6 @@ export class GameEngine {
     this.votes = new Map(state.votes);
     this.kamikazeTarget = state.kamikazeTarget;
     this.confirmVotes = new Map(state.confirmVotes);
+    this.nightSkips = new Set(state.nightSkips ?? []);
   }
 }

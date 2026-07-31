@@ -5,7 +5,7 @@ import { nightActionKeyboard, professorBoxesKeyboard } from "../../keyboards/gam
 import { t } from "../../services/text.service";
 import { MAFIA_KILL_VOTERS, MAFIA_ROLES, PACING, ROLE_EMOJI, ROLE_NAME, ROLE_TEAM, Team } from "../../utils/constants";
 import { PlayerState } from "../../types";
-import { mention, sleep } from "../../utils/helpers";
+import { escapeHtml, mention, sleep } from "../../utils/helpers";
 
 // Guruhga tundagi hikoya matnlarini yuborish
 export async function sendNightStories(
@@ -135,8 +135,10 @@ async function sendSpyPrompt(engine: GameEngine, notifier: NotificationService, 
 
 async function sendMafiaPrompt(engine: GameEngine, notifier: NotificationService, player: PlayerState, alive: PlayerState[]) {
   const targets = alive.filter((p) => !MAFIA_ROLES.includes(p.role));
+  // DIQQAT: ism escapeHtml'siz qolsa, ismida "<" bo'lgan bitta a'zo BUTUN mafiya
+  // promptlarini sindiradi (parse xatosi) va jamoa harakat qila olmay qoladi.
   const mafiaNames = engine.getMafiaMembers()
-    .map((m) => `${ROLE_EMOJI[m.role]} ${m.firstName}`)
+    .map((m) => `${ROLE_EMOJI[m.role]} ${escapeHtml(m.firstName)}`)
     .join(", ");
 
   const text = t("night.mafiaPrompt", { members: mafiaNames });

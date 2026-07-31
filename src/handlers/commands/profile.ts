@@ -20,7 +20,7 @@ import {
 import { gameManager } from "../../game/manager";
 import { privateOnly } from "../middleware/chat-type";
 import { ROLE_EMOJI, ROLE_NAME } from "../../utils/constants";
-import { mention } from "../../utils/helpers";
+import { escapeHtml, mention } from "../../utils/helpers";
 import { t } from "../../services/text.service";
 
 export const profileCommand = new Composer<BotContext>();
@@ -478,9 +478,9 @@ profileCommand.callbackQuery(/^hero:atk:(\d+)$/, async (ctx) => {
   }
   attackerText += `❤️ HP'ga zarar: <b>${result.hpDamage}</b>\n\n`;
   if (result.killed) {
-    attackerText += `💀 <b>${target.firstName}</b> halok bo'ldi!`;
+    attackerText += `💀 <b>${escapeHtml(target.firstName)}</b> halok bo'ldi!`;
   } else {
-    attackerText += `🩸 <b>${target.firstName}</b> tirik qoldi:\n` +
+    attackerText += `🩸 <b>${escapeHtml(target.firstName)}</b> tirik qoldi:\n` +
       `   ❤️ HP: <b>${result.remainingHP}/100</b>`;
     if (result.targetHasHero) {
       attackerText += `\n   🛡 Himoya: <b>${result.remainingProtection}</b>`;
@@ -513,7 +513,7 @@ profileCommand.callbackQuery(/^hero:atk:(\d+)$/, async (ctx) => {
         game.engine.chatTelegramId.toString(),
         t("profile.heroAttackAnnounceKilled", {
           attackerRole: attackerRoleName,
-          name: target.firstName,
+          name: escapeHtml(target.firstName),
         }),
         { parse_mode: "HTML" }
       );
@@ -525,7 +525,7 @@ profileCommand.callbackQuery(/^hero:atk:(\d+)$/, async (ctx) => {
         game.engine.chatTelegramId.toString(),
         t("profile.heroAttackAnnounceSurvived", {
           attackerRole: attackerRoleName,
-          name: target.firstName,
+          name: escapeHtml(target.firstName),
           damagePct,
           remainingPct,
         }),

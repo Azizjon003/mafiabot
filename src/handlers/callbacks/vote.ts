@@ -3,7 +3,7 @@ import { BotContext } from "../../types/context";
 import { GameController } from "../../game/controller";
 import { gameManager } from "../../game/manager";
 import { t } from "../../services/text.service";
-import { mention } from "../../utils/helpers";
+import { escapeHtml, mention } from "../../utils/helpers";
 
 export function createVoteCallbacks(controller: GameController): Composer<BotContext> {
   const composer = new Composer<BotContext>();
@@ -71,7 +71,7 @@ export function createVoteCallbacks(controller: GameController): Composer<BotCon
       await ctx.editMessageText("🚫 Hech kimga ovoz berdingiz.", { parse_mode: "HTML" }).catch(() => {});
     } else {
       await ctx.editMessageText(
-        `✅ Siz <b>${target?.firstName}</b>ga ovoz berdingiz.`,
+        `✅ Siz <b>${escapeHtml(target?.firstName ?? "")}</b>ga ovoz berdingiz.`,
         { parse_mode: "HTML" }
       ).catch(() => {});
     }
@@ -130,7 +130,7 @@ export function createVoteCallbacks(controller: GameController): Composer<BotCon
     // Keyboard yangilash — countlar
     const { yes, no } = engine.getConfirmCounts();
     const candidate = engine.getPlayer(targetPlayerId);
-    const candidateName = candidate?.firstName || "???";
+    const candidateName = escapeHtml(candidate?.firstName || "???");
 
     const kb = new InlineKeyboard()
       .text(`👍 ${yes}`, `confirm_hang:${gameId}:${targetPlayerId}:yes`)
@@ -160,18 +160,29 @@ export function createVoteCallbacks(controller: GameController): Composer<BotCon
     const telegramId = BigInt(ctx.from.id);
     for (const game of gameManager.getAllGames()) {
       const player = game.getPlayerByTelegramId(telegramId);
-      if (player) {
-        game.setKamikazeTarget(targetPlayerId);
-        const target = game.getPlayer(targetPlayerId);
-        await ctx.answerCallbackQuery({
-          text: `💣 ${target?.firstName}ni o'zingiz bilan olib ketdingiz!`,
-        });
-        await ctx.editMessageText(
-          `💣 Siz <b>${target?.firstName}</b>ni o'zingiz bilan olib ketdingiz!`,
-          { parse_mode: "HTML" }
-        );
-        break;
+      if (!player) continue;
+
+      // Faqat haqiqiy Kamikaze, faqat tanlov oynasi (15s) ochiq paytda
+      if (player.role !== "KAMIKAZE" || game.pendingPhaseAction !== "KAMIKAZE_DELAY") {
+        await ctx.answerCallbackQuery({ text: "Bu tugma hozir ishlamaydi!" }).catch(() => {});
+        return;
       }
+
+      const target = game.getPlayer(targetPlayerId);
+      if (!target || !target.isAlive) {
+        await ctx.answerCallbackQuery({ text: "Noto'g'ri nishon!" }).catch(() => {});
+        return;
+      }
+
+      game.setKamikazeTarget(targetPlayerId);
+      await ctx.answerCallbackQuery({
+        text: `💣 ${target.firstName}ni o'zingiz bilan olib ketdingiz!`,
+      }).catch(() => {});
+      await ctx.editMessageText(
+        `💣 Siz <b>${escapeHtml(target.firstName)}</b>ni o'zingiz bilan olib ketdingiz!`,
+        { parse_mode: "HTML" }
+      ).catch(() => {});
+      break;
     }
   });
 

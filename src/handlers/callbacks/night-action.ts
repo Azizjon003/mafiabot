@@ -6,7 +6,7 @@ import { gameManager } from "../../game/manager";
 import { sheriffActionKeyboard, robberResponseKeyboard, professorBoxesKeyboard } from "../../keyboards/game";
 import { MAFIA_KILL_VOTERS, ROLE_TEAM, Team, ROLE_EMOJI, ROLE_NAME, PACING } from "../../utils/constants";
 import { t } from "../../services/text.service";
-import { sleep } from "../../utils/helpers";
+import { escapeHtml, sleep } from "../../utils/helpers";
 
 // Night action callback pattern: night_{role}:{targetPlayerId|skip}
 const NIGHT_ROLE_MAP: Record<string, Role> = {
@@ -61,7 +61,7 @@ export function createNightActionCallbacks(controller: GameController): Composer
     }
     await ctx.answerCallbackQuery().catch(() => {});
     await ctx.editMessageText(
-      `🕵🏻‍♂ <b>${target.firstName}</b>ni tanladingiz.\n\nNima qilasiz?`,
+      `🕵🏻‍♂ <b>${escapeHtml(target.firstName)}</b>ni tanladingiz.\n\nNima qilasiz?`,
       { parse_mode: "HTML", reply_markup: sheriffActionKeyboard(targetPlayerId) }
     ).catch(() => {});
   });
@@ -71,6 +71,11 @@ export function createNightActionCallbacks(controller: GameController): Composer
     if (!ctx.from) return;
     const found = findPlayerGame(BigInt(ctx.from.id));
     if (!found) return;
+    if (found.engine.status !== "NIGHT") {
+      await ctx.answerCallbackQuery({ text: "Hozir tun emas!" }).catch(() => {});
+      return;
+    }
+    found.engine.markNightSkip(found.player.playerId);
     found.engine.markNightRoleDone("SHERIFF");
     await ctx.answerCallbackQuery({ text: "🚫 O'tkazildi" }).catch(() => {});
     await ctx.editMessageText("🚫 O'tkazib yubordingiz.", { parse_mode: "HTML" }).catch(() => {});
@@ -105,7 +110,7 @@ export function createNightActionCallbacks(controller: GameController): Composer
       // Natijani engine'ga saqlaymiz — tongda (handleNightEnd dispatch'ida) DM yuboriladi
       const targetTeam = ROLE_TEAM[target.role];
       const isBadRole = targetTeam === Team.MAFIA || targetTeam === Team.SOLO;
-      const usedDocument = target.hasDocumentActive && isBadRole;
+      const usedDocument = !!(target.hasDocumentActive && isBadRole);
       if (usedDocument) {
         target.hasDocumentActive = false;
         try {
@@ -117,21 +122,22 @@ export function createNightActionCallbacks(controller: GameController): Composer
         } catch { /* ignore */ }
       }
 
-      // Hujjatli yoki Advokat himoyali mafiya → tinch axoli ko'rinadi
-      // Aks holda — target rol nomi ko'rsatiladi
-      const disguiseAsTown = usedDocument || (target.isProtectedByLawyer && targetTeam === Team.MAFIA);
+      // Bu yerda FAQAT Hujjat hisobga olinadi. Advokat himoyasi tun yakunida
+      // (engine.processNightActions, 7-qadam) tekshiriladi — chunki isProtectedByLawyer
+      // bayrog'i faqat o'sha paytda o'rnatiladi (submit paytida u doim false bo'lardi).
+      const disguiseAsTown = usedDocument;
       found.engine.setPendingSheriffCheck(found.player.playerId, targetPlayerId, disguiseAsTown);
 
       await ctx.editMessageText(
         `🔍 <b>Tekshiruv yuborildi!</b>\n\n` +
-        `<b>${target.firstName}</b> haqidagi natija <b>tongda</b> keladi.`,
+        `<b>${escapeHtml(target.firstName)}</b> haqidagi natija <b>tongda</b> keladi.`,
         { parse_mode: "HTML" }
       ).catch(() => {});
     } else {
       found.engine.submitNightAction(found.player.playerId, targetPlayerId, "SHERIFF");
       found.engine.setSheriffShoot(targetPlayerId);
       found.engine.markNightRoleDone("SHERIFF");
-      await ctx.editMessageText(`🔫 Siz <b>${target.firstName}</b>ga o'q uzdingiz!`, { parse_mode: "HTML" }).catch(() => {});
+      await ctx.editMessageText(`🔫 Siz <b>${escapeHtml(target.firstName)}</b>ga o'q uzdingiz!`, { parse_mode: "HTML" }).catch(() => {});
     }
 
     if (found.engine.isNightComplete()) {
@@ -175,7 +181,7 @@ export function createNightActionCallbacks(controller: GameController): Composer
     found.engine.markNightRoleDone("ROBBER");
 
     await ctx.editMessageText(
-      t("night.robberWaiting", { name: target.firstName }),
+      t("night.robberWaiting", { name: escapeHtml(target.firstName) }),
       { parse_mode: "HTML" }
     ).catch(() => {});
 
@@ -255,7 +261,7 @@ export function createNightActionCallbacks(controller: GameController): Composer
     }
 
     await ctx.editMessageText(
-      `🎩 Siz <b>${target.firstName}</b>ga 3 ta sirli quti taklif qildingiz.\nU birini ochganda natija ma'lum bo'ladi.`,
+      `🎩 Siz <b>${escapeHtml(target.firstName)}</b>ga 3 ta sirli quti taklif qildingiz.\nU birini ochganda natija ma'lum bo'ladi.`,
       { parse_mode: "HTML" }
     ).catch(() => {});
 
@@ -325,8 +331,9 @@ export function createNightActionCallbacks(controller: GameController): Composer
       return;
     }
 
-    // Skip
+    // Skip — bu ham harakat, harakatsizlikka sanalmaydi
     if (targetValue === "skip") {
+      found.engine.markNightSkip(found.player.playerId);
       const actionRole = MAFIA_KILL_VOTERS.includes(found.player.role) ? found.player.role : role;
       found.engine.markNightRoleDone(actionRole);
       await ctx.answerCallbackQuery({ text: "🚫 O'tkazildi" }).catch(() => {});
@@ -368,7 +375,7 @@ export function createNightActionCallbacks(controller: GameController): Composer
     if (actionPrefix === "night_mafia") {
       found.engine.submitNightAction(found.player.playerId, targetPlayerId, found.player.role);
       found.engine.markNightRoleDone(found.player.role);
-      await ctx.editMessageText(`🤵🏼 Siz <b>${target.firstName}</b>ni tanladingiz.`, { parse_mode: "HTML" }).catch(() => {});
+      await ctx.editMessageText(`🤵🏼 Siz <b>${escapeHtml(target.firstName)}</b>ni tanladingiz.`, { parse_mode: "HTML" }).catch(() => {});
 
       // Boshqa mafiya a'zolariga xabar — kim kimni tanladi
       const mafiaMembers = found.engine.getMafiaMembers();
@@ -379,7 +386,7 @@ export function createNightActionCallbacks(controller: GameController): Composer
         try {
           await ctx.api.sendMessage(
             mate.telegramId.toString(),
-            `${roleEmoji} <b>${found.player.firstName}</b> (${roleName}) → <b>${target.firstName}</b>ni tanladi`,
+            `${roleEmoji} <b>${escapeHtml(found.player.firstName)}</b> (${roleName}) → <b>${escapeHtml(target.firstName)}</b>ni tanladi`,
             { parse_mode: "HTML" }
           );
         } catch { /* ignore */ }
@@ -389,7 +396,7 @@ export function createNightActionCallbacks(controller: GameController): Composer
     } else {
       found.engine.submitNightAction(found.player.playerId, targetPlayerId, role);
       found.engine.markNightRoleDone(role);
-      await ctx.editMessageText(`✅ Siz <b>${target.firstName}</b>ni tanladingiz.`, { parse_mode: "HTML" }).catch(() => {});
+      await ctx.editMessageText(`✅ Siz <b>${escapeHtml(target.firstName)}</b>ni tanladingiz.`, { parse_mode: "HTML" }).catch(() => {});
     }
 
     if (found.engine.isNightComplete()) {

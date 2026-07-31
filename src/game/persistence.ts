@@ -24,6 +24,7 @@ export interface SerializedEngine {
   votes: Array<[number, number]>;
   kamikazeTarget: number | null;
   confirmVotes: Array<[number, boolean]>;
+  nightSkips?: number[]; // ataylab "O'tkazish" bosganlar (eski snapshotlarda yo'q)
   pendingHangTarget: number | null;
   // Vaqt va xabar
   gameStartedAt: string | null; // ISO
@@ -150,6 +151,7 @@ export function serializeEngine(engine: GameEngine): SerializedEngine {
     votes: internal.votes,
     kamikazeTarget: internal.kamikazeTarget,
     confirmVotes: internal.confirmVotes,
+    nightSkips: internal.nightSkips,
     pendingHangTarget: engine.pendingHangTarget,
     gameStartedAt: engine.gameStartedAt ? engine.gameStartedAt.toISOString() : null,
     registrationMessageId: engine.registrationMessageId,
@@ -174,6 +176,7 @@ export function applySerializedToEngine(engine: GameEngine, s: SerializedEngine)
     votes: s.votes,
     kamikazeTarget: s.kamikazeTarget,
     confirmVotes: s.confirmVotes,
+    nightSkips: s.nightSkips ?? [],
   });
   engine.robberTargetResponse = s.robberTargetResponse;
   engine.pendingHangTarget = s.pendingHangTarget;

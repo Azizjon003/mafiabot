@@ -123,6 +123,9 @@ export const SOLO_ROLES: Role[] = ["KILLER", "MINER", "SNIPER", "ARCHER", "TRAIT
 // Geroy bilan kunduzi otish/himoyalanish faqat shu rollarga ruxsat
 export const HERO_ATTACK_ROLES: Role[] = ["SNIPER", "DON", "SHERIFF"];
 
+// Qorbobo sovg'asi — nishonga beriladigan haqiqiy pul miqdori
+export const SANTA_GIFT_AMOUNT = 25;
+
 // ========== XABAR SUR'ATI (PACING) ==========
 // Guruhga bir necha xabar ketma-ket ketganda o'yinchilar o'qishga ulgurmaydi.
 // Quyidagi pauzalar xabarlarni "birin-ketin" emas, bosqichma-bosqich chiqaradi.
