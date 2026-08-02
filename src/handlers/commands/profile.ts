@@ -600,11 +600,13 @@ async function openUsePage(ctx: BotContext) {
     hero: user.hero ? "✅" : "❌",
   });
 
+  // ✅ faqat predmet HAQIQATAN mavjud bo'lganda ko'rsatiladi — aks holda
+  // "yoqilgan" ko'rinib, o'yinda ishlamay qoladi (consumeForGame sanoqni tekshiradi).
   const flags = {
-    shield: user.useShieldNextGame,
-    document: user.useDocumentNextGame,
-    activeRole: user.useActiveRoleNextGame,
-    hero: user.useHeroNextGame,
+    shield: user.useShieldNextGame && user.shieldCount > 0,
+    document: user.useDocumentNextGame && user.documentCount > 0,
+    activeRole: user.useActiveRoleNextGame && !!user.activeRole,
+    hero: user.useHeroNextGame && !!user.hero,
     premiumEmoji: user.usePremiumEmoji,
   };
 

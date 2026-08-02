@@ -1,13 +1,13 @@
 # Test Hisoboti
-_Yaratildi: 2026-07-26T18:35:17.558Z_
+_Yaratildi: 2026-08-02T14:03:51.345Z_
 
 ## Umumiy natija
 
-- **Jami senariylar:** 182
-- **✅ O'tdi:** 165
+- **Jami senariylar:** 188
+- **✅ O'tdi:** 171
 - **❌ Xato:** 17
-- **Muvaffaqiyat foizi:** 90.7%
-- **Jami vaqt:** 35ms
+- **Muvaffaqiyat foizi:** 91.0%
+- **Jami vaqt:** 134ms
 
 ## Kategoriya bo'yicha
 
@@ -16,9 +16,9 @@ _Yaratildi: 2026-07-26T18:35:17.558Z_
 | Hujjat | 0 | 7 | ❌ (7 xato) |
 | Komissar | 3 | 9 | ❌ (6 xato) |
 | Aktiv rol | 19 | 22 | ❌ (3 xato) |
-| Shield | 21 | 22 | ❌ (1 xato) |
+| Shield | 24 | 25 | ❌ (1 xato) |
 | Mafiya | 8 | 8 | ✅ |
-| Shifokor | 16 | 16 | ✅ |
+| Shifokor | 17 | 17 | ✅ |
 | Kamonchi | 8 | 8 | ✅ |
 | Boshqa | 10 | 10 | ✅ |
 | Qorbola | 5 | 5 | ✅ |
@@ -34,7 +34,7 @@ _Yaratildi: 2026-07-26T18:35:17.558Z_
 | Kamikaze | 2 | 2 | ✅ |
 | Minior | 2 | 2 | ✅ |
 | Ayg'oqchi | 1 | 1 | ✅ |
-| Snayper | 4 | 4 | ✅ |
+| Snayper | 6 | 6 | ✅ |
 | Geroy | 2 | 2 | ✅ |
 
 ## ❌ Muvaffaqiyatsiz senariylar

@@ -133,26 +133,29 @@ export const inventoryService = {
   },
 
   // O'yin tugaganda chaqiriladi — shield/hujjat haqiqatan ishlatilgan bo'lsa iste'mol qiladi.
-  // Ishlatilmagan bo'lsa — inventory'da saqlanadi, use flag false qilinadi.
+  // Ishlatilmagan bo'lsa — inventory'da ham, use flag'da ham hech narsa o'zgarmaydi:
+  // o'yinchi har safar qo'lda qayta yoqib o'tirmasin, keyingi o'yinda avtomatik ishlaydi.
+  // Flag faqat OXIRGI predmet sarflanganda o'chadi (bo'sh inventar bilan yoniq turmasin).
   async finalizeForGame(
     userId: number,
     reserved: { shield: boolean; document: boolean },
     actuallyUsed: { shield: boolean; document: boolean },
   ): Promise<void> {
+    const usedShield = reserved.shield && actuallyUsed.shield;
+    const usedDocument = reserved.document && actuallyUsed.document;
+    if (!usedShield && !usedDocument) return;
+
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) return;
+
     const updates: any = {};
-    if (reserved.shield) {
-      if (actuallyUsed.shield) {
-        // Ishlatildi — DB'dan ayiramiz
-        updates.shieldCount = { decrement: 1 };
-      }
-      // Use flag har doim o'chadi (keyingi o'yin uchun qayta yoqilishi kerak)
-      updates.useShieldNextGame = false;
+    if (usedShield && user.shieldCount > 0) {
+      updates.shieldCount = { decrement: 1 };
+      if (user.shieldCount <= 1) updates.useShieldNextGame = false;
     }
-    if (reserved.document) {
-      if (actuallyUsed.document) {
-        updates.documentCount = { decrement: 1 };
-      }
-      updates.useDocumentNextGame = false;
+    if (usedDocument && user.documentCount > 0) {
+      updates.documentCount = { decrement: 1 };
+      if (user.documentCount <= 1) updates.useDocumentNextGame = false;
     }
     if (Object.keys(updates).length > 0) {
       await prisma.user.update({ where: { id: userId }, data: updates });

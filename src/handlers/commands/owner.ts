@@ -243,6 +243,8 @@ ownerCommand.command("giveshield", ownerOnly, async (ctx) => {
     return;
   }
   await inventoryRepo.addShield(target.id, 1);
+  // Sotib olgandagidek — keyingi o'yinda avtomatik ishlasin
+  await inventoryRepo.setUseFlag(target.id, "shield", true);
   await ctx.reply(
     `✅ ${mention(target.firstName, target.telegramId)}ga 🛡 Shield berildi`,
     { parse_mode: "HTML" }
@@ -257,6 +259,8 @@ ownerCommand.command("givedoc", ownerOnly, async (ctx) => {
     return;
   }
   await inventoryRepo.addDocument(target.id, 1);
+  // Sotib olgandagidek — keyingi o'yinda avtomatik ishlasin
+  await inventoryRepo.setUseFlag(target.id, "document", true);
   await ctx.reply(
     `✅ ${mention(target.firstName, target.telegramId)}ga 📜 Hujjat berildi`,
     { parse_mode: "HTML" }
@@ -1260,10 +1264,13 @@ ownerCommand.on("message:text", async (ctx, next) => {
         break;
       case "shield":
         await inventoryRepo.addShield(user.id, amount);
+        // Sovg'a bo'lsa — keyingi o'yinda avtomatik ishlasin (olib qo'yishda tegmaymiz)
+        if (amount > 0) await inventoryRepo.setUseFlag(user.id, "shield", true);
         resultText = `🛡 ${amount} ta Shield`;
         break;
       case "document":
         await inventoryRepo.addDocument(user.id, amount);
+        if (amount > 0) await inventoryRepo.setUseFlag(user.id, "document", true);
         resultText = `📜 ${amount} ta Hujjat`;
         break;
       case "points":

@@ -584,6 +584,55 @@ const inventoryScenarios: Scenario[] = [
     nights: [{ actions: { SNIPER: "Civ1" } }],
     afterNight: [{ dead: ["Civ1"] }],
   },
+  // Regressiya: killTargets — Map, shuning uchun Snayperdan KEYIN ishlaydigan qotil
+  // (Kamonchi/Qorbola/Qaroqchi/Professor) o'lim sababini almashtirib yuborardi va
+  // "cause !== SNIPER_KILL" tekshiruvi aldanib, Shield snayper o'qini to'sib qolardi.
+  {
+    name: "Shield Snayperdan saqlamaydi — Kamonchi ham otgan bo'lsa ham",
+    players: ["Sniper", "Archer", "Civ1", "Civ2"],
+    roles: { Sniper: "SNIPER", Archer: "ARCHER", Civ1: "CIVILIAN", Civ2: "CIVILIAN" },
+    inventory: { Civ1: { shield: true } },
+    nights: [{ actions: { SNIPER: "Civ1", ARCHER: "Civ1" } }],
+    // Shield sarflanmaydi ham — snayper o'qini to'smaydi
+    afterNight: [{ dead: ["Civ1"], inventory: { Civ1: { shield: true } } }],
+  },
+  {
+    name: "Shield Snayperdan saqlamaydi — Qorbola ham urgan bo'lsa ham",
+    players: ["Sniper", "Snow", "Civ1", "Civ2"],
+    roles: { Sniper: "SNIPER", Snow: "SNOWBOY", Civ1: "CIVILIAN", Civ2: "CIVILIAN" },
+    inventory: { Civ1: { shield: true } },
+    nights: [{ actions: { SNIPER: "Civ1", SNOWBOY: "Civ1" } }],
+    afterNight: [{ dead: ["Civ1"] }],
+  },
+  {
+    name: "Shield Snayperdan saqlamaydi — Qaroqchi ham o'ldirmoqchi bo'lsa ham",
+    players: ["Sniper", "Rob", "Civ1", "Civ2"],
+    roles: { Sniper: "SNIPER", Rob: "ROBBER", Civ1: "CIVILIAN", Civ2: "CIVILIAN" },
+    inventory: { Civ1: { shield: true } },
+    nights: [{ actions: { SNIPER: "Civ1" }, robber: { target: "Civ1", response: "refuse" } }],
+    afterNight: [{ dead: ["Civ1"] }],
+  },
+  {
+    name: "Snayper + Kamonchi + Shifokor — davolash ham o'tmaydi",
+    players: ["Sniper", "Archer", "Doctor", "Civ1", "Civ2"],
+    roles: { Sniper: "SNIPER", Archer: "ARCHER", Doctor: "DOCTOR", Civ1: "CIVILIAN", Civ2: "CIVILIAN" },
+    nights: [{ actions: { SNIPER: "Civ1", ARCHER: "Civ1", DOCTOR: "Civ1" } }],
+    afterNight: [{ dead: ["Civ1"] }],
+  },
+  {
+    name: "Snayper + Kamonchi — Tan qo'riqchisi o'zini tashlamaydi (tirik qoladi)",
+    players: ["Sniper", "Archer", "BG", "Civ1", "Civ2"],
+    roles: { Sniper: "SNIPER", Archer: "ARCHER", BG: "BODYGUARD", Civ1: "CIVILIAN", Civ2: "CIVILIAN" },
+    nights: [{ actions: { SNIPER: "Civ1", ARCHER: "Civ1", BODYGUARD: "Civ1" } }],
+    afterNight: [{ dead: ["Civ1"], alive: ["Sniper", "Archer", "BG", "Civ2"] }],
+  },
+  {
+    name: "Kamonchi + Tan qo'riqchisi (snaypersiz) — qo'riqchi jonini beradi",
+    players: ["Archer", "BG", "Civ1", "Civ2"],
+    roles: { Archer: "ARCHER", BG: "BODYGUARD", Civ1: "CIVILIAN", Civ2: "CIVILIAN" },
+    nights: [{ actions: { ARCHER: "Civ1", BODYGUARD: "Civ1" } }],
+    afterNight: [{ dead: ["BG"], alive: ["Archer", "Civ1", "Civ2"] }],
+  },
   {
     name: "Shield Qotil o'q'idan saqlaydi",
     players: ["Killer", "Civ1", "Civ2"],

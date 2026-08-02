@@ -541,6 +541,12 @@ export class GameEngine {
     const killTargets: Map<number, DeathCause> = new Map();
     const healedTargets: Set<number> = new Set();
     const visitorsMap: Map<number, number[]> = new Map(); // targetId -> visitorIds
+    // Snayper o'q uzgan nishonlar. killTargets — Map bo'lgani uchun undan KEYIN
+    // ishlaydigan rollar (Kamonchi, Qorbola, Qaroqchi, Professor) sababni almashtirib
+    // yuborishi mumkin edi — natijada "cause !== SNIPER_KILL" tekshiruvi aldanib,
+    // Shield va Tan qo'riqchisi snayper o'qini to'sib qolardi. Endi sabab emas,
+    // MANA SHU ro'yxat asos qilib olinadi (Shifokordagi healedTargets.delete kabi).
+    const sniperTargets: Set<number> = new Set();
 
     // 1. Kezuvchi bloklashi
     const hookerAction = this.nightActions.get("HOOKER");
@@ -1070,6 +1076,7 @@ export class GameEngine {
                 } else {
                   // Snayperchi — himoyani ham o'tadi, shuning uchun healedTargets dan olib tashlaymiz
                   healedTargets.delete(sniperAction.targetId);
+                  sniperTargets.add(sniperAction.targetId);
                   killTargets.set(sniperAction.targetId, "SNIPER_KILL");
                   // Daydi ko'rmaydi — visitor qo'shmaymiz
                   useCharge(actor, "SNIPER");
@@ -1338,7 +1345,8 @@ export class GameEngine {
         });
 
         const cause = killTargets.get(bodyguardAction.targetId);
-        if (cause && cause !== "SNIPER_KILL" && (cause as string) !== "INACTIVE") {
+        const sniped = sniperTargets.has(bodyguardAction.targetId);
+        if (cause && !sniped && cause !== "SNIPER_KILL" && (cause as string) !== "INACTIVE") {
           // Hujumni o'ziga oladi
           killTargets.delete(bodyguardAction.targetId);
           killTargets.set(guard.playerId, cause);
@@ -1363,14 +1371,19 @@ export class GameEngine {
       // Harakatsizlikdan o'lim — hech narsa saqlamaydi
       const isInactiveDeath = (cause as string) === "INACTIVE";
 
+      // Snayper o'qi hech narsa bilan to'silmaydi. Boshqa qotil ham shu odamni
+      // nishonga olgan bo'lsa `cause` almashib qolishi mumkin — shuning uchun
+      // sabab emas, sniperTargets ro'yxati tekshiriladi.
+      const isSniped = cause === "SNIPER_KILL" || sniperTargets.has(targetId);
+
       // Shifokor davolagani tekshiruv (sniper va inaktiv bundan mustasno)
-      if (healedTargets.has(targetId) && cause !== "SNIPER_KILL" && !isInactiveDeath) {
+      if (healedTargets.has(targetId) && !isSniped && !isInactiveDeath) {
         result.saved.push(target);
         continue;
       }
 
       // Shield tekshiruvi — 1 o'yinda 1 marta (sniper va inaktiv bundan mustasno)
-      if (target.hasShieldActive && cause !== "SNIPER_KILL" && !isInactiveDeath) {
+      if (target.hasShieldActive && !isSniped && !isInactiveDeath) {
         target.hasShieldActive = false;
         target.shieldCharges = 0;
         result.saved.push(target);
