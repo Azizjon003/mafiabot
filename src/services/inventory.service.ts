@@ -39,6 +39,23 @@ export const inventoryService = {
     return { success: true, price };
   },
 
+  // Snayper o'qi sotib olish — avtomatik yoqiladi
+  async buyBullet(userId: number): Promise<{ success: boolean; error?: string; price?: number }> {
+    const price = await pricingService.get(PRICE_KEYS.BULLET);
+    const currency = await pricingService.getCurrency(PRICE_KEYS.BULLET);
+    const spent = currency === "diamond"
+      ? await economyService.spendDiamonds(userId, price, "buy_bullet")
+      : await economyService.spendMoney(userId, price, "buy_bullet");
+    if (!spent) {
+      const sym = currency === "diamond" ? "💎" : "💰";
+      const cur = currency === "diamond" ? "olmosingiz" : "pulingiz";
+      return { success: false, error: `Yetarli ${cur} yo'q! (${price}${sym})` };
+    }
+    await inventoryRepo.addBullet(userId, 1);
+    await inventoryRepo.setUseFlag(userId, "bullet", true);
+    return { success: true, price };
+  },
+
   // Aktiv rol sotib olish — valyuta admin paneldan sozlanadi (olmos yoki pul)
   async buyActiveRole(userId: number, role: Role): Promise<{ success: boolean; error?: string; price?: number }> {
     const key = rolePriceKey(role);
@@ -64,7 +81,7 @@ export const inventoryService = {
   },
 
   // Foydalanish flag'ini almashtirish (toggle)
-  async toggleUseFlag(userId: number, flag: "shield" | "document" | "activeRole" | "hero" | "premiumEmoji"): Promise<{ enabled: boolean; error?: string }> {
+  async toggleUseFlag(userId: number, flag: "shield" | "document" | "bullet" | "activeRole" | "hero" | "premiumEmoji"): Promise<{ enabled: boolean; error?: string }> {
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) return { enabled: false, error: "User topilmadi" };
 
@@ -74,6 +91,9 @@ export const inventoryService = {
     }
     if (flag === "document" && user.documentCount < 1) {
       return { enabled: false, error: "Sizda Hujjat yo'q!" };
+    }
+    if (flag === "bullet" && user.bulletCount < 1) {
+      return { enabled: false, error: "Sizda Snayper o'qi yo'q!" };
     }
     if (flag === "activeRole" && !user.activeRole) {
       return { enabled: false, error: "Sizda Aktiv rol yo'q!" };
@@ -86,6 +106,7 @@ export const inventoryService = {
     const fieldMap = {
       shield: "useShieldNextGame",
       document: "useDocumentNextGame",
+      bullet: "useBulletNextGame",
       activeRole: "useActiveRoleNextGame",
       hero: "useHeroNextGame",
       premiumEmoji: "usePremiumEmoji",
@@ -101,6 +122,7 @@ export const inventoryService = {
   async consumeForGame(userId: number): Promise<{
     shieldUsed: boolean;
     documentUsed: boolean;
+    bulletUsed: boolean;
     activeRole: Role | null;
     heroUsed: boolean;
   }> {
@@ -108,11 +130,12 @@ export const inventoryService = {
       where: { id: userId },
       include: { hero: true },
     });
-    if (!user) return { shieldUsed: false, documentUsed: false, activeRole: null, heroUsed: false };
+    if (!user) return { shieldUsed: false, documentUsed: false, bulletUsed: false, activeRole: null, heroUsed: false };
 
     const result = {
       shieldUsed: user.useShieldNextGame && user.shieldCount > 0,
       documentUsed: user.useDocumentNextGame && user.documentCount > 0,
+      bulletUsed: user.useBulletNextGame && user.bulletCount > 0,
       activeRole: user.useActiveRoleNextGame ? user.activeRole : null,
       heroUsed: user.useHeroNextGame && !!user.hero,
     };
@@ -138,12 +161,13 @@ export const inventoryService = {
   // Flag faqat OXIRGI predmet sarflanganda o'chadi (bo'sh inventar bilan yoniq turmasin).
   async finalizeForGame(
     userId: number,
-    reserved: { shield: boolean; document: boolean },
-    actuallyUsed: { shield: boolean; document: boolean },
+    reserved: { shield: boolean; document: boolean; bullet?: boolean },
+    actuallyUsed: { shield: boolean; document: boolean; bullet?: boolean },
   ): Promise<void> {
     const usedShield = reserved.shield && actuallyUsed.shield;
     const usedDocument = reserved.document && actuallyUsed.document;
-    if (!usedShield && !usedDocument) return;
+    const usedBullet = !!reserved.bullet && !!actuallyUsed.bullet;
+    if (!usedShield && !usedDocument && !usedBullet) return;
 
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) return;
@@ -156,6 +180,10 @@ export const inventoryService = {
     if (usedDocument && user.documentCount > 0) {
       updates.documentCount = { decrement: 1 };
       if (user.documentCount <= 1) updates.useDocumentNextGame = false;
+    }
+    if (usedBullet && user.bulletCount > 0) {
+      updates.bulletCount = { decrement: 1 };
+      if (user.bulletCount <= 1) updates.useBulletNextGame = false;
     }
     if (Object.keys(updates).length > 0) {
       await prisma.user.update({ where: { id: userId }, data: updates });

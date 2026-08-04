@@ -71,6 +71,7 @@ export interface ExpectedState {
 
 export interface PlayerInventory {
   shield?: boolean;
+  bullet?: boolean;
   hero?: boolean;
   document?: boolean;
   preferredRole?: Role;
@@ -138,6 +139,7 @@ export function createEngine(scenario: Scenario) {
     const inv = scenario.inventory?.[name];
     if (inv) {
       if (inv.shield) p.hasShieldActive = true;
+      if (inv.bullet) p.hasBulletActive = true;
       if (inv.hero) p.hasHeroActive = true;
       if (inv.document) p.hasDocumentActive = true;
       if (inv.preferredRole) p.preferredRole = inv.preferredRole;
@@ -236,18 +238,20 @@ async function runVote(engine: GameEngine, id: (n: string) => number, input: Vot
     if (counts.yes > counts.no) {
       // Osish — kill manually (engine'da alohida method yo'q; processVotes ichida emas)
       result.votedOut.isAlive = false;
-      // Kamikaze?
+      // Kamikaze — production bilan bir xil yo'l: nishon tanlanadi, keyin qo'llanadi
       if (result.votedOut.role === "KAMIKAZE" && input.kamikaze) {
-        const k = engine.getPlayer(id(input.kamikaze));
-        if (k) k.isAlive = false;
+        engine.setKamikazeTarget(id(input.kamikaze));
+        const victim = engine.applyKamikazeTarget();
+        if (victim) result.kamikazeTarget = victim;
       }
     }
   } else if (result.votedOut && !input.confirm) {
     // Confirm fazasi belgilanmagan — avtomatik osish
     result.votedOut.isAlive = false;
     if (result.votedOut.role === "KAMIKAZE" && input.kamikaze) {
-      const k = engine.getPlayer(id(input.kamikaze));
-      if (k) k.isAlive = false;
+      engine.setKamikazeTarget(id(input.kamikaze));
+      const victim = engine.applyKamikazeTarget();
+      if (victim) result.kamikazeTarget = victim;
     }
   }
 
@@ -290,6 +294,8 @@ function assertState(
       if (!p) { errors.push(`[${label}] ${name} topilmadi`); continue; }
       if (inv.shield !== undefined && p.hasShieldActive !== inv.shield)
         errors.push(`[${label}] ${name}.shield kutilgan: ${inv.shield}, bo'ldi: ${p.hasShieldActive}`);
+      if (inv.bullet !== undefined && !!p.hasBulletActive !== inv.bullet)
+        errors.push(`[${label}] ${name}.bullet kutilgan: ${inv.bullet}, bo'ldi: ${!!p.hasBulletActive}`);
       if (inv.hero !== undefined && p.hasHeroActive !== inv.hero)
         errors.push(`[${label}] ${name}.hero kutilgan: ${inv.hero}, bo'ldi: ${p.hasHeroActive}`);
       if (inv.document !== undefined && !!p.hasDocumentActive !== inv.document)

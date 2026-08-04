@@ -25,6 +25,10 @@ export interface PlayerState {
   reservedShield: boolean; // O'yin boshida shield reserve qilinganmi (finalize uchun)
   hasDocumentActive?: boolean; // Hujjat faolmi (komissar tekshiruvini aldash)
   reservedDocument: boolean; // O'yin boshida hujjat reserve qilinganmi
+  // Snayper o'qi — Shieldga teskari. Bu o'yinchining tungi o'ldirishi barcha
+  // himoyani yorib o'tadi va nishonning Shieldini parchalab tashlaydi.
+  hasBulletActive?: boolean; // O'q hali ishlatilmaganmi
+  reservedBullet?: boolean; // O'yin boshida o'q reserve qilinganmi (finalize uchun)
   preferredRole?: Role; // Aktiv rol — tarqatishda ustuvor
   // Sotqin
   originalRole?: Role; // Sotqin uchun — asl rol

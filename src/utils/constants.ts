@@ -165,6 +165,10 @@ export const PACING = {
   ROLE_INTRO_MS: 1500,      // rol xabari → jamoa tanishtiruvi orasida
   MAFIA_SYNC_MS: 800,       // mafiya sheriklariga "kim kimni tanladi" xabarlari orasida
   GAME_END_MS: 2500,        // yakuniy jadval → shaxsiy natijalar orasida
+  // Osilgan Kamikaze nishon tanlashi uchun beriladigan vaqt. Bu QATTIQ chegara emas —
+  // o'yinchi tanlashi bilan timer darhol ishga tushadi (engine.fireTimerNow()).
+  // Shuning uchun uzoq qo'yilgan: DM push kelib, o'qib, tanlashga ulgursin.
+  KAMIKAZE_PICK_MS: 45000,
 };
 
 // ========== CHARGE LIMITS (ZARYAD CHEGARALARI) ==========

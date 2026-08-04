@@ -39,6 +39,9 @@ model User {
   // Inventar (miqdorli)
   shieldCount     Int @default(0)
   documentCount   Int @default(0)
+  // Snayper o'qi — Shieldga teskari predmet. O'ldirish zarbasi barcha himoyani
+  // (Shield, Shifokor, Tan qo'riqchisi) yorib o'tadi va Shieldni parchalab tashlaydi.
+  bulletCount     Int @default(0)
 
   // Aktiv rol (sotib olingan)
   activeRole      Role?
@@ -46,6 +49,7 @@ model User {
   // Keyingi o'yinga foydalanish flaglari
   useShieldNextGame    Boolean @default(false)
   useDocumentNextGame  Boolean @default(false)
+  useBulletNextGame    Boolean @default(false)
   useActiveRoleNextGame Boolean @default(false)
   useHeroNextGame      Boolean @default(false)
   usePremiumEmoji      Boolean @default(false)

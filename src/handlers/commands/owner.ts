@@ -112,6 +112,7 @@ ownerCommand.command("setprice", ownerOnly, async (ctx) => {
       "⚠️ Foydalanish: /setprice <key> <value>\n\n" +
       "Misollar:\n" +
       "/setprice price_shield 60\n" +
+      "/setprice price_bullet 14\n" +
       "/setprice price_role_SNIPER 500\n" +
       "/setprice price_chest_basic 12000",
     );
@@ -251,6 +252,22 @@ ownerCommand.command("giveshield", ownerOnly, async (ctx) => {
   );
 });
 
+// /givebullet (reply or id) — snayper o'qi berish
+ownerCommand.command("givebullet", ownerOnly, async (ctx) => {
+  const target = await getTargetUser(ctx);
+  if (!target) {
+    await ctx.reply("⚠️ Reply qiling yoki ID kiriting");
+    return;
+  }
+  await inventoryRepo.addBullet(target.id, 1);
+  // Sotib olgandagidek — keyingi o'yinda avtomatik ishlasin
+  await inventoryRepo.setUseFlag(target.id, "bullet", true);
+  await ctx.reply(
+    `✅ ${mention(target.firstName, target.telegramId)}ga 🎯 Snayper o'qi berildi`,
+    { parse_mode: "HTML" }
+  );
+});
+
 // /givedoc (reply or id) — hujjat berish
 ownerCommand.command("givedoc", ownerOnly, async (ctx) => {
   const target = await getTargetUser(ctx);
@@ -319,7 +336,7 @@ ownerCommand.callbackQuery("ap:roleprices", ownerOnly, async (ctx) => {
 
 // Bu kalit sotib olinadigan item (valyuta o'zgartirish mumkin)
 const CONFIGURABLE_CURRENCY_KEYS = new Set([
-  "price_shield", "price_document", "price_hero_create", "price_vip_month",
+  "price_shield", "price_bullet", "price_document", "price_hero_create", "price_vip_month",
   "price_hero_points_1000", "price_hero_prot", "price_hero_charge", "price_hero_rename",
   "price_chest_basic", "price_chest_silver", "price_chest_gold",
 ]);
@@ -459,7 +476,7 @@ ownerCommand.callbackQuery("ap:gift", ownerOnly, async (ctx) => {
   ).catch(() => {});
 });
 
-ownerCommand.callbackQuery(/^ap:gift:(money|diamond|shield|document|points|vip)$/, ownerOnly, async (ctx) => {
+ownerCommand.callbackQuery(/^ap:gift:(money|diamond|shield|bullet|document|points|vip)$/, ownerOnly, async (ctx) => {
   if (!ctx.from) return;
   const giftType = ctx.match[1];
   pendingInputs.set(ctx.from.id.toString(), { type: "gift", giftType });
@@ -468,6 +485,7 @@ ownerCommand.callbackQuery(/^ap:gift:(money|diamond|shield|document|points|vip)$
     money: "💰 Pul",
     diamond: "💎 Olmos",
     shield: "🛡 Shield (1 dona)",
+    bullet: "🎯 Snayper o'qi (1 dona)",
     document: "📜 Hujjat (1 dona)",
     points: "⭐ Geroy ball",
     vip: "⭐️ VIP (30 kun)",
@@ -1267,6 +1285,11 @@ ownerCommand.on("message:text", async (ctx, next) => {
         // Sovg'a bo'lsa — keyingi o'yinda avtomatik ishlasin (olib qo'yishda tegmaymiz)
         if (amount > 0) await inventoryRepo.setUseFlag(user.id, "shield", true);
         resultText = `🛡 ${amount} ta Shield`;
+        break;
+      case "bullet":
+        await inventoryRepo.addBullet(user.id, amount);
+        if (amount > 0) await inventoryRepo.setUseFlag(user.id, "bullet", true);
+        resultText = `🎯 ${amount} ta Snayper o'qi`;
         break;
       case "document":
         await inventoryRepo.addDocument(user.id, amount);

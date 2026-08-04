@@ -592,13 +592,23 @@ export class GameController {
       if (voteResult.votedOut?.role === "KAMIKAZE") {
         const aliveNow = engine.getAlivePlayers();
         const kb = kamikazeTargetKeyboard(aliveNow);
-        await this.notifier.sendToPlayer(
+        const promptMsgId = await this.notifier.sendToPlayer(
           voteResult.votedOut.telegramId,
           t("game.kamikazePrompt"),
           kb
         );
 
-        engine.setTimer(15000, async () => {
+        // DM yetib bormadi (o'yinchi bot bilan shaxsiy chat ochmagan yoki bloklagan) —
+        // jimgina kutib o'tirmaymiz, guruhga sababini aytamiz.
+        if (promptMsgId === undefined) {
+          logger.warn(
+            { telegramId: voteResult.votedOut.telegramId.toString(), gameId: engine.gameId },
+            "Kamikaze DM yuborilmadi — nishon tanlash oynasi ochilmadi"
+          );
+          await this.notifier.sendToGroup(chatTelegramId, t("game.kamikazeNoDm"));
+        }
+
+        engine.setTimer(PACING.KAMIKAZE_PICK_MS, async () => {
           // Kamikaze tanlagan nishonni endi qo'llaymiz (tanlamagan bo'lsa null qaytadi).
           // processVotes paytida nishon hali tanlanmagan edi — shu yerda o'ldiriladi.
           const kamikazeVictim = engine.applyKamikazeTarget();
@@ -766,13 +776,15 @@ export class GameController {
         // Shield va Hujjat finalize — ishlatilgan bo'lsa iste'mol, bo'lmasa saqlanadi
         // Shield used = hasShieldActive false bo'ldi (hujum bor edi va shield o'z ishini qildi)
         // Document used = hasDocumentActive false bo'ldi (Komissar tekshirdi va yomon rolni tinch ko'rsatdi)
+        // Bullet used = hasBulletActive false bo'ldi (o'q kimningdir himoyasini yorib o'tdi)
         const shieldUsed = player.reservedShield && !player.hasShieldActive;
         const documentUsed = player.reservedDocument && !player.hasDocumentActive;
+        const bulletUsed = !!player.reservedBullet && !player.hasBulletActive;
         const { inventoryService } = await import("../services/inventory.service");
         await inventoryService.finalizeForGame(
           player.userId,
-          { shield: player.reservedShield, document: player.reservedDocument },
-          { shield: shieldUsed, document: documentUsed },
+          { shield: player.reservedShield, document: player.reservedDocument, bullet: !!player.reservedBullet },
+          { shield: shieldUsed, document: documentUsed, bullet: bulletUsed },
         ).catch((e) => logger.error(e, `finalizeForGame xatolik userId=${player.userId}`));
       } catch (e) {
         logger.error(e, `Statistika yozishda xatolik (userId: ${player.userId})`);

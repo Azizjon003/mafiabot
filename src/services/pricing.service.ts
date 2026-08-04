@@ -6,6 +6,7 @@ export const PRICE_KEYS = {
   // Dokon (💎 olmosda)
   SHIELD: "price_shield",                        // 50💎
   DOCUMENT: "price_document",                    // 30💎
+  BULLET: "price_bullet",                        // Snayper o'qi — Shieldga teskari
   HERO_CREATE: "price_hero_create",              // 100💎
   VIP_MONTH: "price_vip_month",                  // 100💎
   HERO_POINTS_1000: "price_hero_points_1000",    // 100💎 → 1000 ball
@@ -54,6 +55,7 @@ const DEFAULTS: Record<string, number> = {
   // Do'kon (💎 olmosda) — olmos daromadiga moslab REBALANS (~1.5💎/yutuq)
   [PRICE_KEYS.SHIELD]: 10,                    // 10💎 (~7 yutuq) — eski 15
   [PRICE_KEYS.DOCUMENT]: 6,                   // 6💎 (~4 yutuq) — eski 10
+  [PRICE_KEYS.BULLET]: 14,                    // 14💎 — Shielddan qimmatroq (hujum > himoya)
   [PRICE_KEYS.HERO_CREATE]: 25,              // 25💎 (~17 yutuq) — eski 30
   [PRICE_KEYS.VIP_MONTH]: 20,                 // 20💎/oy (~13 yutuq)
   [PRICE_KEYS.HERO_POINTS_1000]: 12,          // 12💎 → 1000 ball — eski 20
@@ -130,6 +132,7 @@ export type Currency = "diamond" | "money";
 // Default valyutalar
 const DEFAULT_CURRENCIES: Record<string, Currency> = {
   [PRICE_KEYS.SHIELD]: "diamond",
+  [PRICE_KEYS.BULLET]: "diamond",
   [PRICE_KEYS.DOCUMENT]: "diamond",
   [PRICE_KEYS.HERO_CREATE]: "diamond",
   [PRICE_KEYS.VIP_MONTH]: "diamond",

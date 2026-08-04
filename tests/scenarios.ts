@@ -813,5 +813,151 @@ for (let n = 1; n <= 4; n++) {
   });
 }
 
-export const scenarios: Scenario[] = [...manual, ...generated, ...inventoryScenarios, ...shieldGen, ...docGen];
+
+// ==================== KAMIKAZE + SNAYPER O'QI (yangi) ====================
+// Kamikaze: osilganda tanlagan odamni olib ketadi VA tunda uni o'ldirgan qotil ham portlaydi.
+// Snayper o'qi: Shieldga teskari inventar — barcha himoyani yorib o'tadi, Shieldni parchalaydi.
+const kamikazeAndBullet: Scenario[] = [
+  // ==================== KAMIKAZE ====================
+  {
+    name: "Kamikaze osilganda tanlagan odamni o'zi bilan olib ketadi",
+    players: ["Kam", "Don", "Civ1", "Civ2", "Civ3"],
+    roles: { Kam: "KAMIKAZE", Don: "DON", Civ1: "CIVILIAN", Civ2: "CIVILIAN", Civ3: "CIVILIAN" },
+    votes: [{ votes: { Don: "Kam", Civ1: "Kam", Civ2: "Kam", Civ3: "Kam" }, kamikaze: "Civ1" }],
+    afterVote: [{ dead: ["Kam", "Civ1"], alive: ["Don", "Civ2", "Civ3"] }],
+  },
+  {
+    name: "Kamikaze osilib hech kimni tanlamasa — faqat o'zi o'ladi",
+    players: ["Kam", "Don", "Civ1", "Civ2"],
+    roles: { Kam: "KAMIKAZE", Don: "DON", Civ1: "CIVILIAN", Civ2: "CIVILIAN" },
+    votes: [{ votes: { Don: "Kam", Civ1: "Kam", Civ2: "Kam" } }],
+    afterVote: [{ dead: ["Kam"], alive: ["Don", "Civ1", "Civ2"] }],
+  },
+  {
+    name: "Kamikaze mafiyani o'zi bilan olib ketadi (osilganda)",
+    players: ["Kam", "Don", "Mafia", "Civ1", "Civ2"],
+    roles: { Kam: "KAMIKAZE", Don: "DON", Mafia: "MAFIA", Civ1: "CIVILIAN", Civ2: "CIVILIAN" },
+    votes: [{ votes: { Civ1: "Kam", Civ2: "Kam", Don: "Kam" }, kamikaze: "Don" }],
+    afterVote: [{ dead: ["Kam", "Don"], alive: ["Mafia", "Civ1", "Civ2"] }],
+  },
+  {
+    name: "Mafiya tunda Kamikazeni o'ldirsa — Don ham portlashdan o'ladi",
+    players: ["Don", "Kam", "Civ1", "Civ2", "Civ3"],
+    roles: { Don: "DON", Kam: "KAMIKAZE", Civ1: "CIVILIAN", Civ2: "CIVILIAN", Civ3: "CIVILIAN" },
+    nights: [{ mafiaVotes: [{ voter: "Don", target: "Kam" }] }],
+    afterNight: [{ dead: ["Kam", "Don"], alive: ["Civ1", "Civ2", "Civ3"] }],
+  },
+  {
+    name: "Qotil tunda Kamikazeni o'ldirsa — Qotil ham o'ladi",
+    players: ["Killer", "Kam", "Civ1", "Civ2"],
+    roles: { Killer: "KILLER", Kam: "KAMIKAZE", Civ1: "CIVILIAN", Civ2: "CIVILIAN" },
+    nights: [{ actions: { KILLER: "Kam" } }],
+    afterNight: [{ dead: ["Kam", "Killer"], alive: ["Civ1", "Civ2"] }],
+  },
+  {
+    name: "Kamikaze tunda Shifokor saqlab qolsa — portlash bo'lmaydi",
+    players: ["Don", "Doctor", "Kam", "Civ1", "Civ2"],
+    roles: { Don: "DON", Doctor: "DOCTOR", Kam: "KAMIKAZE", Civ1: "CIVILIAN", Civ2: "CIVILIAN" },
+    nights: [{ mafiaVotes: [{ voter: "Don", target: "Kam" }], actions: { DOCTOR: "Kam" } }],
+    afterNight: [{ alive: ["Don", "Doctor", "Kam", "Civ1", "Civ2"] }],
+  },
+  {
+    name: "Kamikaze Shieldi ishlasa — portlash bo'lmaydi",
+    players: ["Killer", "Kam", "Civ1", "Civ2"],
+    roles: { Killer: "KILLER", Kam: "KAMIKAZE", Civ1: "CIVILIAN", Civ2: "CIVILIAN" },
+    inventory: { Kam: { shield: true } },
+    nights: [{ actions: { KILLER: "Kam" } }],
+    afterNight: [{ alive: ["Killer", "Kam", "Civ1", "Civ2"], inventory: { Kam: { shield: false } } }],
+  },
+  {
+    name: "Snayper Kamikazeni otsa — Snayper ham portlashdan o'ladi",
+    players: ["Sniper", "Kam", "Civ1", "Civ2"],
+    roles: { Sniper: "SNIPER", Kam: "KAMIKAZE", Civ1: "CIVILIAN", Civ2: "CIVILIAN" },
+    nights: [{ actions: { SNIPER: "Kam" } }],
+    afterNight: [{ dead: ["Kam", "Sniper"], alive: ["Civ1", "Civ2"] }],
+  },
+
+  // ==================== SNAYPER O'QI (inventar) ====================
+  {
+    name: "Snayper o'qi Shieldni parchalaydi — nishon o'ladi, o'q sarflanadi",
+    players: ["Killer", "Civ1", "Civ2", "Civ3"],
+    roles: { Killer: "KILLER", Civ1: "CIVILIAN", Civ2: "CIVILIAN", Civ3: "CIVILIAN" },
+    inventory: { Killer: { bullet: true }, Civ1: { shield: true } },
+    nights: [{ actions: { KILLER: "Civ1" } }],
+    afterNight: [{
+      dead: ["Civ1"],
+      alive: ["Killer", "Civ2", "Civ3"],
+      inventory: { Civ1: { shield: false }, Killer: { bullet: false } },
+    }],
+  },
+  {
+    name: "Snayper o'qi Shifokor davolashini yorib o'tadi",
+    players: ["Killer", "Doctor", "Civ1", "Civ2"],
+    roles: { Killer: "KILLER", Doctor: "DOCTOR", Civ1: "CIVILIAN", Civ2: "CIVILIAN" },
+    inventory: { Killer: { bullet: true } },
+    nights: [{ actions: { KILLER: "Civ1", DOCTOR: "Civ1" } }],
+    afterNight: [{ dead: ["Civ1"], inventory: { Killer: { bullet: false } } }],
+  },
+  {
+    name: "Snayper o'qi Tan qo'riqchisini yorib o'tadi — qo'riqchi tirik qoladi",
+    players: ["Killer", "BG", "Civ1", "Civ2"],
+    roles: { Killer: "KILLER", BG: "BODYGUARD", Civ1: "CIVILIAN", Civ2: "CIVILIAN" },
+    inventory: { Killer: { bullet: true } },
+    nights: [{ actions: { KILLER: "Civ1", BODYGUARD: "Civ1" } }],
+    afterNight: [{
+      dead: ["Civ1"],
+      alive: ["Killer", "BG", "Civ2"],
+      inventory: { Killer: { bullet: false } },
+    }],
+  },
+  {
+    name: "Snayper o'qi himoyasiz odamda SARFLANMAYDI",
+    players: ["Killer", "Civ1", "Civ2", "Civ3"],
+    roles: { Killer: "KILLER", Civ1: "CIVILIAN", Civ2: "CIVILIAN", Civ3: "CIVILIAN" },
+    inventory: { Killer: { bullet: true } },
+    nights: [{ actions: { KILLER: "Civ1" } }],
+    afterNight: [{ dead: ["Civ1"], inventory: { Killer: { bullet: true } } }],
+  },
+  {
+    name: "Snayper o'qi tinch rolda sarflanmaydi (hech kimni o'ldirmadi)",
+    players: ["Doctor", "Don", "Civ1", "Civ2"],
+    roles: { Doctor: "DOCTOR", Don: "DON", Civ1: "CIVILIAN", Civ2: "CIVILIAN" },
+    inventory: { Doctor: { bullet: true } },
+    nights: [{ actions: { DOCTOR: "Civ1" }, mafiaVotes: [{ voter: "Don", target: "Civ1" }] }],
+    afterNight: [{ alive: ["Doctor", "Don", "Civ1", "Civ2"], inventory: { Doctor: { bullet: true } } }],
+  },
+  {
+    name: "Snayper o'qi Mafiya o'ldirishida ham ishlaydi (Don o'q egasi)",
+    players: ["Don", "Civ1", "Civ2", "Civ3"],
+    roles: { Don: "DON", Civ1: "CIVILIAN", Civ2: "CIVILIAN", Civ3: "CIVILIAN" },
+    inventory: { Don: { bullet: true }, Civ1: { shield: true } },
+    nights: [{ mafiaVotes: [{ voter: "Don", target: "Civ1" }] }],
+    afterNight: [{
+      dead: ["Civ1"],
+      inventory: { Civ1: { shield: false }, Don: { bullet: false } },
+    }],
+  },
+  {
+    name: "Snayper o'qi Kamonchida ham ishlaydi",
+    players: ["Archer", "Civ1", "Civ2", "Civ3"],
+    roles: { Archer: "ARCHER", Civ1: "CIVILIAN", Civ2: "CIVILIAN", Civ3: "CIVILIAN" },
+    inventory: { Archer: { bullet: true }, Civ1: { shield: true } },
+    nights: [{ actions: { ARCHER: "Civ1" } }],
+    afterNight: [{ dead: ["Civ1"], inventory: { Archer: { bullet: false }, Civ1: { shield: false } } }],
+  },
+  {
+    name: "Snayper o'qi 2-tunda ishlamaydi (1 marta sarflanadi)",
+    players: ["Killer", "Civ1", "Civ2", "Civ3"],
+    roles: { Killer: "KILLER", Civ1: "CIVILIAN", Civ2: "CIVILIAN", Civ3: "CIVILIAN" },
+    inventory: { Killer: { bullet: true }, Civ1: { shield: true }, Civ2: { shield: true } },
+    nights: [{ actions: { KILLER: "Civ1" } }, { actions: { KILLER: "Civ2" } }],
+    afterNight: [
+      { dead: ["Civ1"], inventory: { Killer: { bullet: false } } },
+      // 2-tun: Civ2 shieldi ishlaydi, tirik qoladi
+      { alive: ["Killer", "Civ2", "Civ3"], inventory: { Civ2: { shield: false } } },
+    ],
+  },
+];
+
+export const scenarios: Scenario[] = [...manual, ...generated, ...inventoryScenarios, ...shieldGen, ...docGen, ...kamikazeAndBullet];
 

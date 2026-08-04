@@ -72,7 +72,7 @@ class GameManager {
     // Yangi inventory tizimi — flag bo'lsa shield/document/activeRole/hero ishlatiladi
     const used = await inventoryService.consumeForGame(user.id);
 
-    if (used.activeRole || used.shieldUsed || used.documentUsed || used.heroUsed) {
+    if (used.activeRole || used.shieldUsed || used.documentUsed || used.bulletUsed || used.heroUsed) {
       logger.info(
         {
           userId: user.id,
@@ -110,6 +110,8 @@ class GameManager {
       reservedShield: used.shieldUsed,
       hasDocumentActive: used.documentUsed,
       reservedDocument: used.documentUsed,
+      hasBulletActive: used.bulletUsed,
+      reservedBullet: used.bulletUsed,
       preferredRole: used.activeRole ?? undefined,
       inactiveNights: 0,
     };

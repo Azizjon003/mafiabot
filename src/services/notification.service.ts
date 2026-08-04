@@ -110,6 +110,9 @@ export class NotificationService {
     if (player.hasShieldActive) {
       roleMessage += t("roleAssigned.shieldActive");
     }
+    if (player.hasBulletActive) {
+      roleMessage += t("roleAssigned.bulletActive");
+    }
     if (player.hasHeroActive) {
       roleMessage += t("roleAssigned.heroActive");
     }
@@ -157,6 +160,12 @@ export class NotificationService {
       await sleep(PACING.DEATH_STORY_MS);
     }
 
+    // Snayper o'qi Shieldni parchalab tashladi — anonim e'lon (o'limi pastda chiqadi)
+    for (const ev of result.events.filter((e) => e.type === "SHIELD_SHATTERED")) {
+      await this.sendToGroup(chatId, ev.message);
+      await sleep(PACING.DEATH_STORY_MS);
+    }
+
     // O'limlar — har biri alohida xabar, orasida pauza
     if (result.killed.length === 0) {
       // Hech kim o'lmadi
@@ -184,6 +193,21 @@ export class NotificationService {
         : t("game.playerDied", { name: nameMention, roleInline });
 
       await this.sendToGroup(chatId, text);
+      await sleep(PACING.DEATH_STORY_MS);
+    }
+
+    // Kamikaze tunda portladi — o'ldirgan odamni ham olib ketdi
+    for (const ev of result.events.filter((e) => e.type === "KAMIKAZE_NIGHT_EXPLODE")) {
+      const kamikaze = result.killed.find((k) => k.player.playerId === ev.actorId)?.player;
+      const killer = result.killed.find((k) => k.player.playerId === ev.targetId)?.player;
+      if (!kamikaze || !killer) continue;
+      await this.sendToGroup(
+        chatId,
+        t("game.kamikazeNightExplode", {
+          name: mention(kamikaze.firstName, kamikaze.telegramId),
+          killer: mention(killer.firstName, killer.telegramId),
+        })
+      );
       await sleep(PACING.DEATH_STORY_MS);
     }
 

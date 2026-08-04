@@ -113,7 +113,7 @@ export const TEXT_DEFAULTS: Record<string, string> = {
   "deathStory.WARLOCK_KILL":
     "💀 Tunda <b>{name}</b>{roleInline}ga ⚡️ Koldunning qorong'u qarg'ishi tushdi.",
   "deathStory.KAMIKAZE_KILL":
-    "💣 <b>{name}</b>{roleInline} osilgan Kamikaze portlashi natijasida halok bo'ldi.",
+    "💣 <b>{name}</b>{roleInline} Kamikaze portlashi natijasida halok bo'ldi.",
   "deathStory.ROBBER_KILL":
     "💀 Tunda <b>{name}</b>{roleInline} 👺 Qaroqchining hujumida pul uchun o'ldirildi.",
   "deathStory.PROFESSOR_KILL":
@@ -397,6 +397,8 @@ export const TEXT_DEFAULTS: Record<string, string> = {
   "game.warlockProtectedFromHang": "⚡️ <b>{name}</b> sehrli himoya ostida — osib bo'lmadi!",
   "game.hangConfirmPrompt": "⚖️ <b>{name}</b>ni osmoqchimisiz?\n\n👍 Ha — osish\n👎 Yo'q — qo'yib yuborish",
   "game.kamikazePrompt": "💣 Siz osildingiz! Kimni o'zingiz bilan olib ketasiz?",
+  "game.kamikazeNoDm": "💣 Kamikazega shaxsiy xabar yetib bormadi — u hech kimni olib keta olmadi.\n<i>Botga shaxsiy chatdan /start yozib qo'ying!</i>",
+  "game.kamikazeNightExplode": "💣 <b>{name}</b> Kamikaze edi! Portlash <b>{killer}</b>ni ham olib ketdi!",
   "game.hangCancelled": "Axoli kelisha olmadi... <b>{name}</b> osilmadi!",
   "game.voteEndedPrefix": "Ovoz berish yakunlandi:\n",
   "game.mafiaIntro": "🤵🏼 <b>Mafiya jamoasi:</b>\n{members}\n\nTunda birgalikda nishon tanlaysiz!",
@@ -441,6 +443,7 @@ export const TEXT_DEFAULTS: Record<string, string> = {
 
   // ===== roleAssigned — qo'shimchalar =====
   "roleAssigned.shieldActive": "\n\n🛡 <b>Shield faol!</b> 1 marta o'limdan saqlaydi (Snayperdan tashqari).",
+  "roleAssigned.bulletActive": "\n\n🎯 <b>Snayper o'qi faol!</b> Tungi zarbangiz Shield, Shifokor va Tan qo'riqchisini yorib o'tadi.",
   "roleAssigned.heroActive": "\n\n🥷 <b>Geroy faol!</b> Sizda maxsus qo'shimcha qobiliyat bor.",
 
   // ===== START / RULES =====
@@ -470,7 +473,17 @@ export const TEXT_DEFAULTS: Record<string, string> = {
   "profile.shopTitle": "🏪 <b>Do'kon</b>\nKategoriyani tanlang:",
   "profile.shopBuyTitle": "🛒 Sotib olish — kategoriyani tanlang:",
   "profile.shopShield":
-    "🛡 <b>Himoya (Shield)</b>\n\nO'yinda 1 marta o'limdan saqlaydi (Snayperdan tashqari).\n\n{emoji} Narxi: <b>{price}</b>",
+    "🛡 <b>Himoya (Shield)</b>\n\nTungi hujumdan 1 marta saqlaydi.\n" +
+    "⚠️ Snayper roli va 🎯 Snayper o'qi uni yorib o'tadi.\n" +
+    "⚠️ Osilishdan, Kamikaze portlashidan va Ovchi o'qidan saqlamaydi.\n\n{emoji} Narxi: <b>{price}</b>",
+  "profile.shopBullet":
+    "🎯 <b>Snayper o'qi</b>\n\nHimoyaga TESKARI predmet.\n\n" +
+    "O'ldiruvchi rol tushsa, tungi zarbangiz <b>hamma himoyani yorib o'tadi</b>:\n" +
+    "🛡 Himoyani <b>parchalab tashlaydi</b> — nishon ham himoyasidan ayriladi, ham o'ladi\n" +
+    "💊 Shifokor davolashi to'sa olmaydi\n" +
+    "🛡 Tan qo'riqchisi o'zini o'rtaga tashlay olmaydi\n\n" +
+    "<i>Tinch rol tushsa yoki himoyasiz odamni o'ldirsangiz — o'q sarflanmaydi.</i>\n\n" +
+    "{emoji} Narxi: <b>{price}</b>",
   "profile.shopDocument":
     "📜 <b>Hujjat</b>\n\nKomissar tekshiruvini bekor qiladi (1 marta).\n⚠️ Faqat Mafiya va Yakka rollar uchun foydali.\n\n{emoji} Narxi: <b>{price}</b>",
   "profile.shopChest":
@@ -496,6 +509,7 @@ export const TEXT_DEFAULTS: Record<string, string> = {
   "profile.useTitle":
     "🎁 <b>Keyingi o'yinda nimadan foydalanasiz?</b>\n\n" +
     "🛡 Himoya: {shieldCount} ta\n" +
+    "🎯 Snayper o'qi: {bulletCount} ta\n" +
     "📜 Hujjat: {documentCount} ta\n" +
     "🎭 Aktiv rol: {activeRole}\n" +
     "🥷 Geroy: {hero}",
@@ -580,6 +594,8 @@ export const TEXT_LABELS: Record<string, string> = {
   "game.warlockProtectedFromHang": "Koldun himoyasi — osilmadi",
   "game.hangConfirmPrompt": "Osishni tasdiqlash",
   "game.kamikazePrompt": "Kamikaze — kimni olib keta?",
+  "game.kamikazeNoDm": "Kamikazega DM yetmadi",
+  "game.kamikazeNightExplode": "Kamikaze tunda portladi — qotilni olib ketdi",
   "game.hangCancelled": "Osish bekor",
   "game.voteEndedPrefix": "Ovoz berish yakunlandi: (prefix)",
   "game.mafiaIntro": "Mafiya jamoasi tanishuvi",
@@ -700,6 +716,7 @@ export const TEXT_LABELS: Record<string, string> = {
   "roleAssigned.ORACLE": "Rol tavsifi — Folbin",
   "roleAssigned.FRAMER": "Rol tavsifi — Tuhmatchi",
   "roleAssigned.shieldActive": "Shield faol — qo'shimcha",
+  "roleAssigned.bulletActive": "Snayper o'qi faol — qo'shimcha",
   "roleAssigned.heroActive": "Geroy faol — qo'shimcha",
 
   // NIGHT (DM promptlar + natijalar)
@@ -815,6 +832,7 @@ export const TEXT_LABELS: Record<string, string> = {
   "profile.shopTitle": "Do'kon — sarlavha",
   "profile.shopBuyTitle": "Do'kon — sotib olish",
   "profile.shopShield": "Do'kon — Shield tavsifi",
+  "profile.shopBullet": "Do'kon — Snayper o'qi tavsifi",
   "profile.shopDocument": "Do'kon — Hujjat tavsifi",
   "profile.shopChest": "Do'kon — Sandiq tavsifi",
   "profile.shopVip": "Do'kon — VIP tavsifi",

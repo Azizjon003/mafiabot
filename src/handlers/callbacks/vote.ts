@@ -147,24 +147,26 @@ export function createVoteCallbacks(controller: GameController): Composer<BotCon
     if (!ctx.from) return;
 
     const targetValue = ctx.match[1];
-
-    if (targetValue === "skip") {
-      await ctx.answerCallbackQuery({ text: "🚫 Hech kimni olmadingiz" });
-      await ctx.editMessageText("💣 Hech kimni tanlamadingiz.", { parse_mode: "HTML" });
-      return;
-    }
-
-    const targetPlayerId = parseInt(targetValue);
-    if (isNaN(targetPlayerId)) return;
+    const isSkip = targetValue === "skip";
+    const targetPlayerId = isSkip ? -1 : parseInt(targetValue);
+    if (!isSkip && isNaN(targetPlayerId)) return;
 
     const telegramId = BigInt(ctx.from.id);
     for (const game of gameManager.getAllGames()) {
       const player = game.getPlayerByTelegramId(telegramId);
       if (!player) continue;
 
-      // Faqat haqiqiy Kamikaze, faqat tanlov oynasi (15s) ochiq paytda
+      // Faqat haqiqiy Kamikaze, faqat tanlov oynasi ochiq paytda
       if (player.role !== "KAMIKAZE" || game.pendingPhaseAction !== "KAMIKAZE_DELAY") {
         await ctx.answerCallbackQuery({ text: "Bu tugma hozir ishlamaydi!" }).catch(() => {});
+        return;
+      }
+
+      if (isSkip) {
+        await ctx.answerCallbackQuery({ text: "🚫 Hech kimni olmadingiz" }).catch(() => {});
+        await ctx.editMessageText("💣 Hech kimni tanlamadingiz.", { parse_mode: "HTML" }).catch(() => {});
+        // Kutib o'tirmaymiz — o'yin darhol davom etsin
+        game.fireTimerNow();
         return;
       }
 
@@ -182,7 +184,10 @@ export function createVoteCallbacks(controller: GameController): Composer<BotCon
         `💣 Siz <b>${escapeHtml(target.firstName)}</b>ni o'zingiz bilan olib ketdingiz!`,
         { parse_mode: "HTML" }
       ).catch(() => {});
-      break;
+      // Tanlov qilindi — taymer tugashini kutmasdan darhol qo'llaymiz.
+      // (Aks holda o'yinchi tanlagach ham guruh yana 45s kutib turardi.)
+      game.fireTimerNow();
+      return;
     }
   });
 

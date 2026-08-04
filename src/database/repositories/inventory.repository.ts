@@ -17,6 +17,14 @@ export const inventoryRepo = {
     });
   },
 
+  // Snayper o'qi
+  async addBullet(userId: number, count: number = 1) {
+    return prisma.user.update({
+      where: { id: userId },
+      data: { bulletCount: { increment: count } },
+    });
+  },
+
   // Document
   async addDocument(userId: number, count: number = 1) {
     return prisma.user.update({
@@ -41,10 +49,11 @@ export const inventoryRepo = {
   },
 
   // Use flags (keyingi o'yinda foydalanish)
-  async setUseFlag(userId: number, flag: "shield" | "document" | "activeRole" | "hero" | "premiumEmoji", value: boolean) {
+  async setUseFlag(userId: number, flag: "shield" | "document" | "bullet" | "activeRole" | "hero" | "premiumEmoji", value: boolean) {
     const fieldMap = {
       shield: "useShieldNextGame",
       document: "useDocumentNextGame",
+      bullet: "useBulletNextGame",
       activeRole: "useActiveRoleNextGame",
       hero: "useHeroNextGame",
       premiumEmoji: "usePremiumEmoji",
@@ -62,6 +71,7 @@ export const inventoryRepo = {
       data: {
         useShieldNextGame: false,
         useDocumentNextGame: false,
+        useBulletNextGame: false,
         useActiveRoleNextGame: false,
         useHeroNextGame: false,
       },

@@ -41,6 +41,7 @@ async function buildProfileText(userId: number): Promise<string> {
   txt += `💰 Pul: <b>${user.money.toLocaleString()}</b>\n`;
   txt += `💎 Olmos: <b>${user.diamonds}</b>\n`;
   txt += `🛡 Himoya: <b>${user.shieldCount}</b>\n`;
+  txt += `🎯 Snayper o'qi: <b>${user.bulletCount}</b>\n`;
   txt += `📜 Hujjatlar: <b>${user.documentCount}</b>\n`;
   txt += `🥷 Geroy: <b>${user.hero ? user.hero.name + " (lvl " + user.hero.level + ")" : "Yo'q"}</b>\n`;
   if (user.activeRole) {
@@ -48,6 +49,7 @@ async function buildProfileText(userId: number): Promise<string> {
     txt += `🎭 Aktiv rol: ${ROLE_EMOJI[user.activeRole]} <b>${ROLE_NAME[user.activeRole]}</b> ${flagIcon}\n`;
   }
   if (user.useShieldNextGame && user.shieldCount > 0) txt += `🛡 Shield keyingi o'yinda ✅\n`;
+  if (user.useBulletNextGame && user.bulletCount > 0) txt += `🎯 Snayper o'qi keyingi o'yinda ✅\n`;
   if (user.useDocumentNextGame && user.documentCount > 0) txt += `📜 Hujjat keyingi o'yinda ✅\n`;
   if (user.useHeroNextGame && user.hero) txt += `🥷 Geroy keyingi o'yinda ✅\n`;
   if (isVip && user.vipExpiresAt) {
@@ -113,6 +115,17 @@ profileCommand.callbackQuery("shop:cat:shield", async (ctx) => {
   ).catch(() => {});
 });
 
+// Snayper o'qi
+profileCommand.callbackQuery("shop:cat:bullet", async (ctx) => {
+  const price = await pricingService.get(PRICE_KEYS.BULLET);
+  const emoji = await currencyEmoji(PRICE_KEYS.BULLET);
+  await ctx.answerCallbackQuery().catch(() => {});
+  await ctx.editMessageText(
+    t("profile.shopBullet", { emoji, price: price.toLocaleString() }),
+    { parse_mode: "HTML", reply_markup: buyItemKeyboard("bullet") }
+  ).catch(() => {});
+});
+
 // Document
 profileCommand.callbackQuery("shop:cat:document", async (ctx) => {
   const price = await pricingService.get(PRICE_KEYS.DOCUMENT);
@@ -174,13 +187,15 @@ profileCommand.callbackQuery("shop:cat:role", async (ctx) => {
 });
 
 // ==================== Sotib olish callback'lar ====================
-profileCommand.callbackQuery(/^shop:buy:(shield|document|vip|chest)$/, async (ctx) => {
+profileCommand.callbackQuery(/^shop:buy:(shield|bullet|document|vip|chest)$/, async (ctx) => {
   if (!ctx.dbUser) return;
   const item = ctx.match[1];
 
   let res: { success: boolean; error?: string; reward?: any };
   if (item === "shield") {
     res = await inventoryService.buyShield(ctx.dbUser.id);
+  } else if (item === "bullet") {
+    res = await inventoryService.buyBullet(ctx.dbUser.id);
   } else if (item === "document") {
     res = await inventoryService.buyDocument(ctx.dbUser.id);
   } else if (item === "vip") {
@@ -595,6 +610,7 @@ async function openUsePage(ctx: BotContext) {
 
   const text = t("profile.useTitle", {
     shieldCount: user.shieldCount,
+    bulletCount: user.bulletCount,
     documentCount: user.documentCount,
     activeRole: user.activeRole ? ROLE_NAME[user.activeRole] : "yo'q",
     hero: user.hero ? "✅" : "❌",
@@ -605,6 +621,7 @@ async function openUsePage(ctx: BotContext) {
   const flags = {
     shield: user.useShieldNextGame && user.shieldCount > 0,
     document: user.useDocumentNextGame && user.documentCount > 0,
+    bullet: user.useBulletNextGame && user.bulletCount > 0,
     activeRole: user.useActiveRoleNextGame && !!user.activeRole,
     hero: user.useHeroNextGame && !!user.hero,
     premiumEmoji: user.usePremiumEmoji,
@@ -618,9 +635,9 @@ profileCommand.callbackQuery("prof:use", async (ctx) => {
   await openUsePage(ctx);
 });
 
-profileCommand.callbackQuery(/^use:(shield|document|activeRole|hero|premiumEmoji)$/, async (ctx) => {
+profileCommand.callbackQuery(/^use:(shield|document|bullet|activeRole|hero|premiumEmoji)$/, async (ctx) => {
   if (!ctx.dbUser) return;
-  const flag = ctx.match[1] as "shield" | "document" | "activeRole" | "hero" | "premiumEmoji";
+  const flag = ctx.match[1] as "shield" | "document" | "bullet" | "activeRole" | "hero" | "premiumEmoji";
   const res = await inventoryService.toggleUseFlag(ctx.dbUser.id, flag);
   if (res.error) {
     await ctx.answerCallbackQuery({ text: `❌ ${res.error}`, show_alert: true }).catch(() => {});

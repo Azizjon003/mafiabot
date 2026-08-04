@@ -1,13 +1,13 @@
 # Test Hisoboti
-_Yaratildi: 2026-08-02T14:03:51.345Z_
+_Yaratildi: 2026-08-04T18:04:24.835Z_
 
 ## Umumiy natija
 
-- **Jami senariylar:** 188
-- **✅ O'tdi:** 171
+- **Jami senariylar:** 204
+- **✅ O'tdi:** 187
 - **❌ Xato:** 17
-- **Muvaffaqiyat foizi:** 91.0%
-- **Jami vaqt:** 134ms
+- **Muvaffaqiyat foizi:** 91.7%
+- **Jami vaqt:** 33ms
 
 ## Kategoriya bo'yicha
 
@@ -16,9 +16,9 @@ _Yaratildi: 2026-08-02T14:03:51.345Z_
 | Hujjat | 0 | 7 | ❌ (7 xato) |
 | Komissar | 3 | 9 | ❌ (6 xato) |
 | Aktiv rol | 19 | 22 | ❌ (3 xato) |
-| Shield | 24 | 25 | ❌ (1 xato) |
+| Shield | 26 | 27 | ❌ (1 xato) |
 | Mafiya | 8 | 8 | ✅ |
-| Shifokor | 17 | 17 | ✅ |
+| Shifokor | 19 | 19 | ✅ |
 | Kamonchi | 8 | 8 | ✅ |
 | Boshqa | 10 | 10 | ✅ |
 | Qorbola | 5 | 5 | ✅ |
@@ -31,10 +31,10 @@ _Yaratildi: 2026-08-02T14:03:51.345Z_
 | Professor | 20 | 20 | ✅ |
 | Ovoz berish | 4 | 4 | ✅ |
 | G'olib | 1 | 1 | ✅ |
-| Kamikaze | 2 | 2 | ✅ |
+| Kamikaze | 7 | 7 | ✅ |
 | Minior | 2 | 2 | ✅ |
 | Ayg'oqchi | 1 | 1 | ✅ |
-| Snayper | 6 | 6 | ✅ |
+| Snayper | 13 | 13 | ✅ |
 | Geroy | 2 | 2 | ✅ |
 
 ## ❌ Muvaffaqiyatsiz senariylar

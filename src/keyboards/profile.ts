@@ -20,12 +20,14 @@ export function profileMainKeyboard(): InlineKeyboard {
 export function shopCategoriesKeyboard(): InlineKeyboard {
   return new InlineKeyboard()
     .text("🛡 Himoya", "shop:cat:shield")
+    .text("🎯 Snayper o'qi", "shop:cat:bullet")
+    .row()
     .text("📜 Hujjat", "shop:cat:document")
-    .row()
     .text("🥷 Geroy", "shop:cat:hero")
-    .text("🗃 Sandiq", "shop:cat:chest")
     .row()
+    .text("🗃 Sandiq", "shop:cat:chest")
     .text("🎭 Aktiv rol", "shop:cat:role")
+    .row()
     .text("⭐️ VIP", "shop:cat:vip")
     .row()
     .text("🔙 Profil", "prof:back");
@@ -111,6 +113,7 @@ export function heroAttackTargetsKeyboard(targets: { playerId: number; firstName
 export function useItemsKeyboard(flags: {
   shield: boolean;
   document: boolean;
+  bullet: boolean;
   activeRole: boolean;
   hero: boolean;
   premiumEmoji: boolean;
@@ -119,6 +122,7 @@ export function useItemsKeyboard(flags: {
   return new InlineKeyboard()
     .text(`${m(flags.shield)} 🛡 Himoyadan foydalanish`, "use:shield").row()
     .text(`${m(flags.document)} 📜 Hujjatdan foydalanish`, "use:document").row()
+    .text(`${m(flags.bullet)} 🎯 Snayper o'qidan foydalanish`, "use:bullet").row()
     .text(`${m(flags.activeRole)} 🎭 Aktiv roldan foydalanish`, "use:activeRole").row()
     .text(`${m(flags.hero)} 🥷 Geroydan foydalanish`, "use:hero").row()
     .text(`${m(flags.premiumEmoji)} ⭐️ Premium emoji`, "use:premiumEmoji").row()

@@ -547,6 +547,16 @@ export class GameEngine {
     // Shield va Tan qo'riqchisi snayper o'qini to'sib qolardi. Endi sabab emas,
     // MANA SHU ro'yxat asos qilib olinadi (Shifokordagi healedTargets.delete kabi).
     const sniperTargets: Set<number> = new Set();
+    // Kim kimni o'ldirdi: targetId -> actorId. Ikki narsa uchun kerak:
+    //   1) Kamikaze tunda o'ldirilsa — o'ldirgan odam ham portlashdan o'ladi
+    //   2) "Snayper o'qi" predmeti — qotilda o'q bo'lsa uning zarbasi himoyani yorib o'tadi
+    // Sababsiz o'limlarda (INACTIVE) actor bo'lmaydi.
+    const killActors: Map<number, number> = new Map();
+    const setKill = (targetId: number, cause: DeathCause, actorId: number | null): void => {
+      killTargets.set(targetId, cause);
+      if (actorId !== null) killActors.set(targetId, actorId);
+      else killActors.delete(targetId);
+    };
 
     // 1. Kezuvchi bloklashi
     const hookerAction = this.nightActions.get("HOOKER");
@@ -802,7 +812,9 @@ export class GameEngine {
       const mafiaVictim = this.getPlayer(mafiaTarget);
       // Mafiya jamoasini o'ldirmaslik
       if (mafiaVictim && ROLE_TEAM[mafiaVictim.role] !== Team.MAFIA) {
-        killTargets.set(mafiaTarget, "MAFIA_KILL");
+        // Mafiya jamoaviy o'ldiradi — "qotil" sifatida qaror ovozini bergan
+        // mafioz olinadi (Kamikaze portlashi va Snayper o'qi shunga bog'lanadi).
+        setKill(mafiaTarget, "MAFIA_KILL", this.resolveMafiaKiller(mafiaTarget));
         this.addVisitor(visitorsMap, mafiaTarget, -1);
       }
     }
@@ -825,7 +837,7 @@ export class GameEngine {
           });
         } else {
           // Mafiya emas — o'ldiradi
-          killTargets.set(labAction.targetId, "LAB_KILL");
+          setKill(labAction.targetId, "LAB_KILL", labAction.actorId);
           result.events.push({
             type: "LAB_KILL",
             actorId: labAction.actorId,
@@ -857,7 +869,7 @@ export class GameEngine {
               privateMessage: `🔫 Birinchi tunda o'tish taqiqlangan! Siz faqat tekshira olasiz.`,
             });
           } else {
-            killTargets.set(sheriffAction.targetId, "SHERIFF_KILL");
+            setKill(sheriffAction.targetId, "SHERIFF_KILL", sheriffAction.actorId);
             result.events.push({
               type: "SHERIFF_SHOOT_HIT",
               actorId: sheriffAction.actorId,
@@ -1006,7 +1018,7 @@ export class GameEngine {
                   privateMessage: "⚡️ Sizning o'ldirish zaryadingiz tugagan! Bu tunda o'ldira olmaysiz.",
                 });
               } else {
-                killTargets.set(warlockAction.targetId, "WARLOCK_KILL");
+                setKill(warlockAction.targetId, "WARLOCK_KILL", warlockAction.actorId);
                 useCharge(actor, "WARLOCK");
                 result.events.push({
                   type: "WARLOCK_KILL",
@@ -1040,7 +1052,7 @@ export class GameEngine {
                 const visitors = visitorsMap.get(minerAction.targetId) || [];
                 for (const visitorId of visitors) {
                   if (visitorId !== -1 && visitorId !== minerAction.actorId) {
-                    killTargets.set(visitorId, "MINER_KILL");
+                    setKill(visitorId, "MINER_KILL", minerAction.actorId);
                   }
                 }
                 // Agar mafiya ham kelgan bo'lsa (targetni o'ldirmoqchi)
@@ -1055,7 +1067,7 @@ export class GameEngine {
             if (killerAction) {
               const actor = this.getPlayer(killerAction.actorId);
               if (actor && !actor.isBlocked) {
-                killTargets.set(killerAction.targetId, "KILLER_KILL");
+                setKill(killerAction.targetId, "KILLER_KILL", killerAction.actorId);
                 this.addVisitor(visitorsMap, killerAction.targetId, killerAction.actorId);
               }
             }
@@ -1077,7 +1089,7 @@ export class GameEngine {
                   // Snayperchi — himoyani ham o'tadi, shuning uchun healedTargets dan olib tashlaymiz
                   healedTargets.delete(sniperAction.targetId);
                   sniperTargets.add(sniperAction.targetId);
-                  killTargets.set(sniperAction.targetId, "SNIPER_KILL");
+                  setKill(sniperAction.targetId, "SNIPER_KILL", sniperAction.actorId);
                   // Daydi ko'rmaydi — visitor qo'shmaymiz
                   useCharge(actor, "SNIPER");
                   result.events.push({
@@ -1104,7 +1116,7 @@ export class GameEngine {
                         privateMessage: "🏹 Sizning o'qlaringiz tugagan! Bu tunda o'ta olmaysiz.",
                       });
                     } else {
-                      killTargets.set(archerAction.targetId, "ARCHER_KILL");
+                      setKill(archerAction.targetId, "ARCHER_KILL", archerAction.actorId);
                       useCharge(actor, "ARCHER");
                       result.events.push({
                         type: "ARCHER_SHOT",
@@ -1130,7 +1142,7 @@ export class GameEngine {
             privateMessage: "⛄️ Sizning qorbo'ronlaringiz tugagan! Bu tunda o'ta olmaysiz.",
           });
         } else {
-          killTargets.set(snowboyAction.targetId, "SNOWBOY_KILL");
+          setKill(snowboyAction.targetId, "SNOWBOY_KILL", snowboyAction.actorId);
           useCharge(actor, "SNOWBOY");
           this.addVisitor(visitorsMap, snowboyAction.targetId, snowboyAction.actorId);
           result.events.push({
@@ -1190,7 +1202,7 @@ export class GameEngine {
             targetPrivateMessage: `👺 Tunda siznikiga qaroqchi keldi va 100 pul olib ketdi!`,
           });
         } else {
-          killTargets.set(robberAction.targetId, "ROBBER_KILL");
+          setKill(robberAction.targetId, "ROBBER_KILL", robberAction.actorId);
           result.events.push({
             type: "ROBBER_KILL",
             actorId: robberAction.actorId,
@@ -1221,7 +1233,7 @@ export class GameEngine {
         }
         const outcome = target.professorBoxes ? target.professorBoxes[idx!] : null;
         if (outcome === "DEATH") {
-          killTargets.set(professorAction.targetId, "PROFESSOR_KILL");
+          setKill(professorAction.targetId, "PROFESSOR_KILL", professorAction.actorId);
           result.events.push({
             type: "PROFESSOR_DEATH",
             actorId: professorAction.actorId,
@@ -1321,10 +1333,48 @@ export class GameEngine {
       } else {
         player.inactiveNights = (player.inactiveNights ?? 0) + 1;
         if (player.inactiveNights >= 2) {
-          killTargets.set(player.playerId, "INACTIVE" as DeathCause);
+          setKill(player.playerId, "INACTIVE" as DeathCause, null);
         }
       }
     }
+
+    // ==================== SNAYPER O'QI (inventar predmeti) ====================
+    // Shieldga teskari predmet: o'q sotib olgan o'yinchining shu tundagi o'ldirishi
+    // BARCHA himoyani yorib o'tadi (Shield, Shifokor davolashi, Tan qo'riqchisi) va
+    // nishonning Shieldini parchalab tashlaydi — ham himoyasi ketadi, ham o'ladi.
+    // Bitta o'q = bitta nishon (Minior bir necha kishini o'ldirsa — faqat birinchisi).
+    const bulletTargets: Set<number> = new Set();
+    const bulletShooters: Map<number, number> = new Map(); // targetId -> shooterId
+    const shootersUsed: Set<number> = new Set();
+    for (const [targetId, actorId] of killActors) {
+      if (shootersUsed.has(actorId)) continue;
+      const shooter = this.getPlayer(actorId);
+      if (!shooter || !shooter.hasBulletActive) continue;
+      if ((killTargets.get(targetId) as string) === "INACTIVE") continue;
+      shootersUsed.add(actorId);
+      bulletTargets.add(targetId);
+      bulletShooters.set(targetId, actorId);
+    }
+
+    // O'q HAQIQATAN ish berganda (himoyani yorganda) sarflanadi. Nishonda hech qanday
+    // himoya bo'lmasa — odam baribir o'lardi, shuning uchun o'q keyingi o'yinga qoladi.
+    const spendBullet = (targetId: number, blocked: string): void => {
+      const shooterId = bulletShooters.get(targetId);
+      if (shooterId === undefined) return;
+      const shooter = this.getPlayer(shooterId);
+      if (!shooter || !shooter.hasBulletActive) return;
+      shooter.hasBulletActive = false;
+      const victim = this.getPlayer(targetId);
+      result.events.push({
+        type: "BULLET_USED",
+        actorId: shooterId,
+        targetId,
+        message: "",
+        privateMessage:
+          `🎯 <b>Snayper o'qingiz ishladi!</b>\n` +
+          `${escapeHtml(victim?.firstName ?? "Nishon")}ni ${blocked} saqlab qololmadi.`,
+      });
+    };
 
     // ==================== TAN QO'RIQCHISI — O'ZINI O'RTAGA TASHLASH ====================
     // Qo'riqlangan odamga hujum bo'lsa — qo'riqchi UNING O'RNIGA o'ladi.
@@ -1345,11 +1395,19 @@ export class GameEngine {
         });
 
         const cause = killTargets.get(bodyguardAction.targetId);
-        const sniped = sniperTargets.has(bodyguardAction.targetId);
+        const sniped =
+          sniperTargets.has(bodyguardAction.targetId) ||
+          bulletTargets.has(bodyguardAction.targetId);
+        // Qo'riqchi o'zini tashlay olmadi, chunki o'q uni ham yorib o'tardi — o'q sarflandi
+        if (cause && bulletTargets.has(bodyguardAction.targetId) && (cause as string) !== "INACTIVE") {
+          spendBullet(bodyguardAction.targetId, "Tan qo'riqchisi ham");
+        }
         if (cause && !sniped && cause !== "SNIPER_KILL" && (cause as string) !== "INACTIVE") {
-          // Hujumni o'ziga oladi
+          // Hujumni o'ziga oladi — qotil ham qo'riqchiga "o'tadi"
+          const attacker = killActors.get(bodyguardAction.targetId) ?? null;
           killTargets.delete(bodyguardAction.targetId);
-          killTargets.set(guard.playerId, cause);
+          killActors.delete(bodyguardAction.targetId);
+          setKill(guard.playerId, cause, attacker);
           result.saved.push(protectedTarget);
           result.events.push({
             type: "BODYGUARD_SACRIFICE",
@@ -1374,12 +1432,18 @@ export class GameEngine {
       // Snayper o'qi hech narsa bilan to'silmaydi. Boshqa qotil ham shu odamni
       // nishonga olgan bo'lsa `cause` almashib qolishi mumkin — shuning uchun
       // sabab emas, sniperTargets ro'yxati tekshiriladi.
-      const isSniped = cause === "SNIPER_KILL" || sniperTargets.has(targetId);
+      // bulletTargets — "Snayper o'qi" inventar predmeti tekkan nishonlar.
+      const hitByBullet = bulletTargets.has(targetId);
+      const isSniped = cause === "SNIPER_KILL" || sniperTargets.has(targetId) || hitByBullet;
 
       // Shifokor davolagani tekshiruv (sniper va inaktiv bundan mustasno)
       if (healedTargets.has(targetId) && !isSniped && !isInactiveDeath) {
         result.saved.push(target);
         continue;
+      }
+      // O'q shifokor davolashini yorib o'tdi — sarflandi
+      if (healedTargets.has(targetId) && hitByBullet && !isInactiveDeath) {
+        spendBullet(targetId, "Shifokor ham");
       }
 
       // Shield tekshiruvi — 1 o'yinda 1 marta (sniper va inaktiv bundan mustasno)
@@ -1398,6 +1462,23 @@ export class GameEngine {
           logger.error(e, "Shield consume xatolik")
         );
         continue;
+      }
+
+      // O'q Shieldni PARCHALAB tashlaydi — himoyasi ham ketadi, o'zi ham o'ladi.
+      // (Snayper ROLI bundan farq qiladi: u shieldga tegmaydi, faqat o'tib ketadi.)
+      if (target.hasShieldActive && hitByBullet && !isInactiveDeath) {
+        target.hasShieldActive = false;
+        target.shieldCharges = 0;
+        playerRepo.consumeShieldCharge(targetId, 0).catch((e) =>
+          logger.error(e, "Shield consume xatolik")
+        );
+        spendBullet(targetId, "Shieldi ham");
+        result.events.push({
+          type: "SHIELD_SHATTERED",
+          actorId: targetId,
+          message: `🎯 <b>Kimningdir himoyasi parchalanib ketdi!</b>`,
+          privateMessage: `🎯 <b>Sizning Shieldingiz parchalanib ketdi</b> — snayper o'qi uni yorib o'tdi!`,
+        });
       }
 
       target.isAlive = false;
@@ -1435,6 +1516,35 @@ export class GameEngine {
           });
         }
       }
+    }
+
+    // ==================== KAMIKAZE TUNDA PORTLAYDI ====================
+    // Kamikazeni tunda o'ldirgan odam portlashdan qutulmaydi — o'zi ham o'ladi.
+    // Portlashni hech narsa to'sa olmaydi (Shield/Shifokor/Tan qo'riqchisi ham).
+    // Faqat HAQIQATAN o'lgan Kamikaze uchun ishlaydi — saqlanib qolgani portlamaydi.
+    const kamikazeDeaths = result.killed.filter((k) => k.player.role === "KAMIKAZE");
+    for (const { player: kamikaze } of kamikazeDeaths) {
+      const killerId = killActors.get(kamikaze.playerId);
+      if (killerId === undefined || killerId === kamikaze.playerId) continue;
+      const killer = this.getPlayer(killerId);
+      if (!killer || !killer.isAlive) continue;
+
+      killer.isAlive = false;
+      result.killed.push({ player: killer, cause: "KAMIKAZE_KILL" });
+      playerRepo.kill(killer.playerId, this.currentRound, "KAMIKAZE_KILL").catch((e) =>
+        logger.error(e, "Kamikaze tungi portlashida o'ldirishda xatolik")
+      );
+      result.events.push({
+        type: "KAMIKAZE_NIGHT_EXPLODE",
+        actorId: kamikaze.playerId,
+        targetId: killer.playerId,
+        message: "",
+        targetPrivateMessage: `💣 Siz o'ldirgan odam <b>Kamikaze</b> ekan! Portlash sizni ham olib ketdi...`,
+      });
+    }
+    if (kamikazeDeaths.length > 0) {
+      this.promoteSergeantIfNeeded();
+      this.promoteMafiaIfNeeded();
     }
 
     // Doktor natija xabari
@@ -1596,6 +1706,20 @@ export class GameEngine {
 
     // Don yo'q — birinchi ovoz
     return activeVotes[0]?.targetId ?? null;
+  }
+
+  // Mafiya jamoaviy o'ldiradi, lekin "qotil" sifatida bitta odam kerak bo'ladi
+  // (Kamikaze portlashi kimni olib ketishi, kimning "Snayper o'qi" ishlashi).
+  // Nishonga ovoz berganlar orasidan: avval Don, bo'lmasa birinchi tirik mafioz.
+  private resolveMafiaKiller(targetId: number): number | null {
+    const voters = this.mafiaVotes.filter((v) => {
+      if (v.targetId !== targetId) return false;
+      const voter = this.getPlayer(v.voterId);
+      return !!voter && voter.isAlive && !voter.isBlocked;
+    });
+    if (voters.length === 0) return null;
+    const don = voters.find((v) => this.getPlayer(v.voterId)?.role === "DON");
+    return (don ?? voters[0]).voterId;
   }
 
   private addVisitor(map: Map<number, number[]>, targetId: number, visitorId: number): void {
@@ -1842,6 +1966,19 @@ export class GameEngine {
     }
     this.timerEndsAt = null;
     this.pendingPhaseAction = null;
+  }
+
+  // Timerni muddatidan OLDIN ishga tushirish — o'yinchi kutilgan harakatni
+  // qilib bo'lgach bekorga kutib o'tirmaslik uchun (masalan Kamikaze nishonni tanladi).
+  // Faqat timer haqiqatan qurollangan bo'lsa ishlaydi — ikki marta chaqirilsa
+  // ikkinchisi false qaytaradi (double-resolution bo'lmaydi).
+  fireTimerNow(): boolean {
+    const cb = this.timerCallback;
+    if (!cb || !this.phaseTimer) return false;
+    this.clearTimer();
+    this.timerCallback = null;
+    cb();
+    return true;
   }
 
   // Persistence uchun — private state'ga access
