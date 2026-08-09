@@ -1,9 +1,11 @@
+import { run, sequentialize, RunnerHandle } from "@grammyjs/runner";
 import { bot } from "./bot";
 import { connectDatabase, disconnectDatabase } from "./database/prisma";
 import { NotificationService } from "./services/notification.service";
 import { GameController } from "./game/controller";
 import { shopService } from "./services/shop.service";
 import { authMiddleware } from "./handlers/middleware/auth";
+import { sequentialKey } from "./handlers/middleware/sequential-key";
 import { startCommand } from "./handlers/commands/start";
 import { createGameCommands } from "./handlers/commands/game";
 import { statsCommand } from "./handlers/commands/stats";
@@ -24,6 +26,8 @@ import { nightSilenceHandler } from "./handlers/night-silence";
 import { logger } from "./utils/logger";
 import { setBotUsername } from "./config";
 import { setupBotCommands } from "./setup-commands";
+
+let runnerHandle: RunnerHandle | undefined;
 
 async function main() {
   // Database ulanish
@@ -63,6 +67,10 @@ async function main() {
   );
 
   // Middleware
+  // sequentialize ENG BIRINCHI — runner update'larni parallel ishlaydi, shuning
+  // uchun bitta o'yinga tegishli update'lar navbatga solinishi shart.
+  // Kalit: guruh -> chat id, shaxsiy chat -> o'yinchining O'YIN GURUHI id'si.
+  bot.use(sequentialize(sequentialKey));
   bot.use(authMiddleware);
 
   // Tunda xabarlarni avtomatik o'chirish (eng boshida)
@@ -92,13 +100,11 @@ async function main() {
   // Chat handler — eng oxirida (mafia chat, dead chat, whisper)
   bot.use(chatHandler);
 
-  // Bot ishga tushirish
-  bot.start({
-    onStart: (botInfo) => {
-      setBotUsername(botInfo.username);
-      logger.info(`🎭 Mafia Bot ishga tushdi: @${botInfo.username}`);
-    },
-  });
+  // Bot ishga tushirish — grammY runner (parallel update qayta ishlash).
+  // bot.start() update'larni BIRIN-KETIN ishlardi: bitta guruhdagi uzun tong
+  // sahnasi (~30s) butun botni, hamma guruhni qotirib qo'yardi.
+  runnerHandle = run(bot);
+  logger.info(`🎭 Mafia Bot ishga tushdi (runner): @${botInfo.username}`);
 }
 // Global xatolik ushlagichlar — faza logikasi await qilinmagan setTimeout callback'larida
 // ishlaydi; reject bo'lsa butun process o'lib, HAMMA o'yin yiqilmasligi uchun log qilamiz.
@@ -116,9 +122,11 @@ async function gracefulShutdown(signal: string) {
   shuttingDown = true;
   logger.info(`${signal} — bot to'xtatilmoqda...`);
   try {
-    await bot.stop();
+    // Runner to'xtatiladi va ishlab turgan middleware tugashini kutadi
+    if (runnerHandle?.isRunning()) await runnerHandle.stop();
+    else await bot.stop();
   } catch (e) {
-    logger.error(e, "bot.stop() xatolik");
+    logger.error(e, "bot to'xtatishda xatolik");
   }
   await disconnectDatabase().catch((e) => logger.error(e, "disconnectDatabase xatolik"));
   process.exit(0);

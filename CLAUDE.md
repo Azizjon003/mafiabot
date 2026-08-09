@@ -61,6 +61,31 @@ handlers/ (grammY Composers)  →  GameController  →  GameEngine  →  reposit
   inventory is reserved.
 - **`game/phases/*`** — per-phase prompt/story senders, called by the controller.
 
+### Concurrency — read before adding middleware
+
+`index.ts` runs the bot through **`@grammyjs/runner`**, not `bot.start()`. The built-in polling
+processes updates strictly sequentially (`for (const update of updates) await handleUpdate(update)`),
+so one slow handler froze *every* group — a night resolution costs ~30 s of `PACING` sleeps alone.
+
+The engine is shared mutable state with no locking, so concurrency is made safe by
+`sequentialize(sequentialKey)`, installed **first**, before `authMiddleware`.
+`handlers/middleware/sequential-key.ts` maps an update to a queue:
+
+- group chat → `c<chatId>`
+- **private chat of someone in a game → `c<that game's group id>`** — this is the whole point.
+  Night actions arrive in private chats while the game is keyed by the group, so a plain
+  `ctx.chat.id` key would let two players mutate one engine in parallel.
+- anyone else → `u<userId>`
+
+If you add state shared across chats, make sure its updates land on one key.
+`tests/sequential-key.smoke.ts` guards these invariants.
+
+Phase resolution reached from a **callback** (`await controller.handleNightEnd(...)` in
+`handlers/callbacks/night-action.ts`) still holds that game's queue for the full morning
+sequence. `engine.phaseResolving` / `engine.ending` are the reentrancy guards — both are
+set synchronously before any `await`, so fire-and-forget (`void controller.handleNightEnd(...)`)
+is safe if you want to release the queue earlier.
+
 ### Persistence & restart
 
 The whole engine is serialized to `Game.state` (JSON) — see `game/persistence.ts`. `persistSoon()`

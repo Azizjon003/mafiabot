@@ -160,6 +160,18 @@ class GameManager {
     return false;
   }
 
+  // O'yinchi (TIRIK yoki O'LIK) qatnashayotgan o'yinni topadi — SINXRON.
+  // sequentialize kaliti uchun kerak: shaxsiy chatdan kelgan update qaysi
+  // o'yin holatiga tegishini bilishimiz shart, aks holda ikki o'yinchining
+  // tun harakati bitta engine'ni bir vaqtda o'zgartirib yuboradi.
+  // O'liklar ham hisobga olinadi — ular oxirgi so'z va o'liklar chatida yozadi.
+  findGameByPlayer(telegramId: bigint): GameEngine | undefined {
+    for (const game of this.activeGames.values()) {
+      if (game.getPlayerByTelegramId(telegramId)) return game;
+    }
+    return undefined;
+  }
+
   getActiveGameCount(): number {
     return this.activeGames.size;
   }
