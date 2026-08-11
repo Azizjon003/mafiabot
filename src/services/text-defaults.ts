@@ -331,6 +331,10 @@ export const TEXT_DEFAULTS: Record<string, string> = {
   "night.doctorHealedConfirm": "👨🏼‍⚕️ Siz <b>{name}</b>ni davoladingiz.",
 
   // ===== ERRORS =====
+  "errors.tooManyCommands":
+    "⚠️ Juda ko'p buyruq yubordingiz. Bir oz kuting va qayta urinib ko'ring.",
+  "game.extendLimit":
+    "⏳ Vaqtni uzaytirish chegarasi tugadi — boshqa uzaytirib bo'lmaydi.",
   "errors.notAdmin": "⚠️ Bu buyruq faqat adminlar uchun!",
   "errors.notInGame": "⚠️ Siz o'yinda emassiz!",
   "errors.notYourTurn": "⚠️ Hozir sizning navbatingiz emas!",
@@ -844,6 +848,8 @@ export const TEXT_LABELS: Record<string, string> = {
   "night.doctorHealedConfirm": "Shifokorga — kimni davoladi",
 
   // ERRORS
+  "errors.tooManyCommands": "Xato — juda ko'p buyruq",
+  "game.extendLimit": "Uzaytirish chegarasi",
   "errors.notAdmin": "Xato — admin emas",
   "errors.notInGame": "Xato — o'yinda emas",
   "errors.notYourTurn": "Xato — sizning navbatingiz emas",

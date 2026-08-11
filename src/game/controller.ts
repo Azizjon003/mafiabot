@@ -28,6 +28,11 @@ export class GameController {
   private registrationTimers: Map<string, ReturnType<typeof setInterval>> = new Map();
   private registrationTimeLeft: Map<string, number> = new Map();
   private registrationLastRepostAt: Map<string, number> = new Map(); // epoch ms
+  // Spamga qarshi: /extend nechta marta ishlatilgani (o'yin boshiga)
+  private extendCount: Map<string, number> = new Map();
+  private static MAX_EXTENDS = 3;              // bitta o'yinga ko'pi bilan 3 marta
+  private static MAX_REGISTRATION_SEC = 300;   // ro'yxat 5 daqiqadan oshmasin
+  private static BUMP_COOLDOWN_MS = 15_000;    // /startgame bilan pastga tushirish oralig'i
 
   constructor(notifier: NotificationService) {
     this.notifier = notifier;
@@ -37,6 +42,10 @@ export class GameController {
 
   async handleStartGame(chatTelegramId: bigint, chatTitle?: string, creatorTelegramId?: bigint): Promise<GameEngine> {
     const engine = await gameManager.createGame(chatTelegramId, chatTitle);
+    // Yangi o'yin — /extend hisobini nolga qaytaramiz.
+    // (endGame'da ham tozalanadi, lekin /stopgame yo'li u yerdan o'tmaydi,
+    //  shuning uchun ASOSIY tozalash aynan shu yerda.)
+    this.extendCount.delete(chatTelegramId.toString());
     if (creatorTelegramId != null) engine.creatorTelegramId = creatorTelegramId;
     const msgId = await startRegistration(engine, this.notifier);
     const chatKey = chatTelegramId.toString();
@@ -101,6 +110,10 @@ export class GameController {
     const engine = gameManager.getGame(chatTelegramId);
     if (!engine || engine.status !== "WAITING") return;
     const chatKey = chatTelegramId.toString();
+    // Spam himoyasi: /startgame ni qayta-qayta bosish xabarni o'chirib-yozaverishga
+    // olib kelardi (har safar 3-4 ta API so'rovi). Qisqa oraliqda e'tiborsiz qoldiramiz.
+    const lastBump = this.registrationLastRepostAt.get(chatKey) ?? 0;
+    if (Date.now() - lastBump < GameController.BUMP_COOLDOWN_MS) return;
     const currentLeft = this.registrationTimeLeft.get(chatKey) ?? engine.settings.registrationTimeout;
 
     const text = getRegistrationText(engine, currentLeft);
@@ -791,6 +804,7 @@ export class GameController {
       }
     }
 
+    this.extendCount.delete(chatTelegramId.toString());
     await gameManager.endGame(chatTelegramId);
   }
 
@@ -854,6 +868,14 @@ export class GameController {
     if (!engine) return false;
     const chatKey = chatTelegramId.toString();
 
+    // Spam himoyasi: /extend cheksiz emas — bitta o'yinga MAX_EXTENDS marta.
+    // Busiz admin (yoki yaratuvchi) ro'yxatni cheksiz cho'zib turishi mumkin edi.
+    const used = this.extendCount.get(chatKey) ?? 0;
+    if (used >= GameController.MAX_EXTENDS) {
+      logger.info({ chatId: chatKey, used }, "Extend chegarasi tugadi");
+      return false;
+    }
+
     if (engine.status === "WAITING") {
       // Registration fazasi — timeLeft ni 30 soniyaga oshirish
       // Agar timer allaqachon tugagan bo'lsa — uzaytirib bo'lmaydi
@@ -862,6 +884,12 @@ export class GameController {
         return false;
       }
       const current = this.registrationTimeLeft.get(chatKey) || 0;
+      // Umumiy ro'yxat vaqti ham cheklangan
+      if (current + 30 > GameController.MAX_REGISTRATION_SEC) {
+        logger.info({ chatId: chatKey, current }, "Ro'yxat vaqti chegarasi");
+        return false;
+      }
+      this.extendCount.set(chatKey, used + 1);
       const newLeft = current + 30;
       this.registrationTimeLeft.set(chatKey, newLeft);
 
@@ -883,6 +911,7 @@ export class GameController {
 
     // Boshqa fazalar (tun, kun, ovoz berish)
     if (["NIGHT", "DAY", "VOTING"].includes(engine.status)) {
+      this.extendCount.set(chatKey, used + 1);
       engine.extendTimer(30000);
       return true;
     }

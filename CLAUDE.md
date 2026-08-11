@@ -90,6 +90,22 @@ sequence. `engine.phaseResolving` / `engine.ending` are the reentrancy guards �
 set synchronously before any `await`, so fire-and-forget (`void controller.handleNightEnd(...)`)
 is safe if you want to release the queue earlier.
 
+### Anti-spam
+
+Group game commands (`/startgame`, `/begingame`, `/stopgame`, `/extend`, `/quit`…) run through
+`handlers/middleware/anti-spam.ts`: 3 commands per user / 8 per chat in a 10 s window.
+
+The rule that matters: **when rate-limited, never reply**. Each rejected command used to cost a
+`getChatMember` call plus a "not admin" reply, so spamming `/extend` made the bot flood the group
+itself. The middleware deletes the offending message and warns at most once per user per minute
+with a self-deleting message.
+
+Supporting limits: `/extend` is capped at `MAX_EXTENDS` (3) per game and `MAX_REGISTRATION_SEC`
+(300) total — `extendCount` is reset in `handleStartGame`, because `/stopgame` does not go through
+`controller.endGame()`. `/startgame` re-posting the registration message has a 15 s cooldown.
+`utils/admin-cache.ts` caches `getChatMember` for 5 min (also used by `night-silence.ts`, which
+otherwise hits the API on *every* group message).
+
 ### Persistence & restart
 
 The whole engine is serialized to `Game.state` (JSON) — see `game/persistence.ts`. `persistSoon()`

@@ -5,16 +5,14 @@ import { gameManager } from "../../game/manager";
 import { GameEngine } from "../../game/engine";
 import { t } from "../../services/text.service";
 import { groupOnly } from "../middleware/chat-type";
+import { antiSpam } from "../middleware/anti-spam";
+import { isChatAdminCached } from "../../utils/admin-cache";
 
 // Guruh admini (yoki egasi) ekanligini tekshirish
+// Keshlangan — spam paytida har bir buyruq uchun Telegram API so'rovi ketmasin
 async function isChatAdmin(ctx: BotContext): Promise<boolean> {
   if (!ctx.from) return false;
-  try {
-    const member = await ctx.getChatMember(ctx.from.id);
-    return member.status === "creator" || member.status === "administrator";
-  } catch {
-    return false;
-  }
+  return isChatAdminCached(ctx);
 }
 
 // O'yinni boshqarishga ruxsat: o'yinni YARATGAN foydalanuvchi YOKI guruh admini
@@ -31,7 +29,7 @@ export function createGameCommands(controller: GameController): Composer<BotCont
   // /startgame — Yangi o'yin boshlash (guruhda ISTALGAN foydalanuvchi yarata oladi).
   // Agar o'yin allaqachon WAITING fazasida bo'lsa — registratsiya xabari
   // pastga qayta yuboriladi (bump).
-  composer.command("startgame", groupOnly, async (ctx) => {
+  composer.command("startgame", groupOnly, antiSpam, async (ctx) => {
     // Buyruq xabarini (/startgame yoki /startgame@bot) o'chirish — guruh toza turishi uchun.
     // Bot "Delete messages" huquqiga ega bo'lmasa — jim davom etadi.
     ctx.deleteMessage().catch(() => {});
@@ -52,7 +50,7 @@ export function createGameCommands(controller: GameController): Composer<BotCont
   });
 
   // /begingame — O'yinni boshlash (ro'yxatni yopish) — yaratuvchi yoki admin
-  composer.command("begingame", groupOnly, async (ctx) => {
+  composer.command("begingame", groupOnly, antiSpam, async (ctx) => {
     const chatId = BigInt(ctx.chat.id);
     const engine = gameManager.getGame(chatId);
     if (!engine || engine.status !== "WAITING") {
@@ -67,7 +65,7 @@ export function createGameCommands(controller: GameController): Composer<BotCont
   });
 
   // /stopgame — O'yinni to'xtatish — o'yinni YARATGAN kishi yoki guruh admini
-  composer.command("stopgame", groupOnly, async (ctx) => {
+  composer.command("stopgame", groupOnly, antiSpam, async (ctx) => {
     const chatId = BigInt(ctx.chat.id);
     const engine = gameManager.getGame(chatId);
     if (!engine) {
@@ -82,7 +80,7 @@ export function createGameCommands(controller: GameController): Composer<BotCont
   });
 
   // /extend — Vaqtni uzaytirish — yaratuvchi yoki admin
-  composer.command("extend", groupOnly, async (ctx) => {
+  composer.command("extend", groupOnly, antiSpam, async (ctx) => {
     const chatId = BigInt(ctx.chat.id);
     const engine = gameManager.getGame(chatId);
     if (!engine) {
@@ -96,6 +94,8 @@ export function createGameCommands(controller: GameController): Composer<BotCont
     const extended = await controller.handleExtend(chatId);
     if (extended) {
       await ctx.reply(t("game.extended"), { parse_mode: "HTML" });
+    } else {
+      await ctx.reply(t("game.extendLimit"), { parse_mode: "HTML" });
     }
   });
 
@@ -133,9 +133,9 @@ export function createGameCommands(controller: GameController): Composer<BotCont
     );
   };
 
-  composer.command("quit", groupOnly, leaveHandler);
-  composer.command("leave", groupOnly, leaveHandler);
-  composer.command("exit", groupOnly, leaveHandler);
+  composer.command("quit", groupOnly, antiSpam, leaveHandler);
+  composer.command("leave", groupOnly, antiSpam, leaveHandler);
+  composer.command("exit", groupOnly, antiSpam, leaveHandler);
 
   return composer;
 }

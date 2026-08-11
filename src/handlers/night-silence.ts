@@ -2,6 +2,7 @@ import { Composer } from "grammy";
 import { BotContext } from "../types/context";
 import { gameManager } from "../game/manager";
 import { logger } from "../utils/logger";
+import { isChatAdminCached } from "../utils/admin-cache";
 
 export const nightSilenceHandler = new Composer<BotContext>();
 
@@ -36,11 +37,8 @@ nightSilenceHandler.on("message", async (ctx, next) => {
   const text = (ctx.message.text ?? ctx.message.caption ?? "").trim();
 
   // Admin tekshirish
-  let isAdmin = false;
-  try {
-    const member = await ctx.getChatMember(ctx.from!.id);
-    isAdmin = member.status === "creator" || member.status === "administrator";
-  } catch { /* ignore */ }
+  // Keshlangan — aks holda guruhdagi HAR BIR xabar uchun Telegram API so'rovi ketardi
+  const isAdmin = await isChatAdminCached(ctx);
 
   // Admin + "!" bilan boshlangan → har doim qoldiramiz (tunda ham, kunduzda ham)
   if (isAdmin && text.startsWith("!")) {
