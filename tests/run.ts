@@ -21,6 +21,7 @@ function categorize(name: string): string {
   if (n.includes("geroy") || n.includes("hero")) return "Geroy";
   if (n.includes("aktiv rol") || n.includes("preferred")) return "Aktiv rol";
   if (n.includes("professor")) return "Professor";
+  if (n.includes("serjant") || n.includes("sergeant")) return "Serjant";
   if (n.includes("sheriff") || n.includes("komissar")) return "Komissar";
   if (n.includes("hooker") || n.includes("kezuvchi")) return "Kezuvchi";
   if (n.includes("doctor") || n.includes("shifokor")) return "Shifokor";

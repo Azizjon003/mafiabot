@@ -1,22 +1,21 @@
 # Test Hisoboti
-_Yaratildi: 2026-08-09T18:02:13.285Z_
+_Yaratildi: 2026-08-11T15:58:00.724Z_
 
 ## Umumiy natija
 
-- **Jami senariylar:** 204
-- **✅ O'tdi:** 187
-- **❌ Xato:** 17
-- **Muvaffaqiyat foizi:** 91.7%
-- **Jami vaqt:** 63ms
+- **Jami senariylar:** 212
+- **✅ O'tdi:** 202
+- **❌ Xato:** 10
+- **Muvaffaqiyat foizi:** 95.3%
+- **Jami vaqt:** 128ms
 
 ## Kategoriya bo'yicha
 
 | Kategoriya | O'tdi | Jami | Holat |
 |---|---|---|---|
-| Hujjat | 0 | 7 | ❌ (7 xato) |
 | Komissar | 3 | 9 | ❌ (6 xato) |
 | Aktiv rol | 19 | 22 | ❌ (3 xato) |
-| Shield | 26 | 27 | ❌ (1 xato) |
+| Hujjat | 7 | 8 | ❌ (1 xato) |
 | Mafiya | 8 | 8 | ✅ |
 | Shifokor | 19 | 19 | ✅ |
 | Kamonchi | 8 | 8 | ✅ |
@@ -27,7 +26,8 @@ _Yaratildi: 2026-08-09T18:02:13.285Z_
 | Daydi | 5 | 5 | ✅ |
 | Labarant | 2 | 2 | ✅ |
 | Koldun | 2 | 2 | ✅ |
-| Sotqin | 3 | 3 | ✅ |
+| Sotqin | 2 | 2 | ✅ |
+| Serjant | 8 | 8 | ✅ |
 | Professor | 20 | 20 | ✅ |
 | Ovoz berish | 4 | 4 | ✅ |
 | G'olib | 1 | 1 | ✅ |
@@ -35,6 +35,7 @@ _Yaratildi: 2026-08-09T18:02:13.285Z_
 | Minior | 2 | 2 | ✅ |
 | Ayg'oqchi | 1 | 1 | ✅ |
 | Snayper | 13 | 13 | ✅ |
+| Shield | 27 | 27 | ✅ |
 | Geroy | 2 | 2 | ✅ |
 
 ## ❌ Muvaffaqiyatsiz senariylar
@@ -59,34 +60,10 @@ _Yaratildi: 2026-08-09T18:02:13.285Z_
 #### Sheriff Donni otadi (8 o'yinchi)
 - [night 1] Dn o'lishi kerak edi, lekin tirik
 
-### Hujjat (7)
-
-#### Hujjat Komissar tekshiruvini aldaydi va sarflanadi
-- [night 1] Don.document kutilgan: false, bo'ldi: true
+### Hujjat (1)
 
 #### Hujjat Sheriff otishda ishlamaydi (faqat check)
 - [night 1] Don o'lishi kerak edi, lekin tirik
-
-#### Hujjat 1-marta ishlaydi, 2-marta yo'q
-- [night 1] Don.document kutilgan: false, bo'ldi: true
-- [night 2] Don.document kutilgan: false, bo'ldi: true
-
-#### Hujjat Komissarni aldaydi (3 o'yinchi)
-- [night 1] Dn.document kutilgan: false, bo'ldi: true
-
-#### Hujjat Komissarni aldaydi (4 o'yinchi)
-- [night 1] Dn.document kutilgan: false, bo'ldi: true
-
-#### Hujjat Komissarni aldaydi (5 o'yinchi)
-- [night 1] Dn.document kutilgan: false, bo'ldi: true
-
-#### Hujjat Komissarni aldaydi (6 o'yinchi)
-- [night 1] Dn.document kutilgan: false, bo'ldi: true
-
-### Shield (1)
-
-#### Shield va Hujjat bir vaqtda (ikki xil himoya)
-- [night 1] Don.document kutilgan: false, bo'ldi: true
 
 ### Aktiv rol (3)
 

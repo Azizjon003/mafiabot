@@ -25,7 +25,7 @@ for (const key of Object.keys(playerRepo) as (keyof typeof playerRepo)[]) {
 // Endi engine'ni import qilamiz (repos allaqachon stubbed)
 import { GameEngine } from "../src/game/engine";
 import { PlayerState, NightResult } from "../src/types";
-import { ROLE_EMOJI } from "../src/utils/constants";
+import { ROLE_EMOJI, ROLE_TEAM, Team } from "../src/utils/constants";
 
 // ==================== TYPES ====================
 
@@ -179,13 +179,33 @@ async function runNight(engine: GameEngine, id: (n: string) => number, input: Ni
     }
   }
 
-  // Komissar
+  // Komissar — handlers/callbacks/night-action.ts dagi `sheriff_action` yo'lini
+  // aynan takrorlaymiz. Hujjat va setPendingSheriffCheck AYNAN o'sha yerda
+  // ishlaydi (engine ichida emas), shusiz tekshiruv natijasi umuman hosil bo'lmaydi.
   if (input.sheriff) {
     const sheriff = engine.getAlivePlayers().find((p) => p.role === "SHERIFF");
     if (sheriff) {
-      engine.submitNightAction(sheriff.playerId, id(input.sheriff.target), "SHERIFF");
-      if (input.sheriff.mode === "shoot") engine.setSheriffShoot(id(input.sheriff.target));
+      const targetId = id(input.sheriff.target);
+      engine.submitNightAction(sheriff.playerId, targetId, "SHERIFF");
+      if (input.sheriff.mode === "shoot") {
+        engine.setSheriffShoot(targetId);
+      } else {
+        const target = engine.getPlayer(targetId);
+        const team = target ? ROLE_TEAM[target.role] : undefined;
+        const isBadRole = team === Team.MAFIA || team === Team.SOLO;
+        const usedDocument = !!(target?.hasDocumentActive && isBadRole);
+        if (usedDocument && target) target.hasDocumentActive = false;
+        engine.setPendingSheriffCheck(sheriff.playerId, targetId, usedDocument);
+      }
+      engine.markNightRoleDone("SHERIFF");
     }
+  }
+
+  // Serjant avtomatik ma'lumot oladi (phases/night.ts::sendSergeantPrompt)
+  const sergeant = engine.getAlivePlayers().find((p) => p.role === "SERGEANT");
+  if (sergeant) {
+    engine.submitNightAction(sergeant.playerId, sergeant.playerId, "SERGEANT");
+    engine.markNightRoleDone("SERGEANT");
   }
 
   // Professor: action + quti tanlash

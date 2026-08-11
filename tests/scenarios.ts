@@ -959,5 +959,70 @@ const kamikazeAndBullet: Scenario[] = [
   },
 ];
 
-export const scenarios: Scenario[] = [...manual, ...generated, ...inventoryScenarios, ...shieldGen, ...docGen, ...kamikazeAndBullet];
+
+// ==================== SERJANT ====================
+// Serjant Komissarning sherigi va u o'lsa o'rnini egallaydi (PRD) — shuning uchun
+// tekshiruv NATIJASI ham unga boradi. Aldov (Hujjat/Advokat/Tuhmatchi) ikkalasiga
+// bir xil ta'sir qiladi: Serjant yolg'onni fosh qila olmaydi.
+const sergeantScenarios: Scenario[] = [
+  {
+    name: "Serjant Komissar tekshiruvi NATIJASINI oladi (aniq rol)",
+    players: ["Sheriff", "Sgt", "Don", "Civ1"],
+    roles: { Sheriff: "SHERIFF", Sgt: "SERGEANT", Don: "DON", Civ1: "CIVILIAN" },
+    nights: [{ sheriff: { target: "Don", mode: "check" } }],
+    afterNight: [{ eventContains: { SERGEANT_INFO: ["tekshirdi", "Don"] } }],
+  },
+  {
+    name: "Serjant tinch axoli natijasini ham oladi",
+    players: ["Sheriff", "Sgt", "Don", "Civ1"],
+    roles: { Sheriff: "SHERIFF", Sgt: "SERGEANT", Don: "DON", Civ1: "CIVILIAN" },
+    nights: [{ sheriff: { target: "Civ1", mode: "check" } }],
+    afterNight: [{ eventContains: { SERGEANT_INFO: ["tekshirdi", "Civ1", "Tinch axoli"] } }],
+  },
+  {
+    name: "Serjant Advokat himoyasidagi mafiyani TINCH deb ko'radi (aldov ishlaydi)",
+    players: ["Sheriff", "Sgt", "Don", "Lawyer", "Civ1"],
+    roles: { Sheriff: "SHERIFF", Sgt: "SERGEANT", Don: "DON", Lawyer: "LAWYER", Civ1: "CIVILIAN" },
+    nights: [{ sheriff: { target: "Don", mode: "check" }, actions: { LAWYER: "Don" } }],
+    afterNight: [{ eventContains: { SERGEANT_INFO: ["Don", "Tinch axoli"] } }],
+  },
+  {
+    name: "Serjant Tuhmatchi belgilagan tinch odamni MAFIYA deb ko'radi",
+    players: ["Sheriff", "Sgt", "Framer", "Civ1", "Civ2"],
+    roles: { Sheriff: "SHERIFF", Sgt: "SERGEANT", Framer: "FRAMER", Civ1: "CIVILIAN", Civ2: "CIVILIAN" },
+    nights: [{ sheriff: { target: "Civ1", mode: "check" }, actions: { FRAMER: "Civ1" } }],
+    afterNight: [{ eventContains: { SERGEANT_INFO: ["Civ1", "Mafiya"] } }],
+  },
+  {
+    name: "Serjant Komissar OTGANDA natija olmaydi (faqat otgani aytiladi)",
+    players: ["Sheriff", "Sgt", "Don", "Civ1", "Civ2"],
+    roles: { Sheriff: "SHERIFF", Sgt: "SERGEANT", Don: "DON", Civ1: "CIVILIAN", Civ2: "CIVILIAN" },
+    nights: [{}, { sheriff: { target: "Don", mode: "shoot" } }],
+    afterNight: [{}, { eventContains: { SERGEANT_INFO: ["o'q uzdi"] } }],
+  },
+  {
+    name: "Serjant oddiy mafiyani ham to'g'ri ko'radi",
+    players: ["Sheriff", "Sgt", "Maf", "Civ1"],
+    roles: { Sheriff: "SHERIFF", Sgt: "SERGEANT", Maf: "MAFIA", Civ1: "CIVILIAN" },
+    nights: [{ sheriff: { target: "Maf", mode: "check" } }],
+    afterNight: [{ eventContains: { SERGEANT_INFO: ["Maf", "Mafiya"] } }],
+  },
+  {
+    name: "Komissar hech kimni tekshirmasa Serjantga natija bormaydi",
+    players: ["Sheriff", "Sgt", "Don", "Civ1"],
+    roles: { Sheriff: "SHERIFF", Sgt: "SERGEANT", Don: "DON", Civ1: "CIVILIAN" },
+    nights: [{}],
+    afterNight: [{ eventContains: { SERGEANT_INFO: ["hech narsa qilmadi"] } }],
+  },
+  {
+    name: "Serjant Komissar Hujjatli mafiyani tinch deb ko'radi (Serjantga ham aldov)",
+    players: ["Sheriff", "Sgt", "Don", "Civ1"],
+    roles: { Sheriff: "SHERIFF", Sgt: "SERGEANT", Don: "DON", Civ1: "CIVILIAN" },
+    inventory: { Don: { document: true } },
+    nights: [{ sheriff: { target: "Don", mode: "check" } }],
+    afterNight: [{ eventContains: { SERGEANT_INFO: ["Don", "Tinch axoli"] } }],
+  },
+];
+
+export const scenarios: Scenario[] = [...manual, ...generated, ...inventoryScenarios, ...shieldGen, ...docGen, ...kamikazeAndBullet, ...sergeantScenarios];
 

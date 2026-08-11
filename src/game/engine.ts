@@ -851,10 +851,16 @@ export class GameEngine {
     }
 
     // 7. Komissar tekshiruvi YOKI otish
+    // Serjant Komissarning sherigi va u o'lsa o'rnini egallaydi (PRD) — shuning uchun
+    // Komissar KO'RGAN natija Serjantga ham boradi. Aldov (Hujjat/Advokat/Tuhmatchi)
+    // ikkalasiga bir xil ta'sir qiladi: Serjant yolg'onni fosh qila olmaydi.
+    let sheriffCheckLine: string | null = null;
+    let sheriffWasBlocked = false;
     const sheriffAction = this.nightActions.get("SHERIFF");
     if (sheriffAction) {
       const actor = this.getPlayer(sheriffAction.actorId);
       const target = this.getPlayer(sheriffAction.targetId);
+      if (actor?.isBlocked) sheriffWasBlocked = true;
       if (actor && target && !actor.isBlocked) {
         if (this.sheriffShootTarget === sheriffAction.targetId) {
           // OTISH — komissar nishonni o'ldiradi (kimligidan qat'i nazar)
@@ -904,13 +910,15 @@ export class GameEngine {
             const displayEmoji = ROLE_EMOJI[displayRole] || "";
             const displayName = ROLE_NAME[displayRole] || displayRole;
 
+            // Serjant ham AYNAN shu natijani oladi (8-qadamda ishlatiladi)
+            sheriffCheckLine = `🔎 <b>${escapeHtml(target.firstName)}</b> — ${displayName} ${displayEmoji}`;
+
             result.events.push({
               type: "SHERIFF_CHECK_RESULT",
               actorId: sheriffAction.actorId,
               targetId: sheriffAction.targetId,
               message: "",
-              privateMessage:
-                `🔎 <b>${escapeHtml(target.firstName)}</b> — ${displayName} ${displayEmoji}`,
+              privateMessage: sheriffCheckLine,
             });
           }
 
@@ -939,12 +947,17 @@ export class GameEngine {
         let info: string;
         if (!sheriffAlive) {
           info = "👮🏻‍♂ Komissar vafot etdi! Endi siz yangi <b>Komissar</b>siz!";
+        } else if (sheriffWasBlocked) {
+          // Kezuvchi uxlatgan — tekshiruv umuman bo'lmagan, "tekshirdi" deb aldamaymiz
+          info = "👮🏻‍♂ Komissar bu tunda harakat qila olmadi.";
         } else if (sheriffAction) {
           const sheriffTarget = this.getPlayer(sheriffAction.targetId);
-          if (this.sheriffShootTarget) {
+          if (this.sheriffShootTarget === sheriffAction.targetId) {
             info = `👮🏻‍♂ Komissar bu tunda <b>${escapeHtml(sheriffTarget?.firstName ?? "")}</b>ga 🔫 o'q uzdi.`;
           } else {
             info = `👮🏻‍♂ Komissar bu tunda <b>${escapeHtml(sheriffTarget?.firstName ?? "")}</b>ni 🔍 tekshirdi.`;
+            // Tekshiruv natijasi — Komissar ko'rgan narsaning aynan o'zi
+            if (sheriffCheckLine) info += `\n\n${sheriffCheckLine}`;
           }
         } else {
           info = "👮🏻‍♂ Komissar bu tunda hech narsa qilmadi.";
