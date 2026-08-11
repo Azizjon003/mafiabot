@@ -22,6 +22,7 @@ import {
   botStatsKeyboard,
   groupsKeyboard,
   GroupSort,
+  paymentSettingsKeyboard,
 } from "../../keyboards/admin-panel";
 import { botStatsRepo } from "../../database/repositories/botstats.repository";
 import {
@@ -46,6 +47,7 @@ const pendingInputs = new Map<
   | { type: "text"; key: string; fromPage?: number }
   | { type: "textsearch" }
   | { type: "textimport" }
+  | { type: "card"; field: "number" | "holder" }
 >();
 
 function escapeHtmlText(s: string): string {
@@ -349,6 +351,59 @@ ownerCommand.callbackQuery("ap:main", ownerOnly, async (ctx) => {
 ownerCommand.callbackQuery("ap:close", ownerOnly, async (ctx) => {
   await ctx.answerCallbackQuery().catch(() => {});
   await ctx.deleteMessage().catch(() => {});
+});
+
+// ==================== TO'LOV (karta rekvizitlari) ====================
+
+function paymentBody(): string {
+  const card = topUpService.getCard();
+  return (
+    `💳 <b>To'lov sozlamalari</b>\n\n` +
+    `<b>Karta:</b> <code>${card.number}</code>\n` +
+    `<b>Egasi:</b> ${card.holder}\n\n` +
+    (card.filled
+      ? `✅ Sotib olish ishlayapti.`
+      : `⚠️ <b>Karta kiritilmagan</b> — foydalanuvchilar sotib ololmaydi!`)
+  );
+}
+
+ownerCommand.callbackQuery("ap:pay", ownerOnly, async (ctx) => {
+  await ctx.answerCallbackQuery().catch(() => {});
+  await ctx.editMessageText(paymentBody(), {
+    parse_mode: "HTML",
+    reply_markup: paymentSettingsKeyboard(),
+  }).catch(() => {});
+});
+
+// Karta raqami / egasini kiritish
+ownerCommand.callbackQuery(/^ap:paycard:(number|holder)$/, ownerOnly, async (ctx) => {
+  if (!ctx.from) return;
+  const field = ctx.match[1] as "number" | "holder";
+  pendingInputs.set(ctx.from.id.toString(), { type: "card", field });
+  await ctx.answerCallbackQuery().catch(() => {});
+  await ctx.reply(
+    field === "number"
+      ? `✏️ <b>Karta raqamini yozing</b>\n<i>Masalan: 8600 1234 5678 9012</i>`
+      : `✏️ <b>Karta egasining ismini yozing</b>\n<i>Masalan: Aziz Aliqulov</i>`,
+    { parse_mode: "HTML" }
+  );
+});
+
+// Kutayotgan cheklar
+ownerCommand.callbackQuery("ap:topups", ownerOnly, async (ctx) => {
+  await ctx.answerCallbackQuery().catch(() => {});
+  const list = await topUpRepo.listPending(20);
+  const body = list.length === 0
+    ? `✅ Kutayotgan chek yo'q.`
+    : `🧾 <b>Kutayotgan cheklar (${list.length})</b>\n\n` +
+      list.map((r) =>
+        `#${r.id} — ${r.user.firstName}: <b>${r.amount.toLocaleString()}</b>` +
+        `${r.kind === "DIAMOND" ? "💎" : "💰"} (${r.priceSom.toLocaleString()} so'm)`
+      ).join("\n");
+  await ctx.editMessageText(body, {
+    parse_mode: "HTML",
+    reply_markup: paymentSettingsKeyboard(),
+  }).catch(() => {});
 });
 
 // ==================== NARXLAR ====================
@@ -1144,6 +1199,20 @@ ownerCommand.on("message:text", async (ctx, next) => {
   if (text.startsWith("/")) {
     pendingInputs.delete(ownerId);
     return next();
+  }
+
+  // KARTA rekvizitlari
+  if (pending.type === "card") {
+    pendingInputs.delete(ownerId);
+    const cur = topUpService.getCard();
+    const number = pending.field === "number" ? text : cur.number;
+    const holder = pending.field === "holder" ? text : cur.holder;
+    await topUpService.setCard(number, holder, BigInt(ctx.from.id));
+    await ctx.reply(
+      `✅ Saqlandi.\n\n<b>Karta:</b> <code>${number}</code>\n<b>Egasi:</b> ${holder}`,
+      { parse_mode: "HTML", reply_markup: paymentSettingsKeyboard() }
+    );
+    return;
   }
 
   // TEXT edit input

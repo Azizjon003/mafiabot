@@ -603,6 +603,8 @@ export const TEXT_CATEGORIES: { id: string; label: string; prefix: string }[] = 
   { id: "start", label: "🚀 Start/Welcome", prefix: "start." },
   { id: "help", label: "📖 Help/Rules", prefix: "help." },
   { id: "profile", label: "👤 Profil/Do'kon", prefix: "profile." },
+  { id: "balance", label: "💱 Balans/To'ldirish", prefix: "balance." },
+  { id: "payment", label: "💳 Karta rekvizitlari", prefix: "payment." },
 ];
 
 // Har kalit uchun o'zbekcha tavsif — admin panelda tushunarli ko'rinsin uchun

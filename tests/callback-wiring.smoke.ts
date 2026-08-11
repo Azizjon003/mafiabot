@@ -6,7 +6,7 @@ process.env.LOG_LEVEL = "silent";
 import { readFileSync } from "fs";
 import { join } from "path";
 import { shopCategoriesKeyboard, useItemsKeyboard, buyItemKeyboard } from "../src/keyboards/profile";
-import { giftCategoriesKeyboard, pricesCategoriesKeyboard } from "../src/keyboards/admin-panel";
+import { giftCategoriesKeyboard, pricesCategoriesKeyboard, adminPanelKeyboard, paymentSettingsKeyboard } from "../src/keyboards/admin-panel";
 import { balanceKeyboard, topUpAmountsKeyboard, cancelKeyboard, reviewKeyboard, rejectReasonKeyboard } from "../src/keyboards/balance";
 
 const out: { ok: boolean; name: string; detail?: string }[] = [];
@@ -42,6 +42,8 @@ const kbs: [string, string[]][] = [
   ["Sotib olish (bullet)", datas(buyItemKeyboard("bullet"))],
   ["Admin sovg'a", datas(giftCategoriesKeyboard())],
   ["Admin narxlar", datas(pricesCategoriesKeyboard())],
+  ["Admin bosh panel", datas(adminPanelKeyboard())],
+  ["Admin to'lov bo'limi", datas(paymentSettingsKeyboard())],
   ["Balans ekrani", datas(balanceKeyboard())],
   ["To'ldirish summalari (💎)", datas(topUpAmountsKeyboard("DIAMOND"))],
   ["To'ldirish summalari (💰)", datas(topUpAmountsKeyboard("MONEY"))],
@@ -59,7 +61,8 @@ for (const [label, list] of kbs) {
 for (const d of ["shop:cat:bullet", "shop:buy:bullet", "use:bullet", "ap:gift:bullet", "ap:price:price_bullet",
                  "prof:buy", "bal:back", "bal:m2d", "bal:d2m", "bal:buy:DIAMOND", "bal:buy:MONEY",
                  "bal:custom:DIAMOND", "bal:amt:DIAMOND:25", "tu:ok:7", "tu:no:7", "tu:rsn:7:nopay",
-                 "tu:rsn:7:custom", "ap:price:exchange_diamond_money", "ap:price:price_diamond_som"]) {
+                 "tu:rsn:7:custom", "ap:price:exchange_diamond_money", "ap:price:price_diamond_som",
+                 "ap:pay", "ap:paycard:number", "ap:paycard:holder", "ap:topups", "ap:main"]) {
   check(`"${d}" handlerga tushadi`, handled(d));
 }
 

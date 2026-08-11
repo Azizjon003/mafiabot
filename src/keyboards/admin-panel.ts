@@ -6,6 +6,8 @@ import { ROLE_EMOJI, ROLE_NAME } from "../utils/constants";
 export function adminPanelKeyboard(): InlineKeyboard {
   return new InlineKeyboard()
     .text("💰 Narxlar", "ap:prices")
+    .text("💳 To'lov", "ap:pay")
+    .row()
     .text("🎁 Sovg'a berish", "ap:gift")
     .row()
     .text("📝 Matnlar", "ap:texts")
@@ -26,12 +28,6 @@ export function pricesCategoriesKeyboard(): InlineKeyboard {
     // Do'kon (💎)
     .text("🛡 Himoya", "ap:price:price_shield")
     .text("🎯 Snayper o'qi", "ap:price:price_bullet")
-    .row()
-    .text("💱 Kurs 1💎=💰", "ap:price:exchange_diamond_money")
-    .text("💳 1💎 so'm", "ap:price:price_diamond_som")
-    .row()
-    .text("💳 1💰 so'm", "ap:price:price_money_som")
-    .text("💳 Min so'm", "ap:price:topup_min_som")
     .text("📜 Hujjat", "ap:price:price_document").row()
     .text("🥷 Geroy yaratish", "ap:price:price_hero_create")
     .text("⭐️ VIP", "ap:price:price_vip_month").row()
@@ -180,4 +176,22 @@ export function configCategoriesKeyboard(): InlineKeyboard {
     .text("📋 Barcha narxlar", "ap:cfg:listprices")
     .row()
     .text("🔙 Asosiy", "ap:main");
+}
+
+// To'lov bo'limi — karta rekvizitlari, kurs va so'm narxlari
+export function paymentSettingsKeyboard(): InlineKeyboard {
+  return new InlineKeyboard()
+    .text("✏️ Karta raqami", "ap:paycard:number")
+    .text("✏️ Karta egasi", "ap:paycard:holder")
+    .row()
+    .text("💱 Kurs 1💎 = 💰", "ap:price:exchange_diamond_money")
+    .row()
+    .text("💳 1💎 = so'm", "ap:price:price_diamond_som")
+    .text("💳 1💰 = so'm", "ap:price:price_money_som")
+    .row()
+    .text("💳 Eng kam so'm", "ap:price:topup_min_som")
+    .row()
+    .text("🧾 Kutayotgan cheklar", "ap:topups")
+    .row()
+    .text("🔙 Ortga", "ap:main");
 }
