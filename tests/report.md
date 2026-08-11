@@ -1,5 +1,5 @@
 # Test Hisoboti
-_Yaratildi: 2026-08-11T15:58:00.724Z_
+_Yaratildi: 2026-08-11T16:25:06.938Z_
 
 ## Umumiy natija
 
@@ -7,7 +7,7 @@ _Yaratildi: 2026-08-11T15:58:00.724Z_
 - **✅ O'tdi:** 202
 - **❌ Xato:** 10
 - **Muvaffaqiyat foizi:** 95.3%
-- **Jami vaqt:** 128ms
+- **Jami vaqt:** 80ms
 
 ## Kategoriya bo'yicha
 

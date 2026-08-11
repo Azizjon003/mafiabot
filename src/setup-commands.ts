@@ -6,7 +6,7 @@ import { logger } from "./utils/logger";
 const PRIVATE_COMMANDS = [
   { command: "start", description: "Botni ishga tushirish" },
   { command: "profile", description: "Mening profilim" },
-  { command: "balance", description: "Balans — pul va olmos" },
+  { command: "balance", description: "Balans, ayirboshlash va sotib olish" },
   { command: "stats", description: "Mening statistikam" },
   { command: "vip", description: "VIP ma'lumoti" },
   { command: "buyvip", description: "VIP sotib olish" },

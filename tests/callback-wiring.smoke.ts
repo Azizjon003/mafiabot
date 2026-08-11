@@ -7,6 +7,7 @@ import { readFileSync } from "fs";
 import { join } from "path";
 import { shopCategoriesKeyboard, useItemsKeyboard, buyItemKeyboard } from "../src/keyboards/profile";
 import { giftCategoriesKeyboard, pricesCategoriesKeyboard } from "../src/keyboards/admin-panel";
+import { balanceKeyboard, topUpAmountsKeyboard, cancelKeyboard, reviewKeyboard, rejectReasonKeyboard } from "../src/keyboards/balance";
 
 const out: { ok: boolean; name: string; detail?: string }[] = [];
 const check = (n: string, ok: boolean, d?: string) => out.push({ ok, name: n, detail: ok ? undefined : d });
@@ -20,6 +21,7 @@ const files = [
   "src/handlers/commands/profile.ts",
   "src/handlers/commands/owner.ts",
   "src/handlers/callbacks/vote.ts",
+  "src/handlers/commands/balance.ts",
 ];
 const patterns: (RegExp | string)[] = [];
 for (const f of files) {
@@ -40,6 +42,12 @@ const kbs: [string, string[]][] = [
   ["Sotib olish (bullet)", datas(buyItemKeyboard("bullet"))],
   ["Admin sovg'a", datas(giftCategoriesKeyboard())],
   ["Admin narxlar", datas(pricesCategoriesKeyboard())],
+  ["Balans ekrani", datas(balanceKeyboard())],
+  ["To'ldirish summalari (💎)", datas(topUpAmountsKeyboard("DIAMOND"))],
+  ["To'ldirish summalari (💰)", datas(topUpAmountsKeyboard("MONEY"))],
+  ["Bekor qilish", datas(cancelKeyboard())],
+  ["Admin chek ko'rish", datas(reviewKeyboard(7))],
+  ["Rad etish sabablari", datas(rejectReasonKeyboard(7))],
 ];
 
 for (const [label, list] of kbs) {
@@ -48,7 +56,10 @@ for (const [label, list] of kbs) {
 }
 
 // Aniq yangi tugmalar
-for (const d of ["shop:cat:bullet", "shop:buy:bullet", "use:bullet", "ap:gift:bullet", "ap:price:price_bullet"]) {
+for (const d of ["shop:cat:bullet", "shop:buy:bullet", "use:bullet", "ap:gift:bullet", "ap:price:price_bullet",
+                 "prof:buy", "bal:back", "bal:m2d", "bal:d2m", "bal:buy:DIAMOND", "bal:buy:MONEY",
+                 "bal:custom:DIAMOND", "bal:amt:DIAMOND:25", "tu:ok:7", "tu:no:7", "tu:rsn:7:nopay",
+                 "tu:rsn:7:custom", "ap:price:exchange_diamond_money", "ap:price:price_diamond_som"]) {
   check(`"${d}" handlerga tushadi`, handled(d));
 }
 

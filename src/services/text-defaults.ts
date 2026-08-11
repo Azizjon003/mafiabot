@@ -513,6 +513,73 @@ export const TEXT_DEFAULTS: Record<string, string> = {
     "📜 Hujjat: {documentCount} ta\n" +
     "🎭 Aktiv rol: {activeRole}\n" +
     "🥷 Geroy: {hero}",
+  // ==================== BALANS / HISOB TO'LDIRISH ====================
+  "balance.title":
+    "💰 <b>Balans va sotib olish</b>\n\n" +
+    "💰 Pul: <b>{money}</b>\n" +
+    "💎 Olmos: <b>{diamonds}</b>\n\n" +
+    "💱 Kurs: <b>1💎 = {rate}💰</b>\n" +
+    "💳 Narx: <b>1💎 = {diamondSom} so'm</b> | <b>1💰 = {moneySom} so'm</b>",
+  "balance.askDiamondToBuy":
+    "💱 <b>Pulni olmosga aylantirish</b>\n\n" +
+    "Kurs: 1💎 = {rate}💰\n" +
+    "Sizda: {money}💰\n\n" +
+    "Nechta olmos olmoqchisiz? Raqam yozing:",
+  "balance.askDiamondToSell":
+    "💱 <b>Olmosni pulga aylantirish</b>\n\n" +
+    "Kurs: 1💎 = {rate}💰\n" +
+    "Sizda: {diamonds}💎\n\n" +
+    "Nechta olmosni sotmoqchisiz? Raqam yozing:",
+  "balance.exchangedToDiamond": "✅ <b>{diamonds}</b>💎 oldingiz!\n💰 Yechildi: <b>{cost}</b>",
+  "balance.exchangedToMoney": "✅ <b>{gain}</b>💰 oldingiz!\n💎 Yechildi: <b>{diamonds}</b>",
+  "balance.askTopUpDiamond":
+    "💎 <b>Olmos sotib olish</b>\n\n" +
+    "Narx: 1💎 = <b>{price} so'm</b>\n" +
+    "Eng kam to'lov: <b>{min} so'm</b>\n\n" +
+    "Nechta olmos olmoqchisiz? Raqam yozing:",
+  "balance.askTopUpMoney":
+    "💰 <b>Pul sotib olish</b>\n\n" +
+    "Narx: 1💰 = <b>{price} so'm</b>\n" +
+    "Eng kam to'lov: <b>{min} so'm</b>\n\n" +
+    "Qancha pul olmoqchisiz? Raqam yozing:",
+  "balance.invoice":
+    "💳 <b>To'lov</b>\n\n" +
+    "Siz olasiz: <b>{amount}</b> {unit}\n" +
+    "To'lov summasi: <b>{som} so'm</b>\n\n" +
+    "Quyidagi kartaga o'tkazing:\n" +
+    "<code>{card}</code>\n" +
+    "{holder}\n\n" +
+    "🧾 To'lagach <b>chek rasmini shu yerga yuboring</b>.\n" +
+    "<i>Admin tekshirib, balansingizni to'ldiradi.</i>",
+  "balance.cardNotSet":
+    "⚠️ Karta rekvizitlari hali kiritilmagan. Iltimos, admin bilan bog'laning.",
+  "balance.minSom": "⚠️ Eng kam to'lov summasi: <b>{min} so'm</b>. Siz tanlagani: {som} so'm.",
+  "balance.badNumber": "⚠️ To'g'ri raqam kiriting (faqat son).",
+  "balance.noPending": "⚠️ Sizda chek kutilayotgan so'rov yo'q. Avval summani tanlang.",
+  "balance.receiptSent":
+    "✅ <b>Chek qabul qilindi!</b>\n\n" +
+    "So'rov raqami: <b>#{id}</b>\n" +
+    "⏳ Admin tekshirib chiqadi — natija shu yerga keladi.",
+  "balance.approved":
+    "✅ <b>To'lovingiz tasdiqlandi!</b>\n\n" +
+    "So'rov <b>#{id}</b>\n" +
+    "Hisobingizga <b>{amount}</b> {unit} qo'shildi.",
+  "balance.rejected":
+    "❌ <b>To'lovingiz rad etildi</b>\n\n" +
+    "So'rov <b>#{id}</b>\n" +
+    "Sabab: <i>{reason}</i>\n\n" +
+    "Savol bo'lsa admin bilan bog'laning.",
+  "balance.cancelled": "⚠️ Oldingi to'lov so'rovingiz bekor qilindi.",
+  "balance.adminNew":
+    "🔔 <b>Yangi to'lov cheki</b>\n\n" +
+    "So'rov: <b>#{id}</b>\n" +
+    "Kimdan: {user} (<code>{telegramId}</code>)\n" +
+    "Oladi: <b>{amount}</b> {unit}\n" +
+    "To'lagan: <b>{som} so'm</b>",
+  "balance.adminNoAdmins":
+    "⚠️ Adminlar ro'yxati bo'sh (OWNER_IDS) — chek hech kimga bormadi!",
+  "payment.cardNumber": "—",
+  "payment.cardHolder": "—",
   "profile.premiumGroupsEmpty": "⭐️ <b>Premium guruhlar</b>\n\nHozircha bo'sh — admin tomonidan qo'shiladi.",
 };
 
@@ -844,5 +911,25 @@ export const TEXT_LABELS: Record<string, string> = {
   "profile.heroAttackAnnounceSurvived": "Geroy hujumi — guruhda omon",
   "profile.heroAttacked": "Geroy hujumi — nishonga xabar",
   "profile.useTitle": "Foydalanish — sarlavha",
+  "balance.title": "Balans ekrani",
+  "balance.askDiamondToBuy": "Pulni olmosga — so'rov",
+  "balance.askDiamondToSell": "Olmosni pulga — so'rov",
+  "balance.exchangedToDiamond": "Ayirboshlandi — olmos",
+  "balance.exchangedToMoney": "Ayirboshlandi — pul",
+  "balance.askTopUpDiamond": "Olmos sotib olish — so'rov",
+  "balance.askTopUpMoney": "Pul sotib olish — so'rov",
+  "balance.invoice": "To'lov — karta rekvizitlari",
+  "balance.cardNotSet": "Karta kiritilmagan",
+  "balance.minSom": "Eng kam summa ogohlantirishi",
+  "balance.badNumber": "Noto'g'ri raqam",
+  "balance.noPending": "Kutilayotgan so'rov yo'q",
+  "balance.receiptSent": "Chek qabul qilindi",
+  "balance.approved": "To'lov tasdiqlandi",
+  "balance.rejected": "To'lov rad etildi",
+  "balance.cancelled": "So'rov bekor qilindi",
+  "balance.adminNew": "Adminga — yangi chek",
+  "balance.adminNoAdmins": "Adminlar ro'yxati bo'sh",
+  "payment.cardNumber": "Karta raqami",
+  "payment.cardHolder": "Karta egasi",
   "profile.premiumGroupsEmpty": "Premium guruhlar — bo'sh",
 };

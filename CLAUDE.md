@@ -131,6 +131,21 @@ Paid items (Shield / Hujjat / Snayper o'qi) are **not** deducted at purchase or 
 Consequences: a cancelled game (`/stopgame`, too few players) never finalizes, so nothing is lost;
 and enabling a toggle *after* joining has no effect on the current game.
 
+### Real-money top-up (manual card + admin review)
+
+There is **no Telegram Payments / Stars integration**. Buying diamonds or money is a manual
+card transfer moderated by admins — `services/topup.service.ts` + `handlers/commands/balance.ts`.
+
+`TopUpRequest` is a state machine: `AWAITING_RECEIPT` → `PENDING` (user sent a receipt photo)
+→ `APPROVED` / `REJECTED`. **Balance is credited only on approve**, and `topUpRepo.review()`
+does a conditional `updateMany({ where: { status: "PENDING" } })` so two admins tapping at once
+cannot credit twice. Card details live in `Config` as `text_payment.cardNumber` /
+`text_payment.cardHolder` (so `/admin` text editing works); rates live in `PRICE_KEYS`
+(`EXCHANGE_DIAMOND_MONEY`, `DIAMOND_SOM`, `MONEY_SOM`, `TOPUP_MIN_SOM`).
+
+Receipts are forwarded to `config.ownerIds` — if `OWNER_IDS` is empty **no one sees them**;
+the handler logs an error and tells the user.
+
 ### Text and pricing are DB-overridable
 
 - `services/text-defaults.ts` holds every string keyed by dotted name. `textService.preloadAll()`

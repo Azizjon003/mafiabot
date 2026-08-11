@@ -7,6 +7,12 @@ export const PRICE_KEYS = {
   SHIELD: "price_shield",                        // 50💎
   DOCUMENT: "price_document",                    // 30💎
   BULLET: "price_bullet",                        // Snayper o'qi — Shieldga teskari
+
+  // Ichki kurs va real pul narxlari (hisob to'ldirish)
+  EXCHANGE_DIAMOND_MONEY: "exchange_diamond_money", // 1💎 = N💰 (o'yin ichida ayirboshlash)
+  DIAMOND_SOM: "price_diamond_som",                 // 1💎 = N so'm (karta orqali)
+  MONEY_SOM: "price_money_som",                     // 1💰 = N so'm (karta orqali)
+  TOPUP_MIN_SOM: "topup_min_som",                   // eng kam to'lov summasi
   HERO_CREATE: "price_hero_create",              // 100💎
   VIP_MONTH: "price_vip_month",                  // 100💎
   HERO_POINTS_1000: "price_hero_points_1000",    // 100💎 → 1000 ball
@@ -56,6 +62,10 @@ const DEFAULTS: Record<string, number> = {
   [PRICE_KEYS.SHIELD]: 10,                    // 10💎 (~7 yutuq) — eski 15
   [PRICE_KEYS.DOCUMENT]: 6,                   // 6💎 (~4 yutuq) — eski 10
   [PRICE_KEYS.BULLET]: 14,                    // 14💎 — Shielddan qimmatroq (hujum > himoya)
+  [PRICE_KEYS.EXCHANGE_DIAMOND_MONEY]: 500,   // 1💎 = 500💰
+  [PRICE_KEYS.DIAMOND_SOM]: 1000,             // 1💎 = 1000 so'm
+  [PRICE_KEYS.MONEY_SOM]: 1,                  // 1💰 = 1 so'm
+  [PRICE_KEYS.TOPUP_MIN_SOM]: 5000,           // eng kam 5000 so'm
   [PRICE_KEYS.HERO_CREATE]: 25,              // 25💎 (~17 yutuq) — eski 30
   [PRICE_KEYS.VIP_MONTH]: 20,                 // 20💎/oy (~13 yutuq)
   [PRICE_KEYS.HERO_POINTS_1000]: 12,          // 12💎 → 1000 ball — eski 20

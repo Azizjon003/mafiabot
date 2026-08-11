@@ -13,6 +13,7 @@ import { economyCommand } from "./handlers/commands/economy";
 import { shopCommand } from "./handlers/commands/shop";
 import { vipCommand } from "./handlers/commands/vip";
 import { profileCommand } from "./handlers/commands/profile";
+import { balanceCommand } from "./handlers/commands/balance";
 import { adminCommand } from "./handlers/commands/admin";
 import { ownerCommand } from "./handlers/commands/owner";
 import { nextCommand } from "./handlers/commands/next";
@@ -80,6 +81,8 @@ async function main() {
   bot.use(startCommand);
   bot.use(createGameCommands(gameController));
   bot.use(statsCommand);
+  // balanceCommand economy va profile dan OLDIN — /balance va "prof:buy" ni u egallaydi
+  bot.use(balanceCommand);
   bot.use(economyCommand);
   bot.use(shopCommand);
   bot.use(vipCommand);

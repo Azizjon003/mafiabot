@@ -6,6 +6,8 @@ import { economyService } from "../../services/economy.service";
 import { vipService } from "../../services/vip.service";
 import { heroRepo } from "../../database/repositories/hero.repository";
 import { inventoryRepo } from "../../database/repositories/inventory.repository";
+import { topUpRepo } from "../../database/repositories/topup.repository";
+import { topUpService } from "../../services/topup.service";
 import { userRepo } from "../../database/repositories/user.repository";
 import { prisma } from "../../database/prisma";
 import { mention } from "../../utils/helpers";
@@ -284,6 +286,40 @@ ownerCommand.command("givedoc", ownerOnly, async (ctx) => {
   );
 });
 
+// /setcard <raqam> | <egasi> — to'lov kartasi rekvizitlari
+ownerCommand.command("setcard", ownerOnly, async (ctx) => {
+  const raw = (ctx.message?.text ?? "").split(" ").slice(1).join(" ").trim();
+  if (!raw) {
+    const cur = topUpService.getCard();
+    await ctx.reply(
+      `💳 <b>Hozirgi karta</b>\n<code>${cur.number}</code>\n${cur.holder}\n\n` +
+      `Yangilash: <code>/setcard 8600 1234 5678 9012 | Ism Familiya</code>`,
+      { parse_mode: "HTML" }
+    );
+    return;
+  }
+  const [number, holder] = raw.split("|").map((x) => x.trim());
+  if (!number) {
+    await ctx.reply("⚠️ Format: /setcard <raqam> | <egasi>");
+    return;
+  }
+  await topUpService.setCard(number, holder || "-", ctx.from ? BigInt(ctx.from.id) : undefined);
+  await ctx.reply(`✅ Karta saqlandi:\n<code>${number}</code>\n${holder ?? ""}`, { parse_mode: "HTML" });
+});
+
+// /topups — ko'rib chiqilmagan to'lov cheklari
+ownerCommand.command("topups", ownerOnly, async (ctx) => {
+  const list = await topUpRepo.listPending(20);
+  if (list.length === 0) {
+    await ctx.reply("✅ Kutayotgan chek yo'q.");
+    return;
+  }
+  const lines = list.map((r) =>
+    `#${r.id} — ${r.user.firstName}: <b>${r.amount.toLocaleString()}</b>${r.kind === "DIAMOND" ? "💎" : "💰"} (${r.priceSom.toLocaleString()} so'm)`
+  );
+  await ctx.reply(`💳 <b>Kutayotgan cheklar (${list.length})</b>\n\n${lines.join("\n")}`, { parse_mode: "HTML" });
+});
+
 // /myid — o'zining Telegram ID sini ko'rish (debug uchun)
 ownerCommand.command("myid", async (ctx) => {
   if (!ctx.from) return;
@@ -337,6 +373,7 @@ ownerCommand.callbackQuery("ap:roleprices", ownerOnly, async (ctx) => {
 // Bu kalit sotib olinadigan item (valyuta o'zgartirish mumkin)
 const CONFIGURABLE_CURRENCY_KEYS = new Set([
   "price_shield", "price_bullet", "price_document", "price_hero_create", "price_vip_month",
+  "exchange_diamond_money", "price_diamond_som", "price_money_som", "topup_min_som",
   "price_hero_points_1000", "price_hero_prot", "price_hero_charge", "price_hero_rename",
   "price_chest_basic", "price_chest_silver", "price_chest_gold",
 ]);

@@ -58,6 +58,7 @@ model User {
   stats        UserStats?
   transactions Transaction[]
   purchases    Purchase[]
+  topUps       TopUpRequest[]
   chests       Chest[]
   hero         Hero?
 
@@ -209,6 +210,40 @@ model Purchase {
   createdAt DateTime @default(now())
 
   @@index([userId])
+}
+
+// ==================== HISOB TO'LDIRISH (karta orqali, admin tasdiqlaydi) ====================
+// Foydalanuvchi summa tanlaydi -> kartaga to'laydi -> chek rasmini yuboradi ->
+// admin tasdiqlaydi yoki sabab bilan rad etadi.
+model TopUpRequest {
+  id            Int          @id @default(autoincrement())
+  userId        Int
+  user          User         @relation(fields: [userId], references: [id])
+  kind          TopUpKind    // Nima sotib olinyapti
+  amount        Int          // Qancha 💰 yoki 💎
+  priceSom      Int          // To'lanishi kerak bo'lgan so'm
+  status        TopUpStatus  @default(AWAITING_RECEIPT)
+  receiptFileId String?      // Telegram photo/document file_id
+  reviewedBy    BigInt?      // Qaysi admin ko'rdi (telegram id)
+  reviewNote    String?      // Rad etish sababi
+  createdAt     DateTime     @default(now())
+  reviewedAt    DateTime?
+
+  @@index([status])
+  @@index([userId])
+}
+
+enum TopUpKind {
+  MONEY
+  DIAMOND
+}
+
+enum TopUpStatus {
+  AWAITING_RECEIPT // chek kutilmoqda
+  PENDING          // chek yuborildi, admin ko'rishi kerak
+  APPROVED
+  REJECTED
+  CANCELLED
 }
 
 enum ShopCategory {
