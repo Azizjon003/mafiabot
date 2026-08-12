@@ -374,6 +374,29 @@ async function showAdminError(ctx: BotContext, e: unknown, where: string): Promi
   ).catch(() => {});
 }
 
+// Ekranni yangilash. editMessageText Telegram tomonidan rad etilishi mumkin
+// (eski xabar, "message is not modified", noto'g'ri klaviatura...). Ilgari bu
+// `.catch(() => {})` bilan JIM yutilardi va tugma "ishlamaydigan" bo'lib ko'rinardi.
+// Endi tahrir bo'lmasa YANGI xabar yuboriladi — admin har doim natijani ko'radi.
+async function editOrReply(
+  ctx: BotContext,
+  text: string,
+  keyboard: InlineKeyboard,
+): Promise<void> {
+  try {
+    await ctx.editMessageText(text, { parse_mode: "HTML", reply_markup: keyboard });
+    return;
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    // Bu xato zararsiz: ekran allaqachon aynan shunday
+    if (/message is not modified/i.test(msg)) return;
+    logger.warn({ err: msg }, "editMessageText ishlamadi — yangi xabar yuboriladi");
+  }
+  await ctx.reply(text, { parse_mode: "HTML", reply_markup: keyboard }).catch((e) =>
+    logger.error(e, "Admin ekranini yuborib bo'lmadi")
+  );
+}
+
 // ==================== REFERRAL ====================
 
 const REF_GROUPS_PER_PAGE = 8;
@@ -403,10 +426,7 @@ async function referralBody(): Promise<string> {
 ownerCommand.callbackQuery("ap:ref", ownerOnly, async (ctx) => {
   await ctx.answerCallbackQuery().catch(() => {});
   try {
-    await ctx.editMessageText(await referralBody(), {
-      parse_mode: "HTML",
-      reply_markup: referralSettingsKeyboard(),
-    }).catch(() => {});
+    await editOrReply(ctx, await referralBody(), referralSettingsKeyboard());
   } catch (e) {
     await showAdminError(ctx, e, "referral sozlamalari");
   }
@@ -425,13 +445,14 @@ async function showRefGroups(ctx: BotContext, page: number) {
     // Hali birorta guruh yo'q — bo'sh klaviatura "ishlamayapti" bo'lib ko'rinadi,
     // shuning uchun sababini ochiq aytamiz.
     if (total === 0) {
-      await ctx.editMessageText(
+      await editOrReply(
+        ctx,
         `👥 <b>Referral guruhlari</b>\n\n` +
         `⚠️ Bazada hali birorta guruh yo'q.\n` +
         `Botni guruhga qo'shib, u yerda bir marta <code>/startgame</code> qiling — ` +
         `shundan keyin guruh shu ro'yxatda paydo bo'ladi.`,
-        { parse_mode: "HTML", reply_markup: referralSettingsKeyboard() }
-      ).catch(() => {});
+        referralSettingsKeyboard(),
+      );
       return;
     }
 
@@ -443,11 +464,13 @@ async function showRefGroups(ctx: BotContext, page: number) {
       take: REF_GROUPS_PER_PAGE,
       select: { id: true, title: true, isReferralTarget: true },
     });
-    await ctx.editMessageText(
+    await editOrReply(
+      ctx,
       `👥 <b>Referral guruhlarini tanlang</b>\n\n` +
-      `Belgilangan guruhlarda o'ynalgan o'yin referralga hisoblanadi.`,
-      { parse_mode: "HTML", reply_markup: referralGroupsKeyboard(groups, safePage, totalPages) }
-    ).catch(() => {});
+      `Belgilangan guruhlarda o'ynalgan o'yin referralga hisoblanadi.\n\n` +
+      `<i>Jami ${total} ta chat, ${safePage + 1}-sahifa.</i>`,
+      referralGroupsKeyboard(groups, safePage, totalPages),
+    );
   } catch (e) {
     await showAdminError(ctx, e, "guruhlar ro'yxati");
   }
@@ -463,6 +486,37 @@ ownerCommand.callbackQuery(/^ap:reftoggle:(\d+):(\d+)$/, ownerOnly, async (ctx) 
     await showRefGroups(ctx, page);
   } catch (e) {
     await showAdminError(ctx, e, "guruhni yoqish/o'chirish");
+  }
+});
+
+// /refdebug — referral guruh ro'yxati nega bo'sh/ishlamayotganini aniqlash
+ownerCommand.command("refdebug", ownerOnly, async (ctx) => {
+  try {
+    const total = await prisma.chat.count();
+    const rows = await prisma.chat.findMany({
+      orderBy: { updatedAt: "desc" },
+      take: 10,
+      select: { id: true, telegramId: true, title: true, type: true, isReferralTarget: true },
+    });
+    const lines = rows.map(
+      (c) =>
+        `#${c.id} ${c.isReferralTarget ? "✅" : "⬜️"} ` +
+        `<code>${c.telegramId}</code> [${c.type}] ` +
+        `${escapeHtmlText(c.title ?? "(nomsiz)")} ` +
+        `→ <code>ap:reftoggle:${c.id}:0</code>`,
+    );
+    await ctx.reply(
+      `🔎 <b>Referral debug</b>\n\n` +
+      `Chat yozuvlari: <b>${total}</b>\n\n` +
+      (lines.length ? lines.join("\n") : "(bo'sh)"),
+      { parse_mode: "HTML" },
+    );
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    logger.error(e, "refdebug xatolik");
+    await ctx.reply(`⚠️ Xatolik:\n<code>${escapeHtmlText(msg.slice(0, 500))}</code>`, {
+      parse_mode: "HTML",
+    });
   }
 });
 
