@@ -91,12 +91,14 @@ export function createGameCommands(controller: GameController): Composer<BotCont
       await ctx.reply(t("errors.notAdmin"), { parse_mode: "HTML" });
       return;
     }
-    const extended = await controller.handleExtend(chatId);
-    if (extended) {
-      await ctx.reply(t("game.extended"), { parse_mode: "HTML" });
-    } else {
-      await ctx.reply(t("game.extendLimit"), { parse_mode: "HTML" });
-    }
+    const res = await controller.handleExtend(chatId);
+    const key =
+      res === "unlimited" ? "game.registrationUnlimited"
+      : res === "already" ? "game.registrationAlreadyUnlimited"
+      : res === "phase" ? "game.extended"
+      : res === "limit" ? "game.extendLimit"
+      : "game.noActiveGame";
+    await ctx.reply(t(key), { parse_mode: "HTML" });
   });
 
   // /quit, /leave, /exit — o'yindan chiqish (faqat WAITING fazasida)

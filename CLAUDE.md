@@ -100,9 +100,16 @@ The rule that matters: **when rate-limited, never reply**. Each rejected command
 itself. The middleware deletes the offending message and warns at most once per user per minute
 with a self-deleting message.
 
-Supporting limits: `/extend` is capped at `MAX_EXTENDS` (3) per game and `MAX_REGISTRATION_SEC`
-(300) total — `extendCount` is reset in `handleStartGame`, because `/stopgame` does not go through
-`controller.endGame()`. `/startgame` re-posting the registration message has a 15 s cooldown.
+`/extend` during registration switches it to **unlimited**: the countdown stops and the game only
+starts on `/begingame`. That is deliberate — waiting for players is normal, and the rate limiter
+already handles spam. The cost is that an abandoned registration would edit/repost its pinned
+message forever, so the interval instead watches for idleness and auto-cancels the game after
+`IDLE_CANCEL_MS` (20 min) with no new player joining. During NIGHT/DAY/VOTING `/extend` keeps a
+`MAX_PHASE_EXTENDS` (3) cap — there is no button to un-stall a paused phase.
+
+All registration state lives behind `clearRegistrationState()`; call it rather than deleting maps
+by hand, or unlimited mode leaks into the next game in that chat. `/startgame` re-posting the
+registration message has a 15 s cooldown.
 `utils/admin-cache.ts` caches `getChatMember` for 5 min (also used by `night-silence.ts`, which
 otherwise hits the API on *every* group message).
 

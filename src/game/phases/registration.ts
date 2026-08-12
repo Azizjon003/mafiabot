@@ -29,7 +29,15 @@ export function getPlayerListText(engine: GameEngine): string {
   return `\n\n<i>Ro'yxatdan o'tganlar:</i>\n${namesInline}\n\nJami <b>${players.length}</b>ta odam.`;
 }
 
+// timeLeft < 0 — CHEKSIZ rejim: sanoq to'xtaydi, o'yin faqat /begingame bilan boshlanadi
 export function getRegistrationText(engine: GameEngine, timeLeft: number): string {
+  if (timeLeft < 0) {
+    return (
+      `📝 <b>Ro'yxatdan o'tish davom etmoqda</b>\n` +
+      `♾ Vaqt: <b>cheksiz</b> — boshlash uchun <code>/begingame</code>` +
+      getPlayerListText(engine)
+    );
+  }
   const mins = Math.floor(timeLeft / 60);
   const secs = timeLeft % 60;
   const timeStr = mins > 0 ? `${mins}:${String(secs).padStart(2, "0")}` : `${secs}s`;

@@ -333,6 +333,14 @@ export const TEXT_DEFAULTS: Record<string, string> = {
   // ===== ERRORS =====
   "errors.tooManyCommands":
     "⚠️ Juda ko'p buyruq yubordingiz. Bir oz kuting va qayta urinib ko'ring.",
+  "game.registrationUnlimited":
+    "♾️ <b>Ro'yxat vaqti cheksiz qilindi!</b>\n" +
+    "O'yin <code>/begingame</code> bosilganda boshlanadi.",
+  "game.registrationAlreadyUnlimited":
+    "♾️ Ro'yxat allaqachon cheksiz — boshlash uchun <code>/begingame</code>.",
+  "game.registrationIdleCancelled":
+    "⏰ Ro'yxatga uzoq vaqt yangi odam qo'shilmadi — o'yin bekor qilindi.\n" +
+    "<code>/startgame</code> bilan yangisini boshlang.",
   "game.extendLimit":
     "⏳ Vaqtni uzaytirish chegarasi tugadi — boshqa uzaytirib bo'lmaydi.",
   "errors.notAdmin": "⚠️ Bu buyruq faqat adminlar uchun!",
@@ -851,6 +859,9 @@ export const TEXT_LABELS: Record<string, string> = {
 
   // ERRORS
   "errors.tooManyCommands": "Xato — juda ko'p buyruq",
+  "game.registrationUnlimited": "Ro'yxat cheksiz qilindi",
+  "game.registrationAlreadyUnlimited": "Ro'yxat allaqachon cheksiz",
+  "game.registrationIdleCancelled": "Ro'yxat bo'sh turib bekor bo'ldi",
   "game.extendLimit": "Uzaytirish chegarasi",
   "errors.notAdmin": "Xato — admin emas",
   "errors.notInGame": "Xato — o'yinda emas",
