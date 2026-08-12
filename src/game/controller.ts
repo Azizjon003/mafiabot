@@ -648,8 +648,11 @@ export class GameController {
     }
 
     if (yes > no && !candidate.isProtectedByWarlock) {
-      // 👍 ko'p — OSILADI
-      const voteResult = engine.processVotes();
+      // 👍 ko'p — OSILADI.
+      // Nishonni QAYTA hisoblatmaymiz: guruh aynan shu nomzodni tasdiqladi.
+      // (Ilgari processVotes() o'zi sanardi va "Hech kimga" ovozlari ko'p bo'lsa
+      //  tasdiqlangan odam osilmay qolardi.)
+      const voteResult = engine.processVotes(engine.pendingHangTarget ?? undefined);
 
       // Kamikaze tekshirish
       if (voteResult.votedOut?.role === "KAMIKAZE") {

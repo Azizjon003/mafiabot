@@ -1,13 +1,13 @@
 # Test Hisoboti
-_Yaratildi: 2026-08-12T17:03:16.944Z_
+_Yaratildi: 2026-08-12T17:11:33.233Z_
 
 ## Umumiy natija
 
-- **Jami senariylar:** 212
-- **✅ O'tdi:** 202
+- **Jami senariylar:** 216
+- **✅ O'tdi:** 206
 - **❌ Xato:** 10
-- **Muvaffaqiyat foizi:** 95.3%
-- **Jami vaqt:** 28ms
+- **Muvaffaqiyat foizi:** 95.4%
+- **Jami vaqt:** 82ms
 
 ## Kategoriya bo'yicha
 
@@ -29,7 +29,7 @@ _Yaratildi: 2026-08-12T17:03:16.944Z_
 | Sotqin | 2 | 2 | ✅ |
 | Serjant | 8 | 8 | ✅ |
 | Professor | 20 | 20 | ✅ |
-| Ovoz berish | 4 | 4 | ✅ |
+| Ovoz berish | 8 | 8 | ✅ |
 | G'olib | 1 | 1 | ✅ |
 | Kamikaze | 7 | 7 | ✅ |
 | Minior | 2 | 2 | ✅ |

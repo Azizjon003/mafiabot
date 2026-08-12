@@ -1847,7 +1847,16 @@ export class GameEngine {
     return victim;
   }
 
-  processVotes(): VoteResult {
+  /**
+   * @param confirmedTargetId Tasdiqlash bosqichidan kelgan nishon.
+   *
+   * DIQQAT: berilgan bo'lsa QAYTA HISOBLANMAYDI. Ilgari bu yerda ovozlar
+   * boshtan sanalardi va natija `handleVotingEnd` qaroriga ZID chiqishi mumkin edi:
+   * u "Hech kimga" (-1) ovozlarini hisobga olmay nomzod tanlaydi, bu yerdagi
+   * `getMostVoted` esa -1 ni ham sanaydi. Natijada -1 eng ko'p bo'lsa (yoki teng
+   * chiqsa) guruh 👍 bilan tasdiqlagan odam OSILMAY qolardi.
+   */
+  processVotes(confirmedTargetId?: number): VoteResult {
     const voteCount = new Map<number, number>();
 
     for (const [, targetId] of this.votes) {
@@ -1859,11 +1868,18 @@ export class GameEngine {
       votes: voteCount,
     };
 
-    const mostVoted = getMostVoted(voteCount);
-    if (mostVoted && mostVoted.target !== -1) {
+    let targetId: number | null = null;
+    if (confirmedTargetId !== undefined && confirmedTargetId !== -1) {
+      targetId = confirmedTargetId;
+    } else {
+      const mostVoted = getMostVoted(voteCount);
       // -1 = "Hech kimga" ovoz
-      const target = this.getPlayer(mostVoted.target);
-      if (target) {
+      if (mostVoted && mostVoted.target !== -1) targetId = mostVoted.target;
+    }
+
+    if (targetId !== null) {
+      const target = this.getPlayer(targetId);
+      if (target && target.isAlive) {
         target.isAlive = false;
         result.votedOut = target;
 

@@ -960,6 +960,49 @@ const kamikazeAndBullet: Scenario[] = [
 ];
 
 
+// ==================== OVOZ BERISH: "Hech kimga" REGRESSIYASI ====================
+// XATO EDI: handleVotingEnd nomzod tanlashda -1 ("Hech kimga") ni hisobga olmasdi,
+// processVotes esa sanardi. Natijada -1 eng ko'p (yoki teng) bo'lsa, guruh
+// tasdiqlagan odam OSILMAY qolardi va "hech kim osilmadi" chiqardi.
+const voteSkipScenarios: Scenario[] = [
+  {
+    name: "Ovoz: 'Hech kimga' ko'p bo'lsa ham tasdiqlangan odam osiladi",
+    players: ["Don", "Civ1", "Civ2", "Civ3", "Civ4"],
+    roles: { Don: "DON", Civ1: "CIVILIAN", Civ2: "CIVILIAN", Civ3: "CIVILIAN", Civ4: "CIVILIAN" },
+    // 2 ovoz Civ1 ga, 3 ovoz "Hech kimga" -> nomzod Civ1, guruh tasdiqlaydi
+    votes: [{
+      votes: { Civ2: "Civ1", Civ3: "Civ1", Don: "skip", Civ1: "skip", Civ4: "skip" },
+      confirm: { Don: true, Civ1: true, Civ2: true, Civ3: true, Civ4: false },
+    }],
+    afterVote: [{ dead: ["Civ1"] }],
+  },
+  {
+    name: "Ovoz: 'Hech kimga' bilan TENG bo'lsa ham tasdiqlangani osiladi",
+    players: ["Don", "Civ1", "Civ2", "Civ3"],
+    roles: { Don: "DON", Civ1: "CIVILIAN", Civ2: "CIVILIAN", Civ3: "CIVILIAN" },
+    // 2 ovoz Civ1 ga, 2 ovoz "Hech kimga"
+    votes: [{
+      votes: { Civ2: "Civ1", Civ3: "Civ1", Don: "skip", Civ1: "skip" },
+      confirm: { Don: true, Civ2: true, Civ3: true },
+    }],
+    afterVote: [{ dead: ["Civ1"] }],
+  },
+  {
+    name: "Ovoz: hamma 'Hech kimga' bosса — hech kim osilmaydi",
+    players: ["Don", "Civ1", "Civ2", "Civ3"],
+    roles: { Don: "DON", Civ1: "CIVILIAN", Civ2: "CIVILIAN", Civ3: "CIVILIAN" },
+    votes: [{ votes: { Don: "skip", Civ1: "skip", Civ2: "skip", Civ3: "skip" } }],
+    afterVote: [{ alive: ["Don", "Civ1", "Civ2", "Civ3"] }],
+  },
+  {
+    name: "Ovoz: nomzodlar TENG bo'lsa — hech kim osilmaydi",
+    players: ["Don", "Civ1", "Civ2", "Civ3"],
+    roles: { Don: "DON", Civ1: "CIVILIAN", Civ2: "CIVILIAN", Civ3: "CIVILIAN" },
+    votes: [{ votes: { Don: "Civ1", Civ1: "Civ2", Civ2: "Civ1", Civ3: "Civ2" } }],
+    afterVote: [{ alive: ["Don", "Civ1", "Civ2", "Civ3"] }],
+  },
+];
+
 // ==================== SERJANT ====================
 // Serjant Komissarning sherigi va u o'lsa o'rnini egallaydi (PRD) — shuning uchun
 // tekshiruv NATIJASI ham unga boradi. Aldov (Hujjat/Advokat/Tuhmatchi) ikkalasiga
@@ -1024,5 +1067,5 @@ const sergeantScenarios: Scenario[] = [
   },
 ];
 
-export const scenarios: Scenario[] = [...manual, ...generated, ...inventoryScenarios, ...shieldGen, ...docGen, ...kamikazeAndBullet, ...sergeantScenarios];
+export const scenarios: Scenario[] = [...manual, ...generated, ...inventoryScenarios, ...shieldGen, ...docGen, ...kamikazeAndBullet, ...sergeantScenarios, ...voteSkipScenarios];
 

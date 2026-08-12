@@ -242,10 +242,26 @@ async function runVote(engine: GameEngine, id: (n: string) => number, input: Vot
   for (const [voter, target] of Object.entries(input.votes)) {
     const v = engine.getPlayer(id(voter));
     if (!v || !v.isAlive) continue;
-    if (target === "skip") continue;
-    engine.submitVote(v.playerId, id(target));
+    // "skip" = "Hech kimga" -> production'da -1 yuboriladi (o'tkazib yuborilmaydi)
+    engine.submitVote(v.playerId, target === "skip" ? -1 : id(target));
   }
-  const result = engine.processVotes();
+
+  // controller.handleVotingEnd bilan BIR XIL: -1 ("Hech kimga") nomzod tanlashda
+  // hisobga olinmaydi. Bu yerda ham shunday bo'lishi shart, aks holda test
+  // production'dan boshqacha yo'ldan ketadi.
+  const counts = engine.getVoteCounts();
+  let maxCount = 0;
+  let candidateId: number | null = null;
+  let isTie = false;
+  for (const [targetId, count] of counts) {
+    if (targetId === -1) continue;
+    if (count > maxCount) { maxCount = count; candidateId = targetId; isTie = false; }
+    else if (count === maxCount && count > 0) { isTie = true; }
+  }
+  const hangable = !isTie && candidateId !== null && maxCount > 0;
+  engine.pendingHangTarget = hangable ? candidateId : null;
+
+  const result = hangable ? engine.processVotes(candidateId!) : engine.processVotes();
 
   // Osishni tasdiqlash (confirm)
   if (result.votedOut && input.confirm) {
