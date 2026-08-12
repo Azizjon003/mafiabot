@@ -185,6 +185,40 @@ async function main() {
   check("Promo havolani matnga ham qo'shadi",
     !!promo && promo.text.includes(promo.link), promo?.text);
 
+  // ============ ADMIN: GURUH TANLASH ============
+  reset();
+  const { referralChatRepo } = await import("../src/database/repositories/referral.repository");
+  const { referralGroupsKeyboard } = await import("../src/keyboards/admin-panel");
+
+  chats.forEach((c) => (c.isReferralTarget = false));
+  const on = await referralChatRepo.toggle(1);
+  check("Toggle: o'chiqni yoqadi", on === true && chats[0].isReferralTarget === true, `${on}`);
+  const off = await referralChatRepo.toggle(1);
+  check("Toggle: yoniqni o'chiradi", off === false && chats[0].isReferralTarget === false, `${off}`);
+
+  const missing = await referralChatRepo.toggle(999);
+  check("Mavjud bo'lmagan guruh — yiqilmaydi", missing === false);
+
+  chats[0].isReferralTarget = true;
+  const targets = await referralChatRepo.listTargets();
+  check("listTargets faqat belgilanganlarni qaytaradi",
+    targets.length === 1 && targets[0].id === 1, J(targets));
+
+  // Klaviatura callback_data si guruhning ICHKI id sini uzatadi
+  const kb: any = referralGroupsKeyboard(
+    [{ id: 7, title: "Mafia UZ", isReferralTarget: true },
+     { id: 8, title: null, isReferralTarget: false }],
+    0, 1,
+  );
+  const datas = (kb.inline_keyboard as any[][]).flat().map((b: any) => b.callback_data);
+  const labels = (kb.inline_keyboard as any[][]).flat().map((b: any) => b.text);
+  check("Toggle tugmasi to'g'ri callback_data beradi",
+    datas.includes("ap:reftoggle:7:0") && datas.includes("ap:reftoggle:8:0"), datas.join(","));
+  check("Yoqilgan guruh belgilangan, o'chiq — yo'q",
+    labels.some((l: string) => l.startsWith("✅")) && labels.some((l: string) => l.includes("Guruh")),
+    labels.join(" | "));
+  check("Ortga tugmasi bor", datas.includes("ap:ref"));
+
   let bad = 0;
   for (const r of out) {
     if (!r.ok) bad++;

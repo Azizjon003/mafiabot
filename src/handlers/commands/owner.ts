@@ -38,6 +38,7 @@ import {
 import { textService } from "../../services/text.service";
 import { TEXT_CATEGORIES, TEXT_LABELS } from "../../services/text-defaults";
 import { privateOnly } from "../middleware/chat-type";
+import { logger } from "../../utils/logger";
 
 // Pending state — admin "aniq qiymat" yoki "sovg'a miqdori" yozishini kutamiz
 // Map<ownerTelegramId, {type: "price"|"gift", key: string, targetUserId?: number}>
@@ -355,6 +356,24 @@ ownerCommand.callbackQuery("ap:close", ownerOnly, async (ctx) => {
   await ctx.deleteMessage().catch(() => {});
 });
 
+// Admin panelidagi xatolikni JIM yutmasdan ko'rsatamiz.
+// Eng ko'p uchraydigan sabab — sxema bazaga yuborilmagan (npm run db:push).
+async function showAdminError(ctx: BotContext, e: unknown, where: string): Promise<void> {
+  const msg = e instanceof Error ? e.message : String(e);
+  logger.error(e, `Admin panel xatoligi: ${where}`);
+  const hint = /column|table|does not exist|Unknown arg|P20\d\d/i.test(msg)
+    ? `\n\n⚠️ Ehtimol sxema bazaga yuborilmagan.\nTerminalda: <code>npm run db:push</code>`
+    : "";
+  await ctx.answerCallbackQuery({
+    text: `Xatolik: ${msg.slice(0, 150)}`,
+    show_alert: true,
+  }).catch(() => {});
+  await ctx.reply(
+    `⚠️ <b>${where}</b> ochilmadi.\n\n<code>${escapeHtmlText(msg.slice(0, 400))}</code>${hint}`,
+    { parse_mode: "HTML" }
+  ).catch(() => {});
+}
+
 // ==================== REFERRAL ====================
 
 const REF_GROUPS_PER_PAGE = 8;
@@ -383,10 +402,14 @@ async function referralBody(): Promise<string> {
 
 ownerCommand.callbackQuery("ap:ref", ownerOnly, async (ctx) => {
   await ctx.answerCallbackQuery().catch(() => {});
-  await ctx.editMessageText(await referralBody(), {
-    parse_mode: "HTML",
-    reply_markup: referralSettingsKeyboard(),
-  }).catch(() => {});
+  try {
+    await ctx.editMessageText(await referralBody(), {
+      parse_mode: "HTML",
+      reply_markup: referralSettingsKeyboard(),
+    }).catch(() => {});
+  } catch (e) {
+    await showAdminError(ctx, e, "referral sozlamalari");
+  }
 });
 
 // Guruhlar ro'yxati — yoqish/o'chirish
@@ -397,29 +420,50 @@ ownerCommand.callbackQuery(/^ap:refgroups:(\d+)$/, ownerOnly, async (ctx) => {
 });
 
 async function showRefGroups(ctx: BotContext, page: number) {
-  const total = await prisma.chat.count();
-  const totalPages = Math.max(1, Math.ceil(total / REF_GROUPS_PER_PAGE));
-  const safePage = Math.min(Math.max(0, page), totalPages - 1);
-  const groups = await prisma.chat.findMany({
-    orderBy: { updatedAt: "desc" },
-    skip: safePage * REF_GROUPS_PER_PAGE,
-    take: REF_GROUPS_PER_PAGE,
-    select: { id: true, title: true, isReferralTarget: true },
-  });
-  await ctx.editMessageText(
-    `👥 <b>Referral guruhlarini tanlang</b>\n\n` +
-    `Belgilangan guruhlarda o'ynalgan o'yin referralga hisoblanadi.`,
-    { parse_mode: "HTML", reply_markup: referralGroupsKeyboard(groups, safePage, totalPages) }
-  ).catch(() => {});
+  try {
+    const total = await prisma.chat.count();
+    // Hali birorta guruh yo'q — bo'sh klaviatura "ishlamayapti" bo'lib ko'rinadi,
+    // shuning uchun sababini ochiq aytamiz.
+    if (total === 0) {
+      await ctx.editMessageText(
+        `👥 <b>Referral guruhlari</b>\n\n` +
+        `⚠️ Bazada hali birorta guruh yo'q.\n` +
+        `Botni guruhga qo'shib, u yerda bir marta <code>/startgame</code> qiling — ` +
+        `shundan keyin guruh shu ro'yxatda paydo bo'ladi.`,
+        { parse_mode: "HTML", reply_markup: referralSettingsKeyboard() }
+      ).catch(() => {});
+      return;
+    }
+
+    const totalPages = Math.max(1, Math.ceil(total / REF_GROUPS_PER_PAGE));
+    const safePage = Math.min(Math.max(0, page), totalPages - 1);
+    const groups = await prisma.chat.findMany({
+      orderBy: { updatedAt: "desc" },
+      skip: safePage * REF_GROUPS_PER_PAGE,
+      take: REF_GROUPS_PER_PAGE,
+      select: { id: true, title: true, isReferralTarget: true },
+    });
+    await ctx.editMessageText(
+      `👥 <b>Referral guruhlarini tanlang</b>\n\n` +
+      `Belgilangan guruhlarda o'ynalgan o'yin referralga hisoblanadi.`,
+      { parse_mode: "HTML", reply_markup: referralGroupsKeyboard(groups, safePage, totalPages) }
+    ).catch(() => {});
+  } catch (e) {
+    await showAdminError(ctx, e, "guruhlar ro'yxati");
+  }
 }
 
 ownerCommand.callbackQuery(/^ap:reftoggle:(\d+):(\d+)$/, ownerOnly, async (ctx) => {
   const chatId = parseInt(ctx.match[1]);
   const page = parseInt(ctx.match[2]);
-  const { referralChatRepo } = await import("../../database/repositories/referral.repository");
-  const now = await referralChatRepo.toggle(chatId);
-  await ctx.answerCallbackQuery({ text: now ? "✅ Yoqildi" : "⬜️ O'chirildi" }).catch(() => {});
-  await showRefGroups(ctx, page);
+  try {
+    const { referralChatRepo } = await import("../../database/repositories/referral.repository");
+    const now = await referralChatRepo.toggle(chatId);
+    await ctx.answerCallbackQuery({ text: now ? "✅ Yoqildi" : "⬜️ O'chirildi" }).catch(() => {});
+    await showRefGroups(ctx, page);
+  } catch (e) {
+    await showAdminError(ctx, e, "guruhni yoqish/o'chirish");
+  }
 });
 
 ownerCommand.callbackQuery("ap:refnope", ownerOnly, async (ctx) => {
