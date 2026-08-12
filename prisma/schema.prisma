@@ -59,6 +59,8 @@ model User {
   transactions Transaction[]
   purchases    Purchase[]
   topUps       TopUpRequest[]
+  referralsMade Referral[] @relation("ReferralsMade")
+  referralUsed  Referral?  @relation("ReferralInvite")
   chests       Chest[]
   hero         Hero?
 
@@ -246,6 +248,32 @@ enum TopUpStatus {
   CANCELLED
 }
 
+// ==================== REFERRAL (do'st taklif qilish) ====================
+// Taklif qilingan odam admin TANLAGAN guruhlarda kerakli sonda o'yin o'ynasa,
+// taklif qilgan odamga mukofot beriladi.
+model Referral {
+  id             Int            @id @default(autoincrement())
+  referrerId     Int                                   // kim taklif qildi
+  referrer       User           @relation("ReferralsMade", fields: [referrerId], references: [id])
+  // Bir odam FAQAT BIR MARTA taklif qilinishi mumkin — @unique shuni kafolatlaydi
+  invitedId      Int            @unique
+  invited        User           @relation("ReferralInvite", fields: [invitedId], references: [id])
+  status         ReferralStatus @default(PENDING)
+  gamesPlayed    Int            @default(0)            // maqsadli guruhlarda tugallangan o'yinlar
+  rewardAmount   Int?
+  rewardCurrency String?                               // "diamond" | "money"
+  rewardedAt     DateTime?
+  createdAt      DateTime       @default(now())
+
+  @@index([referrerId, status])
+}
+
+enum ReferralStatus {
+  PENDING   // shart hali bajarilmagan
+  REWARDED  // mukofot berildi
+  BLOCKED   // admin bekor qildi (suiiste'mol)
+}
+
 enum ShopCategory {
   HERO
   SHIELD
@@ -295,6 +323,8 @@ model Chat {
   type       String
   language   String   @default("uz")
   isActive   Boolean  @default(true)
+  // Referral shu guruhda o'ynalgan o'yin uchun hisoblanadi (adminlar tanlaydi)
+  isReferralTarget Boolean @default(false)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 

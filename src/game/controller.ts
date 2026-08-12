@@ -19,6 +19,7 @@ import { pricingService, rolePriceKey, PRICE_KEYS } from "../services/pricing.se
 import { prisma } from "../database/prisma";
 import { botUsername } from "../config";
 import { logger } from "../utils/logger";
+import type { InlineKeyboard } from "grammy";
 
 // /extend natijasi — chaqiruvchi shunga qarab xabar yozadi
 export type ExtendResult =
@@ -835,6 +836,27 @@ export class GameController {
         // Shaxsiy natija xabari
         await this.sendPersonalGameResult(player, won, moneyEarned, diamondsEarned, ratingChange).catch(() => {});
 
+        // Referral — bu o'yinchi kimningdir taklifi bo'lsa va guruh admin
+        // TANLAGAN maqsadli guruh bo'lsa, o'yin hisobga olinadi.
+        // Servis o'zi tekshiradi: guruh maqsadlimi, shart bajarildimi, shift tugadimi.
+        try {
+          const { referralService } = await import("../services/referral.service");
+          const paid = await referralService.onGameFinished(chatTelegramId, player.userId);
+          if (paid) {
+            const unit = paid.currency === "diamond" ? "💎" : "💰";
+            await this.notifier.sendToPlayer(
+              paid.referrerTelegramId,
+              t("referral.rewardPaid", {
+                name: escapeHtml(player.firstName),
+                amount: paid.amount.toLocaleString(),
+                unit,
+              }),
+            ).catch(() => {});
+          }
+        } catch (e) {
+          logger.error(e, `Referral tekshirishda xatolik (userId=${player.userId})`);
+        }
+
         // Shield va Hujjat finalize — ishlatilgan bo'lsa iste'mol, bo'lmasa saqlanadi
         // Shield used = hasShieldActive false bo'ldi (hujum bor edi va shield o'z ishini qildi)
         // Document used = hasDocumentActive false bo'ldi (Komissar tekshirdi va yomon rolni tinch ko'rsatdi)
@@ -875,7 +897,26 @@ export class GameController {
     text += `\n📊 /profile — to'liq ma'lumot\n`;
     text += `🎭 /startgame — yangi o'yin`;
 
-    await this.notifier.sendToPlayer(player.telegramId, text);
+    // Referral bloki — o'yinchining SHAXSIY havolasi bilan.
+    // Guruh xabariga qo'yib bo'lmaydi: havola har kimga xos.
+    // Referral o'chirilgan bo'lsa buildPromo null qaytaradi va blok qo'shilmaydi.
+    let kb: InlineKeyboard | undefined;
+    try {
+      const { referralService } = await import("../services/referral.service");
+      const promo = await referralService.buildPromo(player.userId, player.telegramId, botUsername);
+      if (promo) {
+        text += promo.text;
+        const { InlineKeyboard: IK } = await import("grammy");
+        kb = new IK().url(
+          "🔗 Havolani ulashish",
+          `https://t.me/share/url?url=${encodeURIComponent(promo.link)}`,
+        );
+      }
+    } catch (e) {
+      logger.error(e, `Referral promo qo'shishda xatolik (userId=${player.userId})`);
+    }
+
+    await this.notifier.sendToPlayer(player.telegramId, text, kb);
   }
 
   private didPlayerWin(player: PlayerState, winner: Winner): boolean {

@@ -10,6 +10,8 @@ export function profileMainKeyboard(): InlineKeyboard {
     .row()
     .text("🥷 Mening Geroyim", "prof:hero")
     .row()
+    .text("🔗 Do'st taklif qilish", "prof:ref")
+    .row()
     .text("🎁 Foydalanish", "prof:use")
     .text("⭐️ Premium guruhlar", "prof:premium")
     .row()
@@ -132,5 +134,13 @@ export function useItemsKeyboard(flags: {
 // 6-ekran: Premium guruhlar
 export function premiumGroupsKeyboard(): InlineKeyboard {
   return new InlineKeyboard()
+    .text("🔙 Profil", "prof:back");
+}
+
+// Referral ekrani
+export function referralKeyboard(link: string): InlineKeyboard {
+  return new InlineKeyboard()
+    .url("🔗 Havolani ulashish", `https://t.me/share/url?url=${encodeURIComponent(link)}`)
+    .row()
     .text("🔙 Profil", "prof:back");
 }

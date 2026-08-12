@@ -169,6 +169,23 @@ cannot credit twice. Card details live in `Config` as `text_payment.cardNumber` 
 Receipts are forwarded to `config.ownerIds` — if `OWNER_IDS` is empty **no one sees them**;
 the handler logs an error and tells the user.
 
+### Referral
+
+`/start ref_<referrerTelegramId>` → `services/referral.service.ts`. A `Referral` row is created only
+if every abuse guard passes: not self, referrer exists, the invited user has **zero `Player` rows**
+(genuinely new), no A→B→A cycle, and `Referral.invitedId` is `@unique` so one person can be referred
+once, ever.
+
+The payout fires from `controller.endGame()` per player. It counts only games played in groups the
+admin flagged (`Chat.isReferralTarget`, toggled in `/admin` → 🔗 Referral → Guruhlarni tanlash) and
+pays after `REFERRAL_MIN_GAMES` finished games, capped by `REFERRAL_MAX_REWARDS` per referrer.
+`referralRepo.claimReward()` is a conditional `updateMany({ where: { status: "PENDING" } })`, so two
+games finishing at once cannot pay twice.
+
+**The reward defaults to money, not diamonds, on purpose** — diamonds are the currency sold for real
+so'm (`DIAMOND_SOM`), so a generous diamond referral cannibalises top-up revenue and is the obvious
+multi-account farming target. The admin can switch the currency on the price screen.
+
 ### Text and pricing are DB-overridable
 
 - `services/text-defaults.ts` holds every string keyed by dotted name. `textService.preloadAll()`

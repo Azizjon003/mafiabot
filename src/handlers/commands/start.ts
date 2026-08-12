@@ -6,6 +6,8 @@ import { joinGameKeyboard, votingPlayerListKeyboard } from "../../keyboards/game
 import { t } from "../../services/text.service";
 import { mention } from "../../utils/helpers";
 import { botUsername } from "../../config";
+import { referralService } from "../../services/referral.service";
+import { escapeHtml } from "../../utils/helpers";
 
 export const startCommand = new Composer<BotContext>();
 
@@ -79,6 +81,31 @@ startCommand.command("start", async (ctx) => {
     }
 
     return;
+  }
+
+  // Deep link: /start ref_<taklif qilgan telegramId> — do'st taklifi
+  if (payload && typeof payload === "string" && payload.startsWith("ref_")) {
+    const raw = payload.slice(4);
+    if (ctx.dbUser && /^\d+$/.test(raw)) {
+      const res = await referralService.register(
+        ctx.dbUser.id,
+        BigInt(ctx.from.id),
+        BigInt(raw),
+      );
+      if (res.ok) {
+        const s = await referralService.getSettings();
+        const groups = await referralService.targetGroups();
+        const groupList = groups.length
+          ? groups.map((g) => `• ${escapeHtml(g.title ?? "Guruh")}`).join("\n")
+          : "—";
+        await ctx.reply(
+          t("referral.invitedWelcome", { minGames: s.minGames, groups: groupList }),
+          { parse_mode: "HTML" },
+        );
+      }
+      // Xato bo'lsa jim o'tamiz — pastdagi oddiy /start javobi beriladi
+    }
+    // Deep link tugadi, oddiy salomlashuvga o'tamiz (return YO'Q)
   }
 
   // Deep link: /start vote_CHATID — ovoz berish

@@ -525,6 +525,28 @@ export const TEXT_DEFAULTS: Record<string, string> = {
     "📜 Hujjat: {documentCount} ta\n" +
     "🎭 Aktiv rol: {activeRole}\n" +
     "🥷 Geroy: {hero}",
+  // ==================== REFERRAL ====================
+  "referral.screen":
+    "🔗 <b>Do'st taklif qilish</b>\n\n" +
+    "Do'stingiz shu havola orqali botni ochsa va tanlangan guruhlarda " +
+    "<b>{minGames}</b> ta o'yin o'ynasa — sizga <b>{reward}</b>{unit} beriladi.\n\n" +
+    "👥 <b>Hisobga olinadigan guruhlar:</b>\n{groups}\n\n" +
+    "⏳ Kutilmoqda: <b>{pending}</b> | ✅ Olingan: <b>{rewarded}</b>\n\n" +
+    "🔗 <b>Sizning havolangiz:</b>\n<code>{link}</code>",
+  "referral.promo":
+    "\n\n──────────\n" +
+    "🔗 <b>Do'st taklif qiling</b>\n" +
+    "Do'stingiz havolangiz orqali kelib {minGames} ta o'yin o'ynasa — sizga <b>{reward}</b>{unit}.\n" +
+    "Shu paytgacha olgansiz: <b>{rewarded}</b> ta\n\n" +
+    "<code>{link}</code>",
+  "referral.invitedWelcome":
+    "🎁 <b>Do'stingiz taklifi bo'yicha keldingiz!</b>\n\n" +
+    "Quyidagi guruhlarda <b>{minGames}</b> ta o'yin o'ynasangiz, sizni taklif qilgan " +
+    "do'stingiz mukofot oladi:\n{groups}",
+  "referral.rewardPaid":
+    "🎁 <b>Referral mukofoti!</b>\n\n" +
+    "Siz taklif qilgan <b>{name}</b> shartni bajardi.\n" +
+    "Hisobingizga <b>{amount}</b>{unit} qo'shildi.",
   // ==================== BALANS / HISOB TO'LDIRISH ====================
   "balance.title":
     "💰 <b>Balans va sotib olish</b>\n\n" +
@@ -612,6 +634,7 @@ export const TEXT_CATEGORIES: { id: string; label: string; prefix: string }[] = 
   { id: "help", label: "📖 Help/Rules", prefix: "help." },
   { id: "profile", label: "👤 Profil/Do'kon", prefix: "profile." },
   { id: "balance", label: "💱 Balans/To'ldirish", prefix: "balance." },
+  { id: "referral", label: "🔗 Referral", prefix: "referral." },
   { id: "payment", label: "💳 Karta rekvizitlari", prefix: "payment." },
 ];
 
@@ -930,6 +953,10 @@ export const TEXT_LABELS: Record<string, string> = {
   "profile.heroAttackAnnounceSurvived": "Geroy hujumi — guruhda omon",
   "profile.heroAttacked": "Geroy hujumi — nishonga xabar",
   "profile.useTitle": "Foydalanish — sarlavha",
+  "referral.screen": "Referral — ekran",
+  "referral.promo": "Referral — o'yin yakunidagi blok",
+  "referral.invitedWelcome": "Referral — taklif qilinganga salom",
+  "referral.rewardPaid": "Referral — mukofot berildi",
   "balance.title": "Balans ekrani",
   "balance.askDiamondToBuy": "Pulni olmosga — so'rov",
   "balance.askDiamondToSell": "Olmosni pulga — so'rov",

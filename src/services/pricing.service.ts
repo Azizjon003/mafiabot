@@ -13,6 +13,11 @@ export const PRICE_KEYS = {
   DIAMOND_SOM: "price_diamond_som",                 // 1💎 = N so'm (karta orqali)
   MONEY_SOM: "price_money_som",                     // 1💰 = N so'm (karta orqali)
   TOPUP_MIN_SOM: "topup_min_som",                   // eng kam to'lov summasi
+
+  // Referral (do'st taklif qilish)
+  REFERRAL_REWARD: "referral_reward",               // 1 ta do'st uchun mukofot (valyuta sozlanadi)
+  REFERRAL_MIN_GAMES: "referral_min_games",         // do'st nechta o'yin o'ynashi kerak
+  REFERRAL_MAX_REWARDS: "referral_max_rewards",     // bir odam ko'pi bilan nechta mukofot olsin (0 = cheksiz)
   HERO_CREATE: "price_hero_create",              // 100💎
   VIP_MONTH: "price_vip_month",                  // 100💎
   HERO_POINTS_1000: "price_hero_points_1000",    // 100💎 → 1000 ball
@@ -66,6 +71,9 @@ const DEFAULTS: Record<string, number> = {
   [PRICE_KEYS.DIAMOND_SOM]: 1000,             // 1💎 = 1000 so'm
   [PRICE_KEYS.MONEY_SOM]: 1,                  // 1💰 = 1 so'm
   [PRICE_KEYS.TOPUP_MIN_SOM]: 5000,           // eng kam 5000 so'm
+  [PRICE_KEYS.REFERRAL_REWARD]: 2000,         // 2000💰 — XAVFSIZ default (olmos emas!)
+  [PRICE_KEYS.REFERRAL_MIN_GAMES]: 2,         // 2 ta tugallangan o'yin
+  [PRICE_KEYS.REFERRAL_MAX_REWARDS]: 20,      // bir odamga ko'pi bilan 20 ta mukofot
   [PRICE_KEYS.HERO_CREATE]: 25,              // 25💎 (~17 yutuq) — eski 30
   [PRICE_KEYS.VIP_MONTH]: 20,                 // 20💎/oy (~13 yutuq)
   [PRICE_KEYS.HERO_POINTS_1000]: 12,          // 12💎 → 1000 ball — eski 20
@@ -143,6 +151,7 @@ export type Currency = "diamond" | "money";
 const DEFAULT_CURRENCIES: Record<string, Currency> = {
   [PRICE_KEYS.SHIELD]: "diamond",
   [PRICE_KEYS.BULLET]: "diamond",
+  [PRICE_KEYS.REFERRAL_REWARD]: "money",
   [PRICE_KEYS.DOCUMENT]: "diamond",
   [PRICE_KEYS.HERO_CREATE]: "diamond",
   [PRICE_KEYS.VIP_MONTH]: "diamond",

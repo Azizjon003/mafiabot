@@ -8,6 +8,8 @@ import { join } from "path";
 import { shopCategoriesKeyboard, useItemsKeyboard, buyItemKeyboard } from "../src/keyboards/profile";
 import { giftCategoriesKeyboard, pricesCategoriesKeyboard, adminPanelKeyboard, paymentSettingsKeyboard } from "../src/keyboards/admin-panel";
 import { balanceKeyboard, topUpAmountsKeyboard, cancelKeyboard, reviewKeyboard, rejectReasonKeyboard } from "../src/keyboards/balance";
+import { referralSettingsKeyboard, referralGroupsKeyboard } from "../src/keyboards/admin-panel";
+import { profileMainKeyboard, referralKeyboard } from "../src/keyboards/profile";
 
 const out: { ok: boolean; name: string; detail?: string }[] = [];
 const check = (n: string, ok: boolean, d?: string) => out.push({ ok, name: n, detail: ok ? undefined : d });
@@ -22,6 +24,7 @@ const files = [
   "src/handlers/commands/owner.ts",
   "src/handlers/callbacks/vote.ts",
   "src/handlers/commands/balance.ts",
+  "src/handlers/commands/start.ts",
 ];
 const patterns: (RegExp | string)[] = [];
 for (const f of files) {
@@ -44,6 +47,9 @@ const kbs: [string, string[]][] = [
   ["Admin narxlar", datas(pricesCategoriesKeyboard())],
   ["Admin bosh panel", datas(adminPanelKeyboard())],
   ["Admin to'lov bo'limi", datas(paymentSettingsKeyboard())],
+  ["Profil bosh ekran", datas(profileMainKeyboard())],
+  ["Admin referral", datas(referralSettingsKeyboard())],
+  ["Referral guruhlari", datas(referralGroupsKeyboard([{ id: 1, title: "G", isReferralTarget: true }], 0, 1))],
   ["Balans ekrani", datas(balanceKeyboard())],
   ["To'ldirish summalari (💎)", datas(topUpAmountsKeyboard("DIAMOND"))],
   ["To'ldirish summalari (💰)", datas(topUpAmountsKeyboard("MONEY"))],
@@ -62,7 +68,9 @@ for (const d of ["shop:cat:bullet", "shop:buy:bullet", "use:bullet", "ap:gift:bu
                  "prof:buy", "bal:back", "bal:m2d", "bal:d2m", "bal:buy:DIAMOND", "bal:buy:MONEY",
                  "bal:custom:DIAMOND", "bal:amt:DIAMOND:25", "tu:ok:7", "tu:no:7", "tu:rsn:7:nopay",
                  "tu:rsn:7:custom", "ap:price:exchange_diamond_money", "ap:price:price_diamond_som",
-                 "ap:pay", "ap:paycard:number", "ap:paycard:holder", "ap:topups", "ap:main"]) {
+                 "ap:pay", "ap:paycard:number", "ap:paycard:holder", "ap:topups", "ap:main",
+                 "prof:ref", "ap:ref", "ap:refgroups:0", "ap:reftoggle:1:0", "ap:reftop",
+                 "ap:price:referral_reward", "ap:price:referral_min_games"]) {
   check(`"${d}" handlerga tushadi`, handled(d));
 }
 

@@ -16,6 +16,7 @@ import {
   heroAttackTargetsKeyboard,
   useItemsKeyboard,
   premiumGroupsKeyboard,
+  referralKeyboard,
 } from "../../keyboards/profile";
 import { gameManager } from "../../game/manager";
 import { privateOnly } from "../middleware/chat-type";
@@ -645,6 +646,36 @@ profileCommand.callbackQuery(/^use:(shield|document|bullet|activeRole|hero|premi
   }
   await ctx.answerCallbackQuery({ text: res.enabled ? "✅ Yoqildi" : "⬜️ O'chirildi" }).catch(() => {});
   await openUsePage(ctx);
+});
+
+// ==================== Do'st taklif qilish ====================
+profileCommand.callbackQuery("prof:ref", async (ctx) => {
+  if (!ctx.dbUser || !ctx.from) return;
+  const { referralService } = await import("../../services/referral.service");
+  const { botUsername } = await import("../../config");
+  const [s, stats, groups] = await Promise.all([
+    referralService.getSettings(),
+    referralService.statsFor(ctx.dbUser.id),
+    referralService.targetGroups(),
+  ]);
+  const link = `https://t.me/${botUsername}?start=ref_${ctx.from.id}`;
+  const unit = s.currency === "diamond" ? "💎" : "💰";
+  const groupList = groups.length
+    ? groups.map((g) => `• ${escapeHtml(g.title ?? "Guruh")}`).join("\n")
+    : "—";
+  await ctx.answerCallbackQuery().catch(() => {});
+  await ctx.editMessageText(
+    t("referral.screen", {
+      link,
+      reward: s.reward.toLocaleString(),
+      unit,
+      minGames: s.minGames,
+      groups: groupList,
+      pending: stats.pending,
+      rewarded: stats.rewarded,
+    }),
+    { parse_mode: "HTML", reply_markup: referralKeyboard(link), disable_web_page_preview: true } as any
+  ).catch(() => {});
 });
 
 // ==================== Premium guruhlar ====================

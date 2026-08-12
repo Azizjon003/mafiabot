@@ -7,6 +7,7 @@ export function adminPanelKeyboard(): InlineKeyboard {
   return new InlineKeyboard()
     .text("💰 Narxlar", "ap:prices")
     .text("💳 To'lov", "ap:pay")
+    .text("🔗 Referral", "ap:ref")
     .row()
     .text("🎁 Sovg'a berish", "ap:gift")
     .row()
@@ -194,4 +195,41 @@ export function paymentSettingsKeyboard(): InlineKeyboard {
     .text("🧾 Kutayotgan cheklar", "ap:topups")
     .row()
     .text("🔙 Ortga", "ap:main");
+}
+
+// Referral bo'limi
+export function referralSettingsKeyboard(): InlineKeyboard {
+  return new InlineKeyboard()
+    .text("🎁 Mukofot miqdori", "ap:price:referral_reward")
+    .row()
+    .text("🎮 Kerakli o'yin", "ap:price:referral_min_games")
+    .text("🛑 Shift", "ap:price:referral_max_rewards")
+    .row()
+    .text("👥 Guruhlarni tanlash", "ap:refgroups:0")
+    .row()
+    .text("🏆 Top taklif qilganlar", "ap:reftop")
+    .row()
+    .text("🔙 Ortga", "ap:main");
+}
+
+// Guruhlarni referral maqsadi sifatida yoqish/o'chirish
+export function referralGroupsKeyboard(
+  groups: { id: number; title: string | null; isReferralTarget: boolean }[],
+  page: number,
+  totalPages: number,
+): InlineKeyboard {
+  const kb = new InlineKeyboard();
+  for (const g of groups) {
+    const mark = g.isReferralTarget ? "✅" : "⬜️";
+    const title = (g.title ?? "Guruh").slice(0, 28);
+    kb.text(`${mark} ${title}`, `ap:reftoggle:${g.id}:${page}`).row();
+  }
+  if (totalPages > 1) {
+    if (page > 0) kb.text("⬅️", `ap:refgroups:${page - 1}`);
+    kb.text(`${page + 1}/${totalPages}`, "ap:refnope");
+    if (page < totalPages - 1) kb.text("➡️", `ap:refgroups:${page + 1}`);
+    kb.row();
+  }
+  kb.text("🔙 Ortga", "ap:ref");
+  return kb;
 }

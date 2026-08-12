@@ -23,6 +23,8 @@ import {
   groupsKeyboard,
   GroupSort,
   paymentSettingsKeyboard,
+  referralSettingsKeyboard,
+  referralGroupsKeyboard,
 } from "../../keyboards/admin-panel";
 import { botStatsRepo } from "../../database/repositories/botstats.repository";
 import {
@@ -353,6 +355,90 @@ ownerCommand.callbackQuery("ap:close", ownerOnly, async (ctx) => {
   await ctx.deleteMessage().catch(() => {});
 });
 
+// ==================== REFERRAL ====================
+
+const REF_GROUPS_PER_PAGE = 8;
+
+async function referralBody(): Promise<string> {
+  const { referralService } = await import("../../services/referral.service");
+  const { referralRepo } = await import("../../database/repositories/referral.repository");
+  const [s, groups, totals] = await Promise.all([
+    referralService.getSettings(),
+    referralService.targetGroups(),
+    referralRepo.totalStats(),
+  ]);
+  const unit = s.currency === "diamond" ? "💎" : "💰";
+  const groupList = groups.length
+    ? groups.map((g) => `• ${escapeHtmlText(g.title ?? "Guruh")}`).join("\n")
+    : `⚠️ <b>Hech qanday guruh tanlanmagan</b> — referral ISHLAMAYDI!`;
+  return (
+    `🔗 <b>Referral sozlamalari</b>\n\n` +
+    `🎁 Mukofot: <b>${s.reward.toLocaleString()}</b>${unit}\n` +
+    `🎮 Kerakli o'yin: <b>${s.minGames}</b>\n` +
+    `🛑 Shift: <b>${s.maxRewards === 0 ? "cheksiz" : s.maxRewards}</b>\n\n` +
+    `👥 <b>Hisobga olinadigan guruhlar:</b>\n${groupList}\n\n` +
+    `⏳ Kutilmoqda: <b>${totals.pending}</b> | ✅ Berilgan: <b>${totals.rewarded}</b>`
+  );
+}
+
+ownerCommand.callbackQuery("ap:ref", ownerOnly, async (ctx) => {
+  await ctx.answerCallbackQuery().catch(() => {});
+  await ctx.editMessageText(await referralBody(), {
+    parse_mode: "HTML",
+    reply_markup: referralSettingsKeyboard(),
+  }).catch(() => {});
+});
+
+// Guruhlar ro'yxati — yoqish/o'chirish
+ownerCommand.callbackQuery(/^ap:refgroups:(\d+)$/, ownerOnly, async (ctx) => {
+  const page = parseInt(ctx.match[1]);
+  await ctx.answerCallbackQuery().catch(() => {});
+  await showRefGroups(ctx, page);
+});
+
+async function showRefGroups(ctx: BotContext, page: number) {
+  const total = await prisma.chat.count();
+  const totalPages = Math.max(1, Math.ceil(total / REF_GROUPS_PER_PAGE));
+  const safePage = Math.min(Math.max(0, page), totalPages - 1);
+  const groups = await prisma.chat.findMany({
+    orderBy: { updatedAt: "desc" },
+    skip: safePage * REF_GROUPS_PER_PAGE,
+    take: REF_GROUPS_PER_PAGE,
+    select: { id: true, title: true, isReferralTarget: true },
+  });
+  await ctx.editMessageText(
+    `👥 <b>Referral guruhlarini tanlang</b>\n\n` +
+    `Belgilangan guruhlarda o'ynalgan o'yin referralga hisoblanadi.`,
+    { parse_mode: "HTML", reply_markup: referralGroupsKeyboard(groups, safePage, totalPages) }
+  ).catch(() => {});
+}
+
+ownerCommand.callbackQuery(/^ap:reftoggle:(\d+):(\d+)$/, ownerOnly, async (ctx) => {
+  const chatId = parseInt(ctx.match[1]);
+  const page = parseInt(ctx.match[2]);
+  const { referralChatRepo } = await import("../../database/repositories/referral.repository");
+  const now = await referralChatRepo.toggle(chatId);
+  await ctx.answerCallbackQuery({ text: now ? "✅ Yoqildi" : "⬜️ O'chirildi" }).catch(() => {});
+  await showRefGroups(ctx, page);
+});
+
+ownerCommand.callbackQuery("ap:refnope", ownerOnly, async (ctx) => {
+  await ctx.answerCallbackQuery().catch(() => {});
+});
+
+ownerCommand.callbackQuery("ap:reftop", ownerOnly, async (ctx) => {
+  await ctx.answerCallbackQuery().catch(() => {});
+  const { referralRepo } = await import("../../database/repositories/referral.repository");
+  const top = await referralRepo.topReferrers(10);
+  const body = top.length === 0
+    ? "Hali hech kim mukofot olmagan."
+    : top.map((r, i) => `${i + 1}. ${escapeHtmlText(r.user.firstName)} — <b>${r.count}</b> ta`).join("\n");
+  await ctx.editMessageText(`🏆 <b>Top taklif qilganlar</b>\n\n${body}`, {
+    parse_mode: "HTML",
+    reply_markup: referralSettingsKeyboard(),
+  }).catch(() => {});
+});
+
 // ==================== TO'LOV (karta rekvizitlari) ====================
 
 function paymentBody(): string {
@@ -429,6 +515,7 @@ ownerCommand.callbackQuery("ap:roleprices", ownerOnly, async (ctx) => {
 const CONFIGURABLE_CURRENCY_KEYS = new Set([
   "price_shield", "price_bullet", "price_document", "price_hero_create", "price_vip_month",
   "exchange_diamond_money", "price_diamond_som", "price_money_som", "topup_min_som",
+  "referral_reward",
   "price_hero_points_1000", "price_hero_prot", "price_hero_charge", "price_hero_rename",
   "price_chest_basic", "price_chest_silver", "price_chest_gold",
 ]);
