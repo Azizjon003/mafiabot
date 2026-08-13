@@ -653,16 +653,13 @@ profileCommand.callbackQuery("prof:ref", async (ctx) => {
   if (!ctx.dbUser || !ctx.from) return;
   const { referralService } = await import("../../services/referral.service");
   const { botUsername } = await import("../../config");
-  const [s, stats, groups] = await Promise.all([
+  const [s, stats, groupList] = await Promise.all([
     referralService.getSettings(),
     referralService.statsFor(ctx.dbUser.id),
-    referralService.targetGroups(),
+    referralService.targetGroupsText(),
   ]);
   const link = `https://t.me/${botUsername}?start=ref_${ctx.from.id}`;
   const unit = s.currency === "diamond" ? "💎" : "💰";
-  const groupList = groups.length
-    ? groups.map((g) => `• ${escapeHtml(g.title ?? "Guruh")}`).join("\n")
-    : "—";
   await ctx.answerCallbackQuery().catch(() => {});
   await ctx.editMessageText(
     t("referral.screen", {

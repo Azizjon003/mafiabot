@@ -94,10 +94,8 @@ startCommand.command("start", async (ctx) => {
       );
       if (res.ok) {
         const s = await referralService.getSettings();
-        const groups = await referralService.targetGroups();
-        const groupList = groups.length
-          ? groups.map((g) => `• ${escapeHtml(g.title ?? "Guruh")}`).join("\n")
-          : "—";
+        // Havolali ro'yxat — do'st shu yerdan guruhga kira oladi
+        const groupList = await referralService.targetGroupsText();
         await ctx.reply(
           t("referral.invitedWelcome", { minGames: s.minGames, groups: groupList }),
           { parse_mode: "HTML" },

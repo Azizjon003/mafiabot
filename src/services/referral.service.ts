@@ -4,6 +4,7 @@ import { economyService } from "./economy.service";
 import { pricingService, PRICE_KEYS } from "./pricing.service";
 import { logger } from "../utils/logger";
 import { t } from "./text.service";
+import { escapeHtml } from "../utils/helpers";
 
 export interface ReferralSettings {
   reward: number;
@@ -158,5 +159,23 @@ export const referralService = {
 
   async targetGroups() {
     return referralChatRepo.listTargets();
+  },
+
+  /**
+   * Maqsadli guruhlarni foydalanuvchiga ko'rsatish uchun formatlaydi.
+   * Havolasi bor guruh bosiladigan bo'ladi — do'st shu yerdan qo'shiladi.
+   * Havolasi yo'q bo'lsa nomi ko'rsatiladi (admin havola qo'shishi kerak).
+   */
+  async targetGroupsText(): Promise<string> {
+    const groups = await referralChatRepo.listTargets();
+    if (groups.length === 0) return "—";
+    return groups
+      .map((g) => {
+        const title = escapeHtml(g.title ?? "Guruh");
+        return g.inviteLink
+          ? `• <a href="${g.inviteLink}">${title}</a>`
+          : `• ${title}`;
+      })
+      .join("\n");
   },
 };

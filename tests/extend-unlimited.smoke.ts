@@ -142,6 +142,34 @@ async function main() {
     res.join(","));
   eng4.clearTimer();
 
+  // ==================== /begingame KAM O'YINCHI BILAN ====================
+  // handleRegistrationEnd o'yinchi yetmasa o'yinni BEKOR QILADI. /begingame endi
+  // hammaga ochiq, shuning uchun handler o'zi tekshiradi — aks holda istalgan
+  // odam ro'yxat boshida yozib o'yinni yo'q qilardi.
+  const c5 = new GameController(notifier);
+  const eng5 = freshGame();
+  eng5.addPlayer(P(1));
+  eng5.addPlayer(P(2));
+  check("Tayyorgarlik: 2 o'yinchi, minPlayers=4",
+    eng5.getPlayerCount() === 2 && eng5.settings.minPlayers === 4);
+
+  // Handler shartining o'zi (game.ts dagi bilan bir xil)
+  const guardBlocks = eng5.getPlayerCount() < eng5.settings.minPlayers;
+  check("Guard ishlaydi: 2 < 4 -> /begingame to'xtatiladi", guardBlocks);
+
+  // Guard bo'lmasa nima bo'lishini isbotlaymiz
+  sent.length = 0;
+  await c5.handleRegistrationEnd(CHAT);
+  check("Guardsiz handleRegistrationEnd o'yinni BEKOR qiladi (shuning uchun guard kerak)",
+    gameManager.getGame(CHAT) === undefined, "o'yin hali ham bor");
+
+  // Yetarli o'yinchi bo'lganda guard o'tkazadi
+  const eng6 = freshGame();
+  [1, 2, 3, 4].forEach((i) => eng6.addPlayer(P(i)));
+  check("4 o'yinchi bo'lsa guard o'tkazadi",
+    eng6.getPlayerCount() >= eng6.settings.minPlayers);
+  gameManager.endGame(CHAT);
+
   let bad = 0;
   for (const r of out) {
     if (!r.ok) bad++;

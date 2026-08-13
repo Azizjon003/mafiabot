@@ -49,7 +49,7 @@ const kbs: [string, string[]][] = [
   ["Admin to'lov bo'limi", datas(paymentSettingsKeyboard())],
   ["Profil bosh ekran", datas(profileMainKeyboard())],
   ["Admin referral", datas(referralSettingsKeyboard())],
-  ["Referral guruhlari", datas(referralGroupsKeyboard([{ id: 1, title: "G", isReferralTarget: true }], 0, 1))],
+  ["Referral guruhlari", datas(referralGroupsKeyboard([{ id: 1, title: "G", isReferralTarget: true, inviteLink: null }], 0, 1))],
   ["Balans ekrani", datas(balanceKeyboard())],
   ["To'ldirish summalari (💎)", datas(topUpAmountsKeyboard("DIAMOND"))],
   ["To'ldirish summalari (💰)", datas(topUpAmountsKeyboard("MONEY"))],
@@ -70,7 +70,7 @@ for (const d of ["shop:cat:bullet", "shop:buy:bullet", "use:bullet", "ap:gift:bu
                  "tu:rsn:7:custom", "ap:price:exchange_diamond_money", "ap:price:price_diamond_som",
                  "ap:pay", "ap:paycard:number", "ap:paycard:holder", "ap:topups", "ap:main",
                  "prof:ref", "ap:ref", "ap:refgroups:0", "ap:reftoggle:1:0", "ap:reftop",
-                 "ap:price:referral_reward", "ap:price:referral_min_games"]) {
+                 "ap:price:referral_reward", "ap:price:referral_min_games", "ap:reflink:1:0"]) {
   check(`"${d}" handlerga tushadi`, handled(d));
 }
 

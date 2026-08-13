@@ -78,7 +78,18 @@ export const referralChatRepo = {
   async listTargets() {
     return prisma.chat.findMany({
       where: { isReferralTarget: true },
-      select: { id: true, telegramId: true, title: true },
+      select: { id: true, telegramId: true, title: true, inviteLink: true },
+    });
+  },
+
+  async setInviteLink(chatId: number, link: string | null) {
+    return prisma.chat.update({ where: { id: chatId }, data: { inviteLink: link } });
+  },
+
+  async byId(chatId: number) {
+    return prisma.chat.findUnique({
+      where: { id: chatId },
+      select: { id: true, telegramId: true, title: true, inviteLink: true, isReferralTarget: true },
     });
   },
 

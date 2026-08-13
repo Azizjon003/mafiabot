@@ -49,7 +49,8 @@ export function createGameCommands(controller: GameController): Composer<BotCont
     await controller.handleStartGame(chatId, ctx.chat.title, ctx.from ? BigInt(ctx.from.id) : undefined);
   });
 
-  // /begingame — O'yinni boshlash (ro'yxatni yopish) — yaratuvchi yoki admin
+  // /begingame — O'yinni boshlash (ro'yxatni yopish).
+  // ISTALGAN foydalanuvchi chaqira oladi: admin kutib o'tirish shart emas.
   composer.command("begingame", groupOnly, antiSpam, async (ctx) => {
     const chatId = BigInt(ctx.chat.id);
     const engine = gameManager.getGame(chatId);
@@ -57,10 +58,17 @@ export function createGameCommands(controller: GameController): Composer<BotCont
       await ctx.reply(t("game.noActiveGame"), { parse_mode: "HTML" });
       return;
     }
-    if (!(await canControlGame(ctx, engine))) {
-      await ctx.reply(t("errors.notAdmin"), { parse_mode: "HTML" });
+
+    // MUHIM: handleRegistrationEnd o'yinchi yetmasa o'yinni BEKOR QILADI.
+    // Bu vaqt tugaganda to'g'ri, lekin qo'lda /begingame uchun emas — aks holda
+    // istalgan odam ro'yxat boshida yozib o'yinni yo'q qilib yuborardi.
+    const count = engine.getPlayerCount();
+    const min = engine.settings.minPlayers;
+    if (count < min) {
+      await ctx.reply(t("game.notEnoughToBegin", { count, min }), { parse_mode: "HTML" });
       return;
     }
+
     await controller.handleRegistrationEnd(chatId);
   });
 
@@ -79,16 +87,14 @@ export function createGameCommands(controller: GameController): Composer<BotCont
     await controller.handleStopGame(chatId);
   });
 
-  // /extend — Vaqtni uzaytirish — yaratuvchi yoki admin
+  // /extend — Vaqtni uzaytirish. ISTALGAN foydalanuvchi chaqira oladi.
+  // Xavfsiz: ro'yxatni cheksiz qiladi (hech narsa yo'qolmaydi), o'yin ichidagi
+  // fazalar esa MAX_PHASE_EXTENDS bilan cheklangan. Spamni antiSpam ushlaydi.
   composer.command("extend", groupOnly, antiSpam, async (ctx) => {
     const chatId = BigInt(ctx.chat.id);
     const engine = gameManager.getGame(chatId);
     if (!engine) {
       await ctx.reply(t("game.noActiveGame"), { parse_mode: "HTML" });
-      return;
-    }
-    if (!(await canControlGame(ctx, engine))) {
-      await ctx.reply(t("errors.notAdmin"), { parse_mode: "HTML" });
       return;
     }
     const res = await controller.handleExtend(chatId);

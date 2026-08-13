@@ -341,6 +341,9 @@ export const TEXT_DEFAULTS: Record<string, string> = {
   "game.registrationIdleCancelled":
     "⏰ Ro'yxatga uzoq vaqt yangi odam qo'shilmadi — o'yin bekor qilindi.\n" +
     "<code>/startgame</code> bilan yangisini boshlang.",
+  "game.notEnoughToBegin":
+    "⚠️ O'yinni boshlash uchun kamida <b>{min}</b> ta o'yinchi kerak.\n" +
+    "Hozir: <b>{count}</b> ta. Do'stlaringizni chaqiring!",
   "game.extendLimit":
     "⏳ Vaqtni uzaytirish chegarasi tugadi — boshqa uzaytirib bo'lmaydi.",
   "errors.notAdmin": "⚠️ Bu buyruq faqat adminlar uchun!",
@@ -885,6 +888,7 @@ export const TEXT_LABELS: Record<string, string> = {
   "game.registrationUnlimited": "Ro'yxat cheksiz qilindi",
   "game.registrationAlreadyUnlimited": "Ro'yxat allaqachon cheksiz",
   "game.registrationIdleCancelled": "Ro'yxat bo'sh turib bekor bo'ldi",
+  "game.notEnoughToBegin": "Boshlash uchun o'yinchi yetmadi",
   "game.extendLimit": "Uzaytirish chegarasi",
   "errors.notAdmin": "Xato — admin emas",
   "errors.notInGame": "Xato — o'yinda emas",

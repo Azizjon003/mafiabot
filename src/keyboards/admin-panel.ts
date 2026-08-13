@@ -214,15 +214,18 @@ export function referralSettingsKeyboard(): InlineKeyboard {
 
 // Guruhlarni referral maqsadi sifatida yoqish/o'chirish
 export function referralGroupsKeyboard(
-  groups: { id: number; title: string | null; isReferralTarget: boolean }[],
+  groups: { id: number; title: string | null; isReferralTarget: boolean; inviteLink: string | null }[],
   page: number,
   totalPages: number,
 ): InlineKeyboard {
   const kb = new InlineKeyboard();
   for (const g of groups) {
     const mark = g.isReferralTarget ? "✅" : "⬜️";
-    const title = (g.title ?? "Guruh").slice(0, 28);
-    kb.text(`${mark} ${title}`, `ap:reftoggle:${g.id}:${page}`).row();
+    const title = (g.title ?? "Guruh").slice(0, 24);
+    // Tanlangan, lekin havolasi yo'q guruh — do'st u yerga kira olmaydi
+    const warn = g.isReferralTarget && !g.inviteLink ? " ⚠️" : "";
+    kb.text(`${mark} ${title}${warn}`, `ap:reftoggle:${g.id}:${page}`);
+    kb.text("🔗", `ap:reflink:${g.id}:${page}`).row();
   }
   if (totalPages > 1) {
     if (page > 0) kb.text("⬅️", `ap:refgroups:${page - 1}`);

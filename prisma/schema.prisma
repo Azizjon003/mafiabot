@@ -325,6 +325,9 @@ model Chat {
   isActive   Boolean  @default(true)
   // Referral shu guruhda o'ynalgan o'yin uchun hisoblanadi (adminlar tanlaydi)
   isReferralTarget Boolean @default(false)
+  // Taklif qilingan do'st shu havola orqali guruhga qo'shiladi.
+  // Bot admin bo'lsa avtomatik olinadi, aks holda admin qo'lda kiritadi.
+  inviteLink       String?
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 

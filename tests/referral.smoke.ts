@@ -68,8 +68,8 @@ function reset() {
   users = [1, 2, 3, 4].map((i) => ({ id: i, telegramId: TG(i), firstName: "U" + i, money: 0, diamonds: 0 }));
   refs = []; players = []; seq = 0;
   chats = [
-    { id: 1, telegramId: BigInt(-100), title: "Maqsadli", isReferralTarget: true },
-    { id: 2, telegramId: BigInt(-200), title: "Oddiy", isReferralTarget: false },
+    { id: 1, telegramId: BigInt(-100), title: "Maqsadli", isReferralTarget: true, inviteLink: null },
+    { id: 2, telegramId: BigInt(-200), title: "Oddiy", isReferralTarget: false, inviteLink: null },
   ];
 }
 
@@ -185,6 +185,27 @@ async function main() {
   check("Promo havolani matnga ham qo'shadi",
     !!promo && promo.text.includes(promo.link), promo?.text);
 
+  // ============ GURUH HAVOLASI ============
+  reset();
+  const { referralChatRepo: rc } = await import("../src/database/repositories/referral.repository");
+  chats.forEach((c) => (c.inviteLink = null));
+
+  const noLink = await referralService.targetGroupsText();
+  check("Havolasiz guruh oddiy matn bo'lib chiqadi",
+    noLink.includes("Maqsadli") && !noLink.includes("<a href"), noLink);
+
+  await rc.setInviteLink(1, "https://t.me/+abc123");
+  const withLink = await referralService.targetGroupsText();
+  check("Havolali guruh BOSILADIGAN bo'ladi",
+    withLink.includes('<a href="https://t.me/+abc123">'), withLink);
+
+  await rc.setInviteLink(1, null);
+  check("Havolani o'chirish ishlaydi", chats[0].inviteLink === null);
+
+  chats.forEach((c) => (c.isReferralTarget = false));
+  check("Guruh tanlanmagan bo'lsa — chiziqcha",
+    (await referralService.targetGroupsText()) === "—");
+
   // ============ ADMIN: GURUH TANLASH ============
   reset();
   const { referralChatRepo } = await import("../src/database/repositories/referral.repository");
@@ -206,17 +227,18 @@ async function main() {
 
   // Klaviatura callback_data si guruhning ICHKI id sini uzatadi
   const kb: any = referralGroupsKeyboard(
-    [{ id: 7, title: "Mafia UZ", isReferralTarget: true },
-     { id: 8, title: null, isReferralTarget: false }],
+    [{ id: 7, title: "Mafia UZ", isReferralTarget: true, inviteLink: "https://t.me/+x" },
+     { id: 8, title: null, isReferralTarget: true, inviteLink: null }],
     0, 1,
   );
   const datas = (kb.inline_keyboard as any[][]).flat().map((b: any) => b.callback_data);
   const labels = (kb.inline_keyboard as any[][]).flat().map((b: any) => b.text);
   check("Toggle tugmasi to'g'ri callback_data beradi",
     datas.includes("ap:reftoggle:7:0") && datas.includes("ap:reftoggle:8:0"), datas.join(","));
-  check("Yoqilgan guruh belgilangan, o'chiq — yo'q",
-    labels.some((l: string) => l.startsWith("✅")) && labels.some((l: string) => l.includes("Guruh")),
-    labels.join(" | "));
+  check("Havolasiz maqsadli guruh ogohlantirish bilan belgilanadi",
+    labels.some((l: string) => l.includes("⚠")), labels.join(" | "));
+  check("Har guruhda havola tugmasi bor",
+    datas.includes("ap:reflink:7:0") && datas.includes("ap:reflink:8:0"), datas.join(","));
   check("Ortga tugmasi bor", datas.includes("ap:ref"));
 
   let bad = 0;

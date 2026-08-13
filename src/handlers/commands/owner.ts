@@ -51,6 +51,7 @@ const pendingInputs = new Map<
   | { type: "textsearch" }
   | { type: "textimport" }
   | { type: "card"; field: "number" | "holder" }
+  | { type: "reflink"; chatId: number; page: number }
 >();
 
 function escapeHtmlText(s: string): string {
@@ -411,7 +412,13 @@ async function referralBody(): Promise<string> {
   ]);
   const unit = s.currency === "diamond" ? "💎" : "💰";
   const groupList = groups.length
-    ? groups.map((g) => `• ${escapeHtmlText(g.title ?? "Guruh")}`).join("\n")
+    ? groups
+        .map((g) => {
+          const title = escapeHtmlText(g.title ?? "Guruh");
+          // Havolasiz guruhga taklif qilingan do'st KIRA OLMAYDI — ochiq belgilaymiz
+          return g.inviteLink ? `• ${title} 🔗` : `• ${title} ⚠️ <i>havolasiz</i>`;
+        })
+        .join("\n")
     : `⚠️ <b>Hech qanday guruh tanlanmagan</b> — referral ISHLAMAYDI!`;
   return (
     `🔗 <b>Referral sozlamalari</b>\n\n` +
@@ -462,7 +469,7 @@ async function showRefGroups(ctx: BotContext, page: number) {
       orderBy: { updatedAt: "desc" },
       skip: safePage * REF_GROUPS_PER_PAGE,
       take: REF_GROUPS_PER_PAGE,
-      select: { id: true, title: true, isReferralTarget: true },
+      select: { id: true, title: true, isReferralTarget: true, inviteLink: true },
     });
     await editOrReply(
       ctx,
@@ -482,7 +489,37 @@ ownerCommand.callbackQuery(/^ap:reftoggle:(\d+):(\d+)$/, ownerOnly, async (ctx) 
   try {
     const { referralChatRepo } = await import("../../database/repositories/referral.repository");
     const now = await referralChatRepo.toggle(chatId);
-    await ctx.answerCallbackQuery({ text: now ? "✅ Yoqildi" : "⬜️ O'chirildi" }).catch(() => {});
+
+    // Yoqilganda taklif havolasini avtomatik olishga urinamiz — do'st guruhga
+    // kira olishi uchun u SHART. Bot admin bo'lmasa qo'lda kiritish kerak.
+    let note = "";
+    if (now) {
+      const chat = await referralChatRepo.byId(chatId);
+      if (chat && !chat.inviteLink) {
+        try {
+          const info: any = await ctx.api.getChat(chat.telegramId.toString());
+          let link: string | undefined = info?.invite_link;
+          if (!link) {
+            const created = await ctx.api.createChatInviteLink(chat.telegramId.toString(), {
+              name: "Referral",
+            });
+            link = created.invite_link;
+          }
+          if (link) {
+            await referralChatRepo.setInviteLink(chatId, link);
+            note = " (havola olindi)";
+          }
+        } catch (linkErr) {
+          logger.warn({ chatId, err: String(linkErr) }, "Taklif havolasini olib bo'lmadi");
+          note = " — havola olinmadi!";
+        }
+      }
+    }
+
+    await ctx.answerCallbackQuery({
+      text: (now ? "✅ Yoqildi" : "⬜️ O'chirildi") + note,
+      show_alert: note.includes("olinmadi"),
+    }).catch(() => {});
     await showRefGroups(ctx, page);
   } catch (e) {
     await showAdminError(ctx, e, "guruhni yoqish/o'chirish");
@@ -518,6 +555,23 @@ ownerCommand.command("refdebug", ownerOnly, async (ctx) => {
       parse_mode: "HTML",
     });
   }
+});
+
+// Guruh taklif havolasini qo'lda kiritish
+ownerCommand.callbackQuery(/^ap:reflink:(\d+):(\d+)$/, ownerOnly, async (ctx) => {
+  if (!ctx.from) return;
+  const chatId = parseInt(ctx.match[1]);
+  const page = parseInt(ctx.match[2]);
+  const { referralChatRepo } = await import("../../database/repositories/referral.repository");
+  const chat = await referralChatRepo.byId(chatId);
+  pendingInputs.set(ctx.from.id.toString(), { type: "reflink", chatId, page });
+  await ctx.answerCallbackQuery().catch(() => {});
+  await ctx.reply(
+    `🔗 <b>${escapeHtmlText(chat?.title ?? "Guruh")}</b> uchun taklif havolasini yuboring.\n\n` +
+    `Hozirgi: ${chat?.inviteLink ? `<code>${escapeHtmlText(chat.inviteLink)}</code>` : "yo'q"}\n\n` +
+    `<i>Havolani o'chirish uchun</i> <code>-</code> <i>yuboring.</i>`,
+    { parse_mode: "HTML" },
+  );
 });
 
 ownerCommand.callbackQuery("ap:refnope", ownerOnly, async (ctx) => {
@@ -1384,6 +1438,25 @@ ownerCommand.on("message:text", async (ctx, next) => {
   if (text.startsWith("/")) {
     pendingInputs.delete(ownerId);
     return next();
+  }
+
+  // Guruh taklif havolasi
+  if (pending.type === "reflink") {
+    pendingInputs.delete(ownerId);
+    const { referralChatRepo } = await import("../../database/repositories/referral.repository");
+    const value = text === "-" ? null : text;
+    if (value && !/^https?:\/\//i.test(value)) {
+      await ctx.reply("⚠️ Havola <code>https://</code> bilan boshlanishi kerak.", { parse_mode: "HTML" });
+      return;
+    }
+    await referralChatRepo.setInviteLink(pending.chatId, value);
+    await ctx.reply(
+      value
+        ? `✅ Havola saqlandi:\n<code>${escapeHtmlText(value)}</code>`
+        : "✅ Havola o'chirildi.",
+      { parse_mode: "HTML" },
+    );
+    return;
   }
 
   // KARTA rekvizitlari
