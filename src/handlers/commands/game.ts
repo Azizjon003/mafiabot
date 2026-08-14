@@ -7,6 +7,7 @@ import { t } from "../../services/text.service";
 import { groupOnly } from "../middleware/chat-type";
 import { antiSpam } from "../middleware/anti-spam";
 import { isChatAdminCached } from "../../utils/admin-cache";
+import { logger } from "../../utils/logger";
 
 // Guruh admini (yoki egasi) ekanligini tekshirish
 // Keshlangan — spam paytida har bir buyruq uchun Telegram API so'rovi ketmasin
@@ -69,7 +70,9 @@ export function createGameCommands(controller: GameController): Composer<BotCont
       return;
     }
 
-    await controller.handleRegistrationEnd(chatId);
+    // FONDA — rol tarqatish + tun boshlanishi (~30s) guruh navbatini ushlab turmasin.
+    // Qayta kirishdan handleRegistrationEnd ichidagi sinxron guard himoya qiladi.
+    controller.handleRegistrationEnd(chatId).catch((e) => logger.error(e, "handleRegistrationEnd (fonda) xatolik"));
   });
 
   // /stopgame — O'yinni to'xtatish — o'yinni YARATGAN kishi yoki guruh admini

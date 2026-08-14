@@ -7,6 +7,7 @@ import { sheriffActionKeyboard, robberResponseKeyboard, professorBoxesKeyboard }
 import { MAFIA_KILL_VOTERS, ROLE_TEAM, Team, ROLE_EMOJI, ROLE_NAME, PACING } from "../../utils/constants";
 import { t } from "../../services/text.service";
 import { escapeHtml, sleep } from "../../utils/helpers";
+import { logger } from "../../utils/logger";
 
 // Night action callback pattern: night_{role}:{targetPlayerId|skip}
 const NIGHT_ROLE_MAP: Record<string, Role> = {
@@ -49,6 +50,15 @@ function findPlayerGame(telegramId: bigint) {
 export function createNightActionCallbacks(controller: GameController): Composer<BotContext> {
   const composer = new Composer<BotContext>();
 
+  // Tun yakunini FONDA boshlaydi — callback navbatni (sequentialize) darhol bo'shatadi.
+  // await qilinsa ~30s lik tong sahnasi guruh + hamma o'yinchi PM navbatini ushlab
+  // turardi (o'lganlarning "oxirgi so'z"i ham shu navbatda qotib qolardi).
+  // handleNightEnd ichidagi phaseResolving guard'i birinchi await'dan OLDIN sinxron
+  // o'rnatiladi, shuning uchun taymer bilan parallel chaqiruv xavfsiz.
+  const endNightInBackground = (chatTelegramId: bigint) => {
+    controller.handleNightEnd(chatTelegramId).catch((e) => logger.error(e, "handleNightEnd (fonda) xatolik"));
+  };
+
   // ==================== KOMISSAR ====================
 
   // 1-bosqich: nishon tanlash → "Tekshirish / Otish"
@@ -86,7 +96,7 @@ export function createNightActionCallbacks(controller: GameController): Composer
     await ctx.answerCallbackQuery({ text: "🚫 O'tkazildi" }).catch(() => {});
     await ctx.editMessageText("🚫 O'tkazib yubordingiz.", { parse_mode: "HTML" }).catch(() => {});
     if (found.engine.isNightComplete()) {
-      await controller.handleNightEnd(found.engine.chatTelegramId);
+      endNightInBackground(found.engine.chatTelegramId);
     }
   });
 
@@ -147,7 +157,7 @@ export function createNightActionCallbacks(controller: GameController): Composer
     }
 
     if (found.engine.isNightComplete()) {
-      await controller.handleNightEnd(found.engine.chatTelegramId);
+      endNightInBackground(found.engine.chatTelegramId);
     }
   });
 
@@ -201,7 +211,7 @@ export function createNightActionCallbacks(controller: GameController): Composer
     } catch { /* ignore */ }
 
     if (found.engine.isNightComplete()) {
-      await controller.handleNightEnd(found.engine.chatTelegramId);
+      endNightInBackground(found.engine.chatTelegramId);
     }
   });
 
@@ -272,7 +282,7 @@ export function createNightActionCallbacks(controller: GameController): Composer
     ).catch(() => {});
 
     if (found.engine.isNightComplete()) {
-      await controller.handleNightEnd(found.engine.chatTelegramId);
+      endNightInBackground(found.engine.chatTelegramId);
     }
   });
 
@@ -383,7 +393,7 @@ export function createNightActionCallbacks(controller: GameController): Composer
     ).catch(() => {});
 
     if (found.engine.isNightComplete()) {
-      await controller.handleNightEnd(found.engine.chatTelegramId);
+      endNightInBackground(found.engine.chatTelegramId);
     }
   });
 
@@ -425,7 +435,7 @@ export function createNightActionCallbacks(controller: GameController): Composer
       await ctx.answerCallbackQuery({ text: "🚫 O'tkazildi" }).catch(() => {});
       await ctx.editMessageText("🚫 O'tkazib yubordingiz.", { parse_mode: "HTML" }).catch(() => {});
       if (found.engine.isNightComplete()) {
-        await controller.handleNightEnd(found.engine.chatTelegramId);
+        endNightInBackground(found.engine.chatTelegramId);
       }
       return;
     }
@@ -486,7 +496,7 @@ export function createNightActionCallbacks(controller: GameController): Composer
     }
 
     if (found.engine.isNightComplete()) {
-      await controller.handleNightEnd(found.engine.chatTelegramId);
+      endNightInBackground(found.engine.chatTelegramId);
     }
   });
 

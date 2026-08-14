@@ -47,6 +47,10 @@ export class GameController {
   // O'yin ICHIDAGI fazalar (tun/kun/ovoz) cheksiz cho'zilmasin — u yerda o'yin
   // to'xtab qoladi, ro'yxatdan farqli o'laroq kimdir "boshlash" tugmasini bosa olmaydi.
   private extendCount: Map<string, number> = new Map();
+  // handleRegistrationEnd endi navbatdan tashqarida ham chaqiriladi (fire-and-forget
+  // /begingame + registratsiya taymeri). Status "STARTING" bo'lgunga qadar bir necha
+  // await bor — shu oynada ikkinchi chaqiruv kirib rollarni qayta tarqatmasin.
+  private registrationEnding: Set<string> = new Set();
   private static MAX_PHASE_EXTENDS = 3;
   private static BUMP_COOLDOWN_MS = 15_000;    // /startgame bilan pastga tushirish oralig'i
 
@@ -194,7 +198,11 @@ export class GameController {
     const chatKey = chatTelegramId.toString();
     const engine = gameManager.getGame(chatTelegramId);
     if (!engine || engine.status !== "WAITING") return;
+    // Reentrancy guard — sinxron tekshiruv+o'rnatish (handleNightEnd'dagi kabi)
+    if (this.registrationEnding.has(chatKey)) return;
+    this.registrationEnding.add(chatKey);
 
+    try {
     this.clearRegistrationState(chatKey);
 
     // Registratsiya xabarini unpin qilish
@@ -264,6 +272,9 @@ export class GameController {
 
     // Kecha boshlash
     await this.startNightPhase(chatTelegramId);
+    } finally {
+      this.registrationEnding.delete(chatKey);
+    }
   }
 
   // ==================== NIGHT ====================
