@@ -30,7 +30,7 @@ export const chestService = {
       const oneMonthAgo = new Date();
       oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
       if (user.lastChestOpenedAt > oneMonthAgo) {
-        return { canOpen: false, reason: "Oyiga 1 marta ochish mumkin! ⭐️ VIP bo'lsangiz cheksiz!" };
+        return { canOpen: false, reason: "Oyiga 1 marta ochish mumkin!" };
       }
     }
 
@@ -68,7 +68,7 @@ export const chestService = {
         data: { lastChestOpenedAt: now },
       });
       if (gate.count === 0) {
-        return { success: false, error: "Oyiga 1 marta ochish mumkin! ⭐️ VIP bo'lsangiz cheksiz!" };
+        return { success: false, error: "Oyiga 1 marta ochish mumkin!" };
       }
       claimedCooldown = true;
     }

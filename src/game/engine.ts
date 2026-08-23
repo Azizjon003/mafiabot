@@ -1290,7 +1290,16 @@ export class GameEngine {
         if (seen.has(vId)) continue;
         seen.add(vId);
         if (vId === -1) {
-          visitorLines.push(`🤵🏼 Mafiya`);
+          // Mafiya tashrifi jamoaviy (-1) yoziladi — Daydi esa boshqa tashrifchilar kabi
+          // KIM kelganini ko'rishi kerak. Haqiqiy kelgan mafioz = o'ldirishni amalga
+          // oshirgan (resolveMafiaKiller: shu nishonga ovoz bergan Don, bo'lmasa birinchi ovoz).
+          const killerId = this.resolveMafiaKiller(trampAction.targetId);
+          const killer = killerId !== null ? this.getPlayer(killerId) : undefined;
+          visitorLines.push(
+            killer
+              ? `${ROLE_EMOJI[killer.role]} ${ROLE_NAME[killer.role]} (${escapeHtml(killer.firstName)})`
+              : `🤵🏼 Mafiya`
+          );
         } else if (vId === trampAction.actorId) {
           continue; // Daydi o'zi — ko'rsatmaymiz
         } else {

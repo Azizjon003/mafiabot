@@ -368,9 +368,12 @@ export const TEXT_DEFAULTS: Record<string, string> = {
   "stats.noStats": "📊 Hali statistika yo'q. O'yin o'ynang!",
 
   // ===== TOP =====
-  "top.header": "🏆 <b>Top o'yinchilar:</b>\n",
+  "top.header": "🏆 <b>Guruh reytingi (umumiy):</b>\n",
   "top.row": "{pos}. {emoji} <b>{name}</b> — {rating} ⭐️ ({wins}W/{games}G)",
-  "top.empty": "Hali hech kim o'ynamagan!",
+  "top.empty": "Bu guruhda hali hech kim o'ynamagan!",
+  "top.periodHeader": "🏆 <b>{label} top — shu guruh:</b>\n\n",
+  "top.periodRow": "{pos} <b>{name}</b> — {rating}⭐️ ({games} o'yin)",
+  "top.periodEmpty": "📊 {label} top — bu guruhda hali hech kim o'ynamagan!",
 
   // ===== BUTTONS =====
   "buttons.join": "✅ Qo'shilish",
@@ -503,8 +506,7 @@ export const TEXT_DEFAULTS: Record<string, string> = {
     "📜 <b>Hujjat</b>\n\nKomissar tekshiruvini bekor qiladi (1 marta).\n⚠️ Faqat Mafiya va Yakka rollar uchun foydali.\n\n{emoji} Narxi: <b>{price}</b>",
   "profile.shopChest":
     "🗃 <b>Sandiq</b>\n\nRandom mukofot oling.\n\n{emoji} Narxi: <b>{price}</b>",
-  "profile.shopVip":
-    "⭐️ <b>VIP (1 oy)</b>\n\nSandiqni cheksiz ochish, maxsus badge.\n\n{emoji} Narxi: <b>{price}</b>",
+
   "profile.shopRole": "🎭 <b>Qaysi rolni sotib olmoqchisiz?</b>\n\nKeyingi o'yinda shu rol tarqatiladi.",
   "profile.chestOpened": "🗃 <b>Sandiq ochildi!</b>\n\nMukofot:\n",
   "profile.heroNone":
@@ -618,6 +620,8 @@ export const TEXT_DEFAULTS: Record<string, string> = {
   "payment.cardNumber": "—",
   "payment.cardHolder": "—",
   "profile.premiumGroupsEmpty": "⭐️ <b>Premium guruhlar</b>\n\nHozircha bo'sh — admin tomonidan qo'shiladi.",
+  "profile.premiumGroups":
+    "⭐️ <b>Premium guruhlar</b> ({count} ta)\n\n{list}\n\n👇 Qo'shilish uchun guruh tugmasini bosing.",
 };
 
 // Kategoriya metadata — admin UI uchun
@@ -912,9 +916,12 @@ export const TEXT_LABELS: Record<string, string> = {
   "stats.noStats": "Statistika yo'q",
 
   // TOP
-  "top.header": "Reyting — sarlavha",
+  "top.header": "Reyting — sarlavha (guruh, umumiy)",
   "top.row": "Reyting — qator",
   "top.empty": "Reyting bo'sh",
+  "top.periodHeader": "Reyting — davr sarlavhasi (kunlik/haftalik/oylik)",
+  "top.periodRow": "Reyting — davr qatori",
+  "top.periodEmpty": "Reyting — davr bo'sh",
 
   // BUTTONS
   "buttons.join": "Tugma — qo'shilish",
@@ -948,7 +955,7 @@ export const TEXT_LABELS: Record<string, string> = {
   "profile.shopBullet": "Do'kon — Snayper o'qi tavsifi",
   "profile.shopDocument": "Do'kon — Hujjat tavsifi",
   "profile.shopChest": "Do'kon — Sandiq tavsifi",
-  "profile.shopVip": "Do'kon — VIP tavsifi",
+
   "profile.shopRole": "Do'kon — rol tanlash",
   "profile.chestOpened": "Sandiq ochildi",
   "profile.heroNone": "Geroy yo'q — taklif",
@@ -982,4 +989,5 @@ export const TEXT_LABELS: Record<string, string> = {
   "payment.cardNumber": "Karta raqami",
   "payment.cardHolder": "Karta egasi",
   "profile.premiumGroupsEmpty": "Premium guruhlar — bo'sh",
+  "profile.premiumGroups": "Premium guruhlar — ro'yxat",
 };

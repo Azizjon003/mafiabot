@@ -1,5 +1,6 @@
 import { Role } from "@prisma/client";
 import { prisma } from "../prisma";
+import { MAFIA_ROLES, ROLE_TEAM, SOLO_ROLES, Team } from "../../utils/constants";
 
 // Role -> UserStats field mapping
 const roleFieldMap: Record<Role, string> = {
@@ -144,8 +145,10 @@ export const statsRepo = {
     });
   },
 
-  // Date range top (kunlik, haftalik, oylik)
-  async getTopByDateRange(days: number, limit: number = 10) {
+  // Date range top (kunlik, haftalik, oylik).
+  // chatTelegramId berilsa — faqat SHU guruhda o'ynalgan o'yinlar hisoblanadi
+  // (guruhda /top yozilganda global emas, guruhning o'z reytingi chiqishi uchun).
+  async getTopByDateRange(days: number, limit: number = 10, chatTelegramId?: bigint) {
     const since = new Date();
     since.setDate(since.getDate() - days);
 
@@ -156,6 +159,7 @@ export const statsRepo = {
         game: {
           status: "FINISHED",
           endedAt: { gte: since },
+          ...(chatTelegramId !== undefined ? { chat: { telegramId: chatTelegramId } } : {}),
         },
       },
       _count: { id: true },
@@ -174,6 +178,46 @@ export const statsRepo = {
       const user = users.find((u) => u.id === r.userId);
       return { user: user!, gamesInPeriod: r._count.id };
     });
+  },
+
+  // Guruhning UMUMIY (butun tarix) reytingi — faqat shu guruhdagi tugagan o'yinlar.
+  // Player jadvalida "yutdi" belgisi yo'q, shuning uchun g'alaba Game.winner + rol jamoasi
+  // bo'yicha hisoblanadi (SOLO g'olib — tirik qolgan yakka rol).
+  async getTopAllTimeByChat(chatTelegramId: bigint, limit: number = 10) {
+    const rows = await prisma.player.findMany({
+      where: { game: { status: "FINISHED", chat: { telegramId: chatTelegramId } } },
+      select: { userId: true, role: true, isAlive: true, game: { select: { winner: true } } },
+    });
+    if (rows.length === 0) return [];
+
+    const agg = new Map<number, { games: number; wins: number }>();
+    for (const r of rows) {
+      const a = agg.get(r.userId) ?? { games: 0, wins: 0 };
+      a.games++;
+      if (r.role && r.game.winner) {
+        const team = ROLE_TEAM[r.role];
+        const won =
+          (r.game.winner === "TOWN" && team === Team.TOWN) ||
+          (r.game.winner === "MAFIA" && MAFIA_ROLES.includes(r.role)) ||
+          (r.game.winner === "SOLO" && SOLO_ROLES.includes(r.role) && r.isAlive);
+        if (won) a.wins++;
+      }
+      agg.set(r.userId, a);
+    }
+
+    const sorted = [...agg.entries()]
+      .sort((x, y) => y[1].wins - x[1].wins || y[1].games - x[1].games)
+      .slice(0, limit);
+    const users = await prisma.user.findMany({
+      where: { id: { in: sorted.map(([id]) => id) } },
+      include: { stats: true },
+    });
+    return sorted
+      .map(([userId, a]) => {
+        const user = users.find((u) => u.id === userId);
+        return user ? { user, gamesInChat: a.games, winsInChat: a.wins } : null;
+      })
+      .filter((x): x is NonNullable<typeof x> => x !== null);
   },
 
   getRank(rating: number): string {

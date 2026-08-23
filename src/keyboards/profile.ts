@@ -30,8 +30,6 @@ export function shopCategoriesKeyboard(): InlineKeyboard {
     .text("🗃 Sandiq", "shop:cat:chest")
     .text("🎭 Aktiv rol", "shop:cat:role")
     .row()
-    .text("⭐️ VIP", "shop:cat:vip")
-    .row()
     .text("🔙 Profil", "prof:back");
 }
 
@@ -131,10 +129,17 @@ export function useItemsKeyboard(flags: {
     .text("🔙 Profil", "prof:back");
 }
 
-// 6-ekran: Premium guruhlar
-export function premiumGroupsKeyboard(): InlineKeyboard {
-  return new InlineKeyboard()
-    .text("🔙 Profil", "prof:back");
+// 6-ekran: Premium guruhlar — admin belgilagan guruhlar havola tugmasi bilan
+export function premiumGroupsKeyboard(
+  groups: { title: string | null; inviteLink: string | null }[],
+): InlineKeyboard {
+  const kb = new InlineKeyboard();
+  for (const g of groups) {
+    if (!g.inviteLink) continue; // havolasiz guruhga URL tugma qo'yib bo'lmaydi
+    kb.url(`⭐️ ${(g.title ?? "Guruh").slice(0, 40)}`, g.inviteLink).row();
+  }
+  kb.text("🔙 Profil", "prof:back");
+  return kb;
 }
 
 // Referral ekrani

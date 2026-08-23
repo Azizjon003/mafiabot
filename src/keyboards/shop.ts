@@ -23,6 +23,5 @@ export function profileKeyboard(): InlineKeyboard {
     .text("🏪 Do'kon", "open_shop")
     .text("🗃 Sandiq", "open_chest")
     .row()
-    .text("⭐️ VIP", "open_vip")
     .text("📊 Statistika", "open_stats");
 }

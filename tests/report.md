@@ -1,13 +1,13 @@
 # Test Hisoboti
-_Yaratildi: 2026-08-14T14:42:45.525Z_
+_Yaratildi: 2026-08-23T11:35:37.915Z_
 
 ## Umumiy natija
 
-- **Jami senariylar:** 216
-- **✅ O'tdi:** 206
+- **Jami senariylar:** 220
+- **✅ O'tdi:** 210
 - **❌ Xato:** 10
-- **Muvaffaqiyat foizi:** 95.4%
-- **Jami vaqt:** 169ms
+- **Muvaffaqiyat foizi:** 95.5%
+- **Jami vaqt:** 119ms
 
 ## Kategoriya bo'yicha
 
@@ -16,21 +16,21 @@ _Yaratildi: 2026-08-14T14:42:45.525Z_
 | Komissar | 3 | 9 | ❌ (6 xato) |
 | Aktiv rol | 19 | 22 | ❌ (3 xato) |
 | Hujjat | 7 | 8 | ❌ (1 xato) |
-| Mafiya | 8 | 8 | ✅ |
+| Mafiya | 9 | 9 | ✅ |
 | Shifokor | 19 | 19 | ✅ |
 | Kamonchi | 8 | 8 | ✅ |
 | Boshqa | 10 | 10 | ✅ |
 | Qorbola | 5 | 5 | ✅ |
 | Kezuvchi | 18 | 18 | ✅ |
 | Qaroqchi | 9 | 9 | ✅ |
-| Daydi | 5 | 5 | ✅ |
+| Daydi | 7 | 7 | ✅ |
 | Labarant | 2 | 2 | ✅ |
 | Koldun | 2 | 2 | ✅ |
 | Sotqin | 2 | 2 | ✅ |
 | Serjant | 8 | 8 | ✅ |
 | Professor | 20 | 20 | ✅ |
 | Ovoz berish | 8 | 8 | ✅ |
-| G'olib | 1 | 1 | ✅ |
+| G'olib | 2 | 2 | ✅ |
 | Kamikaze | 7 | 7 | ✅ |
 | Minior | 2 | 2 | ✅ |
 | Ayg'oqchi | 1 | 1 | ✅ |

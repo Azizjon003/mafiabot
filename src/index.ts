@@ -11,7 +11,7 @@ import { createGameCommands } from "./handlers/commands/game";
 import { statsCommand } from "./handlers/commands/stats";
 import { economyCommand } from "./handlers/commands/economy";
 import { shopCommand } from "./handlers/commands/shop";
-import { vipCommand } from "./handlers/commands/vip";
+
 import { profileCommand } from "./handlers/commands/profile";
 import { balanceCommand } from "./handlers/commands/balance";
 import { adminCommand } from "./handlers/commands/admin";
@@ -85,7 +85,7 @@ async function main() {
   bot.use(balanceCommand);
   bot.use(economyCommand);
   bot.use(shopCommand);
-  bot.use(vipCommand);
+
   bot.use(profileCommand);
   bot.use(adminCommand);
   bot.use(ownerCommand);

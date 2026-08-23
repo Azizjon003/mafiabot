@@ -8,8 +8,7 @@ const PRIVATE_COMMANDS = [
   { command: "profile", description: "Mening profilim" },
   { command: "balance", description: "Balans, ayirboshlash va sotib olish" },
   { command: "stats", description: "Mening statistikam" },
-  { command: "vip", description: "VIP ma'lumoti" },
-  { command: "buyvip", description: "VIP sotib olish" },
+
   { command: "heroname", description: "Geroy nomini o'zgartirish" },
   { command: "say", description: "Anonim shivir (tirik o'yinchilar)" },
   { command: "help", description: "Yordam" },

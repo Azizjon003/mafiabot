@@ -10,6 +10,7 @@ export function adminPanelKeyboard(): InlineKeyboard {
     .text("🔗 Referral", "ap:ref")
     .row()
     .text("🎁 Sovg'a berish", "ap:gift")
+    .text("⭐️ Premium guruhlar", "ap:premium")
     .row()
     .text("📝 Matnlar", "ap:texts")
     .text("📊 Bot statistikasi", "ap:botstats")
@@ -30,8 +31,7 @@ export function pricesCategoriesKeyboard(): InlineKeyboard {
     .text("🛡 Himoya", "ap:price:price_shield")
     .text("🎯 Snayper o'qi", "ap:price:price_bullet")
     .text("📜 Hujjat", "ap:price:price_document").row()
-    .text("🥷 Geroy yaratish", "ap:price:price_hero_create")
-    .text("⭐️ VIP", "ap:price:price_vip_month").row()
+    .text("🥷 Geroy yaratish", "ap:price:price_hero_create").row()
     .text("⭐ Geroy ball (1k)", "ap:price:price_hero_points_1000")
     .text("🛡 Geroy himoya", "ap:price:price_hero_prot").row()
     // Pul bilan (💰)
@@ -113,7 +113,6 @@ export function giftCategoriesKeyboard(): InlineKeyboard {
     .text("📜 Hujjat", "ap:gift:document")
     .row()
     .text("⭐ Geroy ball", "ap:gift:points")
-    .text("⭐️ VIP berish", "ap:gift:vip")
     .row()
     .text("🔙 Asosiy", "ap:main");
 }
@@ -234,5 +233,30 @@ export function referralGroupsKeyboard(
     kb.row();
   }
   kb.text("🔙 Ortga", "ap:ref");
+  return kb;
+}
+
+// Premium guruhlar — admin yoqadi/o'chiradi (referral guruhlari bilan bir xil UI)
+export function premiumGroupsAdminKeyboard(
+  groups: { id: number; title: string | null; isPremium: boolean; inviteLink: string | null }[],
+  page: number,
+  totalPages: number,
+): InlineKeyboard {
+  const kb = new InlineKeyboard();
+  for (const g of groups) {
+    const mark = g.isPremium ? "✅" : "⬜️";
+    const title = (g.title ?? "Guruh").slice(0, 24);
+    // Premium, lekin havolasiz — foydalanuvchi unga kira olmaydi
+    const warn = g.isPremium && !g.inviteLink ? " ⚠️" : "";
+    kb.text(`${mark} ${title}${warn}`, `ap:premtoggle:${g.id}:${page}`);
+    kb.text("🔗", `ap:premlink:${g.id}:${page}`).row();
+  }
+  if (totalPages > 1) {
+    if (page > 0) kb.text("⬅️", `ap:premgroups:${page - 1}`);
+    kb.text(`${page + 1}/${totalPages}`, "ap:premnope");
+    if (page < totalPages - 1) kb.text("➡️", `ap:premgroups:${page + 1}`);
+    kb.row();
+  }
+  kb.text("🔙 Asosiy", "ap:main");
   return kb;
 }

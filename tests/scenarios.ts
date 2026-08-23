@@ -180,7 +180,29 @@ const manual: Scenario[] = [
     players: ["Tramp", "Don", "Civ1", "Civ2", "Civ3"],
     roles: { Tramp: "TRAMP", Don: "DON", Civ1: "CIVILIAN", Civ2: "CIVILIAN", Civ3: "CIVILIAN" },
     nights: [{ actions: { TRAMP: "Civ1" }, mafiaVotes: [{ voter: "Don", target: "Civ1" }] }],
-    afterNight: [{ eventContains: { TRAMP_VISIT: ["Mafiya"] } }],
+    // Mafiya tashrifi ISM bilan ko'rinadi — boshqa tashrifchilar kabi
+    afterNight: [{ eventContains: { TRAMP_VISIT: ["(Don)"] } }],
+  },
+  {
+    name: "Daydi mafiya tashrifida kelgan mafiozning ismini ko'radi (Don + Mafiya ovozi)",
+    players: ["Tramp", "Don", "Mafia", "Civ1", "Civ2", "Civ3"],
+    roles: { Tramp: "TRAMP", Don: "DON", Mafia: "MAFIA", Civ1: "CIVILIAN", Civ2: "CIVILIAN", Civ3: "CIVILIAN" },
+    nights: [{
+      actions: { TRAMP: "Civ1" },
+      mafiaVotes: [{ voter: "Mafia", target: "Civ1" }, { voter: "Don", target: "Civ1" }],
+    }],
+    // Don shu nishonga ovoz bergan — "kelgan" mafioz Don hisoblanadi
+    afterNight: [{ dead: ["Civ1"], eventContains: { TRAMP_VISIT: ["(Don)"] } }],
+  },
+  {
+    name: "Daydi mafiya tashrifida oddiy mafiya ismini ko'radi (Don ovoz bermagan)",
+    players: ["Tramp", "Don", "Mafia", "Civ1", "Civ2", "Civ3"],
+    roles: { Tramp: "TRAMP", Don: "DON", Mafia: "MAFIA", Civ1: "CIVILIAN", Civ2: "CIVILIAN", Civ3: "CIVILIAN" },
+    nights: [{
+      actions: { TRAMP: "Civ1" },
+      mafiaVotes: [{ voter: "Mafia", target: "Civ1" }],
+    }],
+    afterNight: [{ eventContains: { TRAMP_VISIT: ["(Mafia)"] } }],
   },
   {
     name: "Bloklangan Daydi hech narsa ko'rmaydi",
@@ -289,11 +311,30 @@ const manual: Scenario[] = [
   },
   {
     name: "Yakka qotil yutadi — hamma boshqalar o'ldi",
+    players: ["Killer", "Civ1", "Civ2", "Civ3"],
+    roles: { Killer: "KILLER", Civ1: "CIVILIAN", Civ2: "CIVILIAN", Civ3: "CIVILIAN" },
+    nights: [{ actions: { KILLER: "Civ1" } }, { actions: { KILLER: "Civ2" } }],
+    // 1-tundan keyin 3 kishi (Qotil + 2 tinch) — o'yin davom etadi
+    afterNight: [{ dead: ["Civ1"], winner: null }, { dead: ["Civ1", "Civ2"], winner: "SOLO" }],
+    finalWinner: "SOLO",
+  },
+  {
+    name: "Yakka qotil 1v1 qolsa darhol yutadi (tinch axoli bilan)",
     players: ["Killer", "Civ1", "Civ2"],
     roles: { Killer: "KILLER", Civ1: "CIVILIAN", Civ2: "CIVILIAN" },
     nights: [{ actions: { KILLER: "Civ1" } }],
-    votes: [{ votes: { Killer: "Civ2", Civ2: "Killer" } }],
-    // Teng ovoz → hech kim osilmaydi, lekin keyingi tunda qotil Civ2 ni o'ldirsa yutadi
+    // Qotil + Civ2 = 1v1 → kun kutilmaydi, Qotil g'olib
+    afterNight: [{ dead: ["Civ1"], winner: "SOLO" }],
+    finalWinner: "SOLO",
+  },
+  {
+    name: "Yakka qotil 1v1 qolsa mafiyaga qarshi ham yutadi",
+    players: ["Killer", "Don", "Civ1"],
+    roles: { Killer: "KILLER", Don: "DON", Civ1: "CIVILIAN" },
+    nights: [{ actions: { KILLER: "Civ1" }, mafiaVotes: [{ voter: "Don", target: "Civ1" }] }],
+    // Qotil + Don = 1v1 → mafiya pariteti EMAS, Qotil g'olib
+    afterNight: [{ dead: ["Civ1"], winner: "SOLO" }],
+    finalWinner: "SOLO",
   },
 
   // ==================== KAMIKAZE ====================

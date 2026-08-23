@@ -86,14 +86,6 @@ export const shopService = {
           priceType: "MONEY",
           price: 2000,
         },
-        {
-          name: "VIP (1 oy)",
-          description: "VIP imtiyozlar: cheksiz sandiq va maxsus badge",
-          emoji: "⭐️",
-          category: "VIP",
-          priceType: "DIAMOND",
-          price: 20,
-        },
       ],
     });
   },

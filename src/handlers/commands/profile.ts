@@ -3,7 +3,7 @@ import { Role } from "@prisma/client";
 import { BotContext } from "../../types/context";
 import { prisma } from "../../database/prisma";
 import { statsRepo } from "../../database/repositories/stats.repository";
-import { vipService } from "../../services/vip.service";
+
 import { heroService } from "../../services/hero.service";
 import { inventoryService } from "../../services/inventory.service";
 import { pricingService, PRICE_KEYS, rolePriceKey } from "../../services/pricing.service";
@@ -35,7 +35,6 @@ async function buildProfileText(userId: number): Promise<string> {
   if (!user) return "User topilmadi";
 
   const rank = user.stats ? statsRepo.getRank(user.stats.rating) : "Yangi fuqaro";
-  const isVip = await vipService.isVip(userId);
 
   let txt = `👤 <b>${user.firstName}</b>\n\n`;
   txt += `⭐️ Reyting: <b>${user.stats?.rating || 1000}</b> (${rank})\n`;
@@ -53,9 +52,7 @@ async function buildProfileText(userId: number): Promise<string> {
   if (user.useBulletNextGame && user.bulletCount > 0) txt += `🎯 Snayper o'qi keyingi o'yinda ✅\n`;
   if (user.useDocumentNextGame && user.documentCount > 0) txt += `📜 Hujjat keyingi o'yinda ✅\n`;
   if (user.useHeroNextGame && user.hero) txt += `🥷 Geroy keyingi o'yinda ✅\n`;
-  if (isVip && user.vipExpiresAt) {
-    txt += `⭐️ VIP: <b>${user.vipExpiresAt.toLocaleDateString("uz-UZ")}</b> gacha\n`;
-  }
+
   txt += `\n🎮 O'yinlar: <b>${user.stats?.gamesPlayed || 0}</b> | 🏆 Yutgan: <b>${user.stats?.gamesWon || 0}</b>`;
 
   // Obunalar
@@ -155,16 +152,6 @@ profileCommand.callbackQuery("shop:cat:chest", async (ctx) => {
   ).catch(() => {});
 });
 
-// VIP
-profileCommand.callbackQuery("shop:cat:vip", async (ctx) => {
-  const price = await pricingService.get(PRICE_KEYS.VIP_MONTH);
-  const emoji = await currencyEmoji(PRICE_KEYS.VIP_MONTH);
-  await ctx.answerCallbackQuery().catch(() => {});
-  await ctx.editMessageText(
-    t("profile.shopVip", { emoji, price: price.toLocaleString() }),
-    { parse_mode: "HTML", reply_markup: buyItemKeyboard("vip") }
-  ).catch(() => {});
-});
 
 // Aktiv rol ro'yxati
 profileCommand.callbackQuery("shop:cat:role", async (ctx) => {
@@ -188,7 +175,7 @@ profileCommand.callbackQuery("shop:cat:role", async (ctx) => {
 });
 
 // ==================== Sotib olish callback'lar ====================
-profileCommand.callbackQuery(/^shop:buy:(shield|bullet|document|vip|chest)$/, async (ctx) => {
+profileCommand.callbackQuery(/^shop:buy:(shield|bullet|document|chest)$/, async (ctx) => {
   if (!ctx.dbUser) return;
   const item = ctx.match[1];
 
@@ -199,8 +186,6 @@ profileCommand.callbackQuery(/^shop:buy:(shield|bullet|document|vip|chest)$/, as
     res = await inventoryService.buyBullet(ctx.dbUser.id);
   } else if (item === "document") {
     res = await inventoryService.buyDocument(ctx.dbUser.id);
-  } else if (item === "vip") {
-    res = await vipService.buyVip(ctx.dbUser.id);
   } else if (item === "chest") {
     // Sandiq ochish
     const { chestService } = await import("../../services/chest.service");
@@ -676,11 +661,30 @@ profileCommand.callbackQuery("prof:ref", async (ctx) => {
 });
 
 // ==================== Premium guruhlar ====================
+// Admin /admin → ⭐️ Premium guruhlar bo'limida belgilagan guruhlar havola bilan chiqadi.
 profileCommand.callbackQuery("prof:premium", async (ctx) => {
   await ctx.answerCallbackQuery().catch(() => {});
+  const { premiumChatRepo } = await import("../../database/repositories/premium.repository");
+  const groups = await premiumChatRepo.listPremium().catch(() => []);
+
+  if (groups.length === 0) {
+    await ctx.editMessageText(
+      t("profile.premiumGroupsEmpty"),
+      { parse_mode: "HTML", reply_markup: premiumGroupsKeyboard([]) }
+    ).catch(() => {});
+    return;
+  }
+
+  const list = groups
+    .map((g, i) => {
+      const title = escapeHtml(g.title ?? "Guruh");
+      // Havolasiz guruh — tugma chiqmaydi, ro'yxatda belgilab qo'yamiz
+      return g.inviteLink ? `${i + 1}. ${title}` : `${i + 1}. ${title} <i>(havola hali yo'q)</i>`;
+    })
+    .join("\n");
   await ctx.editMessageText(
-    t("profile.premiumGroupsEmpty"),
-    { parse_mode: "HTML", reply_markup: premiumGroupsKeyboard() }
+    t("profile.premiumGroups", { count: groups.length, list }),
+    { parse_mode: "HTML", reply_markup: premiumGroupsKeyboard(groups), disable_web_page_preview: true } as any
   ).catch(() => {});
 });
 

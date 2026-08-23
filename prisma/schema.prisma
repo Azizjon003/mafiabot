@@ -328,6 +328,9 @@ model Chat {
   // Taklif qilingan do'st shu havola orqali guruhga qo'shiladi.
   // Bot admin bo'lsa avtomatik olinadi, aks holda admin qo'lda kiritadi.
   inviteLink       String?
+  // Premium guruh — admin /admin panelidan belgilaydi; foydalanuvchilar profildagi
+  // "⭐️ Premium guruhlar" bo'limida ko'radi (havola = inviteLink, referral bilan umumiy).
+  isPremium        Boolean @default(false)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 

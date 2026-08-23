@@ -3,7 +3,7 @@ import { BotContext } from "../../types/context";
 import { isOwner } from "../../config";
 import { pricingService, PRICE_KEYS } from "../../services/pricing.service";
 import { economyService } from "../../services/economy.service";
-import { vipService } from "../../services/vip.service";
+
 import { heroRepo } from "../../database/repositories/hero.repository";
 import { inventoryRepo } from "../../database/repositories/inventory.repository";
 import { topUpRepo } from "../../database/repositories/topup.repository";
@@ -25,6 +25,7 @@ import {
   paymentSettingsKeyboard,
   referralSettingsKeyboard,
   referralGroupsKeyboard,
+  premiumGroupsAdminKeyboard,
 } from "../../keyboards/admin-panel";
 import { botStatsRepo } from "../../database/repositories/botstats.repository";
 import {
@@ -52,6 +53,7 @@ const pendingInputs = new Map<
   | { type: "textimport" }
   | { type: "card"; field: "number" | "holder" }
   | { type: "reflink"; chatId: number; page: number }
+  | { type: "premlink"; chatId: number; page: number }
 >();
 
 function escapeHtmlText(s: string): string {
@@ -591,6 +593,124 @@ ownerCommand.callbackQuery("ap:reftop", ownerOnly, async (ctx) => {
   }).catch(() => {});
 });
 
+// ==================== PREMIUM GURUHLAR ====================
+// Admin belgilagan guruhlar foydalanuvchi profilidagi "⭐️ Premium guruhlar"
+// bo'limida havola bilan chiqadi. UI referral guruhlari bilan bir xil.
+
+const PREM_GROUPS_PER_PAGE = 8;
+
+ownerCommand.callbackQuery("ap:premium", ownerOnly, async (ctx) => {
+  await ctx.answerCallbackQuery().catch(() => {});
+  await showPremiumGroups(ctx, 0);
+});
+
+ownerCommand.callbackQuery(/^ap:premgroups:(\d+)$/, ownerOnly, async (ctx) => {
+  const page = parseInt(ctx.match[1]);
+  await ctx.answerCallbackQuery().catch(() => {});
+  await showPremiumGroups(ctx, page);
+});
+
+async function showPremiumGroups(ctx: BotContext, page: number) {
+  try {
+    const total = await prisma.chat.count();
+    if (total === 0) {
+      await editOrReply(
+        ctx,
+        `⭐️ <b>Premium guruhlar</b>\n\n` +
+        `⚠️ Bazada hali birorta guruh yo'q.\n` +
+        `Botni guruhga qo'shib, u yerda bir marta <code>/startgame</code> qiling — ` +
+        `shundan keyin guruh shu ro'yxatda paydo bo'ladi.`,
+        adminPanelKeyboard(),
+      );
+      return;
+    }
+
+    const totalPages = Math.max(1, Math.ceil(total / PREM_GROUPS_PER_PAGE));
+    const safePage = Math.min(Math.max(0, page), totalPages - 1);
+    const [groups, premiumCount] = await Promise.all([
+      prisma.chat.findMany({
+        orderBy: { updatedAt: "desc" },
+        skip: safePage * PREM_GROUPS_PER_PAGE,
+        take: PREM_GROUPS_PER_PAGE,
+        select: { id: true, title: true, isPremium: true, inviteLink: true },
+      }),
+      prisma.chat.count({ where: { isPremium: true } }),
+    ]);
+    await editOrReply(
+      ctx,
+      `⭐️ <b>Premium guruhlarni tanlang</b>\n\n` +
+      `Belgilangan guruhlar foydalanuvchilarga profil → "⭐️ Premium guruhlar" bo'limida ` +
+      `havola bilan ko'rsatiladi. ⚠️ — havolasiz (🔗 tugmasi bilan qo'lda kiriting).\n\n` +
+      `<i>Premium: ${premiumCount} ta · Jami ${total} ta chat, ${safePage + 1}-sahifa.</i>`,
+      premiumGroupsAdminKeyboard(groups, safePage, totalPages),
+    );
+  } catch (e) {
+    await showAdminError(ctx, e, "premium guruhlar ro'yxati");
+  }
+}
+
+ownerCommand.callbackQuery(/^ap:premtoggle:(\d+):(\d+)$/, ownerOnly, async (ctx) => {
+  const chatId = parseInt(ctx.match[1]);
+  const page = parseInt(ctx.match[2]);
+  try {
+    const { premiumChatRepo } = await import("../../database/repositories/premium.repository");
+    const now = await premiumChatRepo.toggle(chatId);
+
+    // Yoqilganda taklif havolasini avtomatik olishga urinamiz (referral bilan bir xil).
+    let note = "";
+    if (now) {
+      const chat = await premiumChatRepo.byId(chatId);
+      if (chat && !chat.inviteLink) {
+        try {
+          const info: any = await ctx.api.getChat(chat.telegramId.toString());
+          let link: string | undefined = info?.invite_link;
+          if (!link) {
+            const created = await ctx.api.createChatInviteLink(chat.telegramId.toString(), {
+              name: "Premium",
+            });
+            link = created.invite_link;
+          }
+          if (link) {
+            await premiumChatRepo.setInviteLink(chatId, link);
+            note = " (havola olindi)";
+          }
+        } catch (linkErr) {
+          logger.warn({ chatId, err: String(linkErr) }, "Premium guruh havolasini olib bo'lmadi");
+          note = " — havola olinmadi!";
+        }
+      }
+    }
+
+    await ctx.answerCallbackQuery({
+      text: (now ? "✅ Premium yoqildi" : "⬜️ Premium o'chirildi") + note,
+      show_alert: note.includes("olinmadi"),
+    }).catch(() => {});
+    await showPremiumGroups(ctx, page);
+  } catch (e) {
+    await showAdminError(ctx, e, "premium guruhni yoqish/o'chirish");
+  }
+});
+
+ownerCommand.callbackQuery(/^ap:premlink:(\d+):(\d+)$/, ownerOnly, async (ctx) => {
+  if (!ctx.from) return;
+  const chatId = parseInt(ctx.match[1]);
+  const page = parseInt(ctx.match[2]);
+  const { premiumChatRepo } = await import("../../database/repositories/premium.repository");
+  const chat = await premiumChatRepo.byId(chatId);
+  pendingInputs.set(ctx.from.id.toString(), { type: "premlink", chatId, page });
+  await ctx.answerCallbackQuery().catch(() => {});
+  await ctx.reply(
+    `🔗 <b>${escapeHtmlText(chat?.title ?? "Guruh")}</b> uchun taklif havolasini yuboring.\n\n` +
+    `Hozirgi: ${chat?.inviteLink ? `<code>${escapeHtmlText(chat.inviteLink)}</code>` : "yo'q"}\n\n` +
+    `<i>Havolani o'chirish uchun</i> <code>-</code> <i>yuboring.</i>`,
+    { parse_mode: "HTML" },
+  );
+});
+
+ownerCommand.callbackQuery("ap:premnope", ownerOnly, async (ctx) => {
+  await ctx.answerCallbackQuery().catch(() => {});
+});
+
 // ==================== TO'LOV (karta rekvizitlari) ====================
 
 function paymentBody(): string {
@@ -665,7 +785,7 @@ ownerCommand.callbackQuery("ap:roleprices", ownerOnly, async (ctx) => {
 
 // Bu kalit sotib olinadigan item (valyuta o'zgartirish mumkin)
 const CONFIGURABLE_CURRENCY_KEYS = new Set([
-  "price_shield", "price_bullet", "price_document", "price_hero_create", "price_vip_month",
+  "price_shield", "price_bullet", "price_document", "price_hero_create",
   "exchange_diamond_money", "price_diamond_som", "price_money_som", "topup_min_som",
   "referral_reward",
   "price_hero_points_1000", "price_hero_prot", "price_hero_charge", "price_hero_rename",
@@ -807,7 +927,7 @@ ownerCommand.callbackQuery("ap:gift", ownerOnly, async (ctx) => {
   ).catch(() => {});
 });
 
-ownerCommand.callbackQuery(/^ap:gift:(money|diamond|shield|bullet|document|points|vip)$/, ownerOnly, async (ctx) => {
+ownerCommand.callbackQuery(/^ap:gift:(money|diamond|shield|bullet|document|points)$/, ownerOnly, async (ctx) => {
   if (!ctx.from) return;
   const giftType = ctx.match[1];
   pendingInputs.set(ctx.from.id.toString(), { type: "gift", giftType });
@@ -819,7 +939,6 @@ ownerCommand.callbackQuery(/^ap:gift:(money|diamond|shield|bullet|document|point
     bullet: "🎯 Snayper o'qi (1 dona)",
     document: "📜 Hujjat (1 dona)",
     points: "⭐ Geroy ball",
-    vip: "⭐️ VIP (30 kun)",
   };
 
   await ctx.answerCallbackQuery().catch(() => {});
@@ -827,7 +946,7 @@ ownerCommand.callbackQuery(/^ap:gift:(money|diamond|shield|bullet|document|point
     `🎁 <b>Sovg'a: ${labels[giftType]}</b>\n\n` +
     `Endi quyidagi formatlardan birida yozing:\n\n` +
     `📌 <b>ID + miqdor:</b>\n<code>123456789 100</code>\n\n` +
-    `📌 <b>Faqat ID</b> (shield/document/vip uchun):\n<code>123456789</code>\n\n` +
+    `📌 <b>Faqat ID</b> (shield/document uchun):\n<code>123456789</code>\n\n` +
     `📌 Yoki shu chatda foydalanuvchi xabariga reply qilib miqdor yozing.`,
     { parse_mode: "HTML", reply_markup: giftCategoriesKeyboard() }
   ).catch(() => {});
@@ -1213,7 +1332,7 @@ async function botStatsText(): Promise<string> {
     `👥 <b>Foydalanuvchilar</b> — jami <b>${s.users.total}</b>\n` +
     `   Aktiv: 24s <b>${s.users.activeDay}</b> · 7 kun <b>${s.users.activeWeek}</b> · 30 kun <b>${s.users.activeMonth}</b>\n` +
     `   Yangi: 24s <b>${s.users.newDay}</b> · 7 kun <b>${s.users.newWeek}</b>\n` +
-    `   ⭐️ VIP: <b>${s.users.vip}</b> · 🥷 Geroy: <b>${s.users.withHero}</b> · 🚫 Ban: <b>${s.users.banned}</b>\n\n` +
+    `   🥷 Geroy: <b>${s.users.withHero}</b> · 🚫 Ban: <b>${s.users.banned}</b>\n\n` +
     `🏘 <b>Guruhlar</b> — jami <b>${s.chats.total}</b>\n` +
     `   O'yin bo'lgan: <b>${s.chats.withGames}</b>\n` +
     `   Aktiv: 24s <b>${s.chats.activeDay}</b> · 7 kun <b>${s.chats.activeWeek}</b> · 30 kun <b>${s.chats.activeMonth}</b>\n\n` +
@@ -1459,6 +1578,25 @@ ownerCommand.on("message:text", async (ctx, next) => {
     return;
   }
 
+  // Premium guruh taklif havolasi
+  if (pending.type === "premlink") {
+    pendingInputs.delete(ownerId);
+    const { premiumChatRepo } = await import("../../database/repositories/premium.repository");
+    const value = text === "-" ? null : text;
+    if (value && !/^https?:\/\//i.test(value)) {
+      await ctx.reply("⚠️ Havola <code>https://</code> bilan boshlanishi kerak.", { parse_mode: "HTML" });
+      return;
+    }
+    await premiumChatRepo.setInviteLink(pending.chatId, value);
+    await ctx.reply(
+      value
+        ? `✅ Havola saqlandi:\n<code>${escapeHtmlText(value)}</code>`
+        : "✅ Havola o'chirildi.",
+      { parse_mode: "HTML" },
+    );
+    return;
+  }
+
   // KARTA rekvizitlari
   if (pending.type === "card") {
     pendingInputs.delete(ownerId);
@@ -1669,15 +1807,6 @@ ownerCommand.on("message:text", async (ctx, next) => {
         }
         await heroRepo.addPoints(user.id, amount);
         resultText = `⭐ ${amount} ball`;
-        break;
-      case "vip":
-        const expiresAt = new Date();
-        expiresAt.setDate(expiresAt.getDate() + 30);
-        await prisma.user.update({
-          where: { id: user.id },
-          data: { isVip: true, vipExpiresAt: expiresAt },
-        });
-        resultText = `⭐️ VIP 30 kun`;
         break;
     }
 

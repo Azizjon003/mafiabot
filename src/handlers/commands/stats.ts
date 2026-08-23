@@ -4,6 +4,7 @@ import { statsRepo } from "../../database/repositories/stats.repository";
 import { userRepo } from "../../database/repositories/user.repository";
 import { t } from "../../services/text.service";
 import { ROLE_EMOJI } from "../../utils/constants";
+import { escapeHtml } from "../../utils/helpers";
 import { groupOnly } from "../middleware/chat-type";
 
 export const statsCommand = new Composer<BotContext>();
@@ -54,30 +55,33 @@ statsCommand.command("top30", groupOnly, async (ctx) => {
   await showTopByDays(ctx, 30, "Oylik");
 });
 
-async function showTopByDays(ctx: any, days: number, label: string) {
-  const topPlayers = await statsRepo.getTopByDateRange(days, 10);
+// Guruhda yozilgan /top* buyruqlari faqat SHU guruhdagi o'yinlarni hisoblaydi —
+// global reyting emas (guruh o'z ichki raqobatini ko'rishi uchun).
+async function showTopByDays(ctx: BotContext, days: number, label: string) {
+  if (!ctx.chat) return;
+  const topPlayers = await statsRepo.getTopByDateRange(days, 10, BigInt(ctx.chat.id));
 
   if (topPlayers.length === 0) {
-    await ctx.reply(`📊 ${label} top — hali hech kim o'ynamagan!`, { parse_mode: "HTML" });
+    await ctx.reply(t("top.periodEmpty", { label }), { parse_mode: "HTML" });
     return;
   }
 
   const medals = ["🥇", "🥈", "🥉"];
-  let text = `🏆 <b>${label} top reyting:</b>\n\n`;
+  let text = t("top.periodHeader", { label });
 
   for (let i = 0; i < topPlayers.length; i++) {
     const { user, gamesInPeriod } = topPlayers[i];
     const pos = medals[i] || `${i + 1}.`;
     const rating = user.stats?.rating || 1000;
-    text += `${pos} <b>${user.firstName}</b> — ${rating}⭐️ (${gamesInPeriod} o'yin)\n`;
+    text += t("top.periodRow", { pos, name: escapeHtml(user.firstName), rating, games: gamesInPeriod }) + "\n";
   }
 
   await ctx.reply(text, { parse_mode: "HTML" });
 }
 
-// /topall — Umumiy reyting (eski /top)
+// /topall — Guruhning umumiy (butun tarix) reytingi: shu guruhdagi g'alaba va o'yinlar soni
 statsCommand.command("topall", groupOnly, async (ctx) => {
-  const topPlayers = await statsRepo.getTopPlayers(10);
+  const topPlayers = await statsRepo.getTopAllTimeByChat(BigInt(ctx.chat.id), 10);
 
   if (topPlayers.length === 0) {
     await ctx.reply(t("top.empty"), { parse_mode: "HTML" });
@@ -88,16 +92,16 @@ statsCommand.command("topall", groupOnly, async (ctx) => {
   const medals = ["🥇", "🥈", "🥉"];
 
   for (let i = 0; i < topPlayers.length; i++) {
-    const s = topPlayers[i];
+    const { user, gamesInChat, winsInChat } = topPlayers[i];
     const pos = medals[i] || `${i + 1}.`;
     text +=
       t("top.row", {
         pos: pos.toString(),
         emoji: "⭐️",
-        name: s.user.firstName,
-        rating: s.rating,
-        wins: s.gamesWon,
-        games: s.gamesPlayed,
+        name: escapeHtml(user.firstName),
+        rating: user.stats?.rating || 1000,
+        wins: winsInChat,
+        games: gamesInChat,
       }) + "\n";
   }
 
