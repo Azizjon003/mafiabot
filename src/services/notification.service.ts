@@ -127,9 +127,11 @@ export class NotificationService {
 
     const text = t("game.mafiaIntro", { members: memberList });
 
-    for (const member of mafiaMembers) {
-      await this.sendToPlayer(member.telegramId, text);
-    }
+    await Promise.all(
+      mafiaMembers.map((member) =>
+        this.sendToPlayer(member.telegramId, text).catch(() => undefined)
+      )
+    );
   }
 
   // Komissar + Serjant — bir-birini bilishi uchun
@@ -144,8 +146,10 @@ export class NotificationService {
       `${sheriffLine}\n${sergeantLine}\n\n` +
       `Komissar va Serjant birgalikda ishlashadi.`;
 
-    await this.sendToPlayer(sheriff.telegramId, text);
-    await this.sendToPlayer(sergeant.telegramId, text);
+    await Promise.all([
+      this.sendToPlayer(sheriff.telegramId, text),
+      this.sendToPlayer(sergeant.telegramId, text),
+    ]);
   }
 
   async announceNightResults(chatId: bigint, result: NightResult, showRole: boolean): Promise<void> {

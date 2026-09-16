@@ -237,9 +237,11 @@ export class GameController {
     await engine.assignRoles();
 
     // Rolllarni shaxsiy xabarda yuborish
-    for (const player of engine.players.values()) {
-      await this.notifier.sendRoleToPlayer(player);
-    }
+    await Promise.all(
+      [...engine.players.values()].map((player) =>
+        this.notifier.sendRoleToPlayer(player).catch(() => {})
+      )
+    );
     await sleep(PACING.ROLE_INTRO_MS);
 
     // Mafiya a'zolariga bir-birini ko'rsatish

@@ -23,6 +23,9 @@ export function sequentialKey(ctx: Context): string | undefined {
   }
 
   const userId = ctx.from?.id;
+  const text = ctx.message?.text;
+  const joinMatch = text?.match(/^\/start(?:@\w+)?\s+join_(-?\d+)\s*$/);
+  if (joinMatch) return `c${joinMatch[1]}`;
   if (userId === undefined) return undefined; // kalitsiz — cheklovsiz o'tadi
 
   // Shaxsiy chat: o'yinchi biror o'yinda bo'lsa — o'sha o'yin navbatiga qo'shamiz

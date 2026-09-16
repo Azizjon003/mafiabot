@@ -73,6 +73,13 @@ check("Boshqa o'yin -> boshqa navbat (parallel ketadi)",
 check("O'yinsiz foydalanuvchi -> o'z navbati",
   sequentialKey(ctx({ chat: { id: 999, type: "private" }, from: { id: 999 } })) === "u999");
 
+check("Join deep-link hali o'yinda bo'lmagan odamni guruh navbatiga qo'yadi",
+  sequentialKey(ctx({
+    chat: { id: 999, type: "private" },
+    from: { id: 999 },
+    message: { text: "/start join_-1001" },
+  })) === "c-1001");
+
 // 7) from yo'q (masalan channel_post) -> undefined (cheklovsiz)
 check("from yo'q -> undefined", sequentialKey(ctx({})) === undefined);
 

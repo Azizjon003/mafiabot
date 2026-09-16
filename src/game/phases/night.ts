@@ -3,9 +3,9 @@ import { GameEngine } from "../engine";
 import { NotificationService } from "../../services/notification.service";
 import { nightActionKeyboard, professorBoxesKeyboard } from "../../keyboards/game";
 import { t } from "../../services/text.service";
-import { MAFIA_KILL_VOTERS, MAFIA_ROLES, PACING, ROLE_EMOJI, ROLE_NAME, ROLE_TEAM, Team } from "../../utils/constants";
+import { MAFIA_KILL_VOTERS, MAFIA_ROLES, ROLE_EMOJI, ROLE_NAME, ROLE_TEAM, Team } from "../../utils/constants";
 import { PlayerState } from "../../types";
-import { escapeHtml, mention, sleep } from "../../utils/helpers";
+import { escapeHtml, mention } from "../../utils/helpers";
 
 // Guruhga tundagi hikoya matnlarini yuborish
 export async function sendNightStories(
@@ -14,7 +14,7 @@ export async function sendNightStories(
 ): Promise<void> {
   const alive = engine.getAlivePlayers();
   const sentRoles = new Set<string>();
-  let isFirst = true;
+  const stories: string[] = [];
 
   // Har bir faol rolning hikoya matni
   for (const player of alive) {
@@ -25,16 +25,21 @@ export async function sendNightStories(
     if (player.role === "MAFIA" && sentRoles.has("DON")) continue;
     if (player.role === "DON" && sentRoles.has("MAFIA")) continue;
 
-    // Tun tugagan bo'lsa (masalan hamma tezroq harakat qilgan), hikoyalarni davom ettirmaymiz
-    if (engine.status !== "NIGHT") return;
-
-    // Birinchi xabardan oldin emas, faqat xabarlar orasida pauza
-    if (!isFirst) await sleep(PACING.NIGHT_STORY_MS);
-    isFirst = false;
-
     sentRoles.add(player.role);
-    await notifier.sendToGroup(engine.chatTelegramId, story).catch(() => {});
+    stories.push(story);
   }
+
+  if (engine.status !== "NIGHT" || stories.length === 0) return;
+
+  // Katta o'yinda 20+ alohida xabar Telegram guruh navbatini band qilmasin.
+  // Har tun ro'yxatning boshqa qismidan olti hikoyani bitta xabarga yig'amiz.
+  const maxStories = 6;
+  const start = ((engine.currentRound - 1) * maxStories) % stories.length;
+  const selected = Array.from(
+    { length: Math.min(maxStories, stories.length) },
+    (_, i) => stories[(start + i) % stories.length]
+  );
+  await notifier.sendToGroup(engine.chatTelegramId, selected.join("\n\n")).catch(() => {});
 }
 
 // Har bir rolga tundagi xabar yuborish (shaxsiy chatda)
@@ -44,7 +49,7 @@ export async function sendNightPrompts(
 ): Promise<void> {
   const alive = engine.getAlivePlayers();
 
-  for (const player of alive) {
+  await Promise.all(alive.map(async (player) => {
     switch (player.role) {
       case "HOOKER":
         await sendHookerPrompt(engine, notifier, player, alive);
@@ -123,7 +128,7 @@ export async function sendNightPrompts(
         await sendFramerPrompt(engine, notifier, player, alive);
         break;
     }
-  }
+  }));
 }
 
 // Umumiy: o'zidan boshqa hamma tirik o'yinchini nishon qilib beruvchi prompt

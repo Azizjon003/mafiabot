@@ -11,6 +11,34 @@ import { escapeHtml } from "../../utils/helpers";
 
 export const startCommand = new Composer<BotContext>();
 
+// Ko'p odam bir vaqtda qo'shilganda har bir join uchun guruh xabarini edit qilish
+// Telegram'ning bitta chat limitini to'ldiradi. Burst joinlarni bitta editga yig'amiz.
+const registrationRefreshTimers = new Map<string, ReturnType<typeof setTimeout>>();
+
+function scheduleRegistrationRefresh(ctx: BotContext, chatTelegramId: bigint): void {
+  const key = chatTelegramId.toString();
+  const previous = registrationRefreshTimers.get(key);
+  if (previous) clearTimeout(previous);
+
+  const timer = setTimeout(() => {
+    registrationRefreshTimers.delete(key);
+    const latestEngine = gameManager.getGame(chatTelegramId);
+    if (!latestEngine || latestEngine.status !== "WAITING" || !latestEngine.registrationMessageId) return;
+
+    ctx.api.editMessageText(
+      key,
+      latestEngine.registrationMessageId,
+      getRegistrationText(latestEngine, latestEngine.settings.registrationTimeout),
+      {
+        parse_mode: "HTML",
+        reply_markup: joinGameKeyboard(latestEngine.gameId, botUsername, chatTelegramId),
+      }
+    ).catch(() => {});
+  }, 750);
+
+  registrationRefreshTimers.set(key, timer);
+}
+
 startCommand.command("start", async (ctx) => {
   if (ctx.chat.type !== "private") {
     await ctx.reply(t("start.botStartedInGroup"), { parse_mode: "HTML" });
@@ -62,23 +90,7 @@ startCommand.command("start", async (ctx) => {
       { parse_mode: "HTML" }
     );
 
-    // Guruhda asosiy registration xabarini yangilash (alohida xabar yo'q)
-    if (engine.registrationMessageId) {
-      try {
-        const text = getRegistrationText(engine, engine.settings.registrationTimeout);
-        await ctx.api.editMessageText(
-          chatTelegramId.toString(),
-          engine.registrationMessageId,
-          text,
-          {
-            parse_mode: "HTML",
-            reply_markup: joinGameKeyboard(engine.gameId, botUsername, chatTelegramId),
-          }
-        );
-      } catch {
-        // Xabar o'zgarmagan yoki yo'q — ignore
-      }
-    }
+    scheduleRegistrationRefresh(ctx, chatTelegramId);
 
     return;
   }
